@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+venv/
+ai-service/venv/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+*.tsbuildinfo
+
+# Environment (keep examples)
+.env
+.env.local
+.env.*.local
+ai-service/.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel / deploy
+.vercel
+
+# MCP tooling (local IDE config)
+mcps/
+agent-tools/
+terminals/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/

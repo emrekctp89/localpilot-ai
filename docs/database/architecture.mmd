@@ -1,0 +1,30 @@
+erDiagram
+    PROFILES ||--o{ BUSINESSES : "yönetir"
+    BUSINESSES ||--o| GENERATED_PLANS : "sahiptir"
+
+    PROFILES {
+        uuid id PK
+        string email
+        string full_name
+        string role "owner, agency"
+        timestamp created_at
+    }
+
+    BUSINESSES {
+        uuid id PK
+        uuid owner_id FK
+        string name
+        string sector
+        string city
+        text target_audience
+        timestamp created_at
+    }
+
+    GENERATED_PLANS {
+        uuid id PK
+        uuid business_id FK
+        jsonb mini_site_data "Web sitesi içeriği"
+        jsonb social_media_calendar "30 günlük içerik dizisi"
+        jsonb whatsapp_templates "Otomatik mesajlar"
+        timestamp created_at
+    }
