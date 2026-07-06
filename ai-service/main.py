@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 from datetime import datetime
 from collections import defaultdict
 
+from middleware.billing import create_pro_guard_middleware
 from middleware.security import (
     auth_is_required,
     build_rate_limiter,
@@ -22,6 +23,7 @@ from middleware.security import (
     parse_allow_origin_regex,
     parse_allowed_origins,
 )
+from middleware.stripe_webhook import handle_stripe_event
 
 # ------------------------------------------------------------
 # ENV / CLIENT SETUP
@@ -58,6 +60,7 @@ app = FastAPI(title="LocalPilot AI API", version="1.0.0-rc.1")
 
 rate_limiter = build_rate_limiter()
 app.middleware("http")(create_rate_limit_middleware(rate_limiter))
+app.middleware("http")(create_pro_guard_middleware(supabase))
 app.middleware("http")(create_auth_middleware(supabase, AI_SERVICE_API_KEY))
 cors_kwargs = {
     "allow_origins": ALLOWED_ORIGINS,
@@ -73,10 +76,17 @@ app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 @app.get("/health")
 async def health():
+    checks = {
+        "gemini": bool(GEMINI_API_KEY),
+        "supabase": bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY),
+        "stripe": bool(STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET),
+    }
+    degraded = not all(checks.values())
     return {
-        "status": "ok",
+        "status": "degraded" if degraded else "ok",
         "service": "localpilot-ai",
         "auth_required": auth_is_required(),
+        "checks": checks,
     }
 
 
@@ -405,6 +415,12 @@ async def create_checkout_session(data: CheckoutInput):
 
 @app.post("/stripe-webhook")
 async def stripe_webhook(request: Request):
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=503,
+            detail="Stripe webhook yapılandırılmamış.",
+        )
+
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
@@ -413,23 +429,15 @@ async def stripe_webhook(request: Request):
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
     except Exception as e:
-        print(f"🚨 WEBHOOK HATASI: {str(e)}")
+        print(f"stripe_webhook_verify_failed error={e}")
         raise HTTPException(status_code=400, detail=f"Webhook Hatası: {str(e)}")
 
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        user_id = session["metadata"].get("user_id")
+    result, status_code = handle_stripe_event(event, supabase)
+    if status_code >= 500:
+        print(f"stripe_webhook_handler_failed detail={result.get('detail')}")
+        raise HTTPException(status_code=status_code, detail=result.get("detail"))
 
-        if user_id:
-            try:
-                supabase.table("profiles").update({"is_pro": True}).eq(
-                    "id", user_id
-                ).execute()
-                print(f"BAŞARI: Kullanıcı {user_id} artık PRO paket üyesi!")
-            except Exception as e:
-                print(f"Supabase Güncelleme Hatası: {str(e)}")
-
-    return {"status": "success"}
+    return result
 
 
 @app.post("/forecast-finance")

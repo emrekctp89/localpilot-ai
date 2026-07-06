@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import {
@@ -44,6 +44,9 @@ export default function Dashboard() {
   );
 
   const [activeTab, setActiveTab] = useState("ozet");
+  const [paymentReturn, setPaymentReturn] = useState<"success" | "cancel" | null>(
+    null,
+  );
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] =
     useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
@@ -95,6 +98,15 @@ export default function Dashboard() {
     onboardingStorageKey,
     onboardingDraftReady,
   });
+
+  useEffect(() => {
+    const payment = new URLSearchParams(window.location.search).get("payment");
+    if (payment !== "success" && payment !== "cancel") return;
+
+    setPaymentReturn(payment);
+    setActiveTab("ayarlar");
+    window.history.replaceState({}, "", "/dashboard");
+  }, []);
 
   const canUseProTools =
     session.isPro || process.env.NODE_ENV === "development";
@@ -315,6 +327,8 @@ export default function Dashboard() {
                   isPro={session.isPro}
                   handleUpgradeToPro={handleUpgradeToPro}
                   refreshProStatus={session.refreshProStatus}
+                  paymentReturn={paymentReturn}
+                  onPaymentReturnHandled={() => setPaymentReturn(null)}
                 />
               )}
             </main>

@@ -12,6 +12,8 @@ interface AyarlarTabProps {
   isPro?: boolean;
   handleUpgradeToPro?: () => Promise<void>;
   refreshProStatus?: () => Promise<boolean>;
+  paymentReturn?: "success" | "cancel" | null;
+  onPaymentReturnHandled?: () => void;
 }
 
 export default function AyarlarTab({
@@ -23,6 +25,8 @@ export default function AyarlarTab({
   isPro = false,
   handleUpgradeToPro,
   refreshProStatus,
+  paymentReturn = null,
+  onPaymentReturnHandled,
 }: AyarlarTabProps) {
   const [siteData, setSiteData] = useState(
     plan?.mini_site_data || {
@@ -51,20 +55,47 @@ export default function AyarlarTab({
   const isPublished = Boolean(business?.id);
 
   useEffect(() => {
-    const paymentStatus = new URLSearchParams(window.location.search).get(
-      "payment",
-    );
-    const message =
-      paymentStatus === "success"
-        ? "Ödeme tamamlandı. Pro üyeliğiniz kısa süre içinde etkinleşir."
-        : paymentStatus === "cancel"
-          ? "Ödeme işlemi iptal edildi. Hesabınızda değişiklik yok."
-          : "";
-    if (!message) return;
+    if (!paymentReturn) return;
 
-    const timer = window.setTimeout(() => setBillingMessage(message), 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+    if (paymentReturn === "cancel") {
+      setBillingMessage("Ödeme işlemi iptal edildi. Hesabınızda değişiklik yok.");
+      onPaymentReturnHandled?.();
+      return;
+    }
+
+    let cancelled = false;
+    setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
+
+    const activatePro = async () => {
+      if (!refreshProStatus) {
+        onPaymentReturnHandled?.();
+        return;
+      }
+
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        if (cancelled) return;
+        const active = await refreshProStatus();
+        if (active) {
+          setBillingMessage("Pro üyeliğiniz aktif!");
+          onPaymentReturnHandled?.();
+          return;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+      }
+
+      if (!cancelled) {
+        setBillingMessage(
+          "Ödeme alındı. Pro aktivasyonu biraz sürebilir; 'Üyelik Durumunu Yenile' ile kontrol edin.",
+        );
+        onPaymentReturnHandled?.();
+      }
+    };
+
+    void activatePro();
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentReturn, refreshProStatus, onPaymentReturnHandled]);
 
   const inputClass =
     "w-full border border-gray-300 rounded-md p-3 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-800 outline-none transition";
