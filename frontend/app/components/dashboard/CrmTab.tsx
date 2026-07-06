@@ -4,6 +4,10 @@ import React, { useState, useEffect } from "react";
 // 🚀 ÖNEMLİ DİKKAT: Kendi projenizde bu yorumu açıp sahte supabase'i SİLİN:
 import { analyzeChurn, getAiServiceUrl } from "@/lib/ai-client";
 import { supabase } from "@/lib/supabase";
+import {
+  listCustomerFollowUps,
+  saveCustomerFollowUps,
+} from "@/lib/repositories/crm-activities";
 import type {
   Business,
   Customer,
@@ -110,19 +114,7 @@ export default function CrmTab({ business }: CrmTabProps) {
         return;
       }
 
-      const { data: planData } = await supabase
-        .from("generated_plans")
-        .select("id, mini_site_data")
-        .eq("business_id", business.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const miniSiteData =
-        (planData?.mini_site_data as Record<string, unknown> | null) || {};
-      const cloudReminders =
-        (miniSiteData.crm_follow_ups as
-          | Record<string, CustomerFollowUp>
-          | undefined) || {};
+      const cloudReminders = await listCustomerFollowUps(business.id);
       const mergedReminders = {
         ...localReminders,
         ...cloudReminders,
@@ -130,30 +122,15 @@ export default function CrmTab({ business }: CrmTabProps) {
 
       setReminders(mergedReminders);
 
-      if (
-        Object.keys(localReminders).some(
-          (customerId) => !cloudReminders[customerId],
-        )
-      ) {
-        const nextMiniSiteData = {
-          ...miniSiteData,
-          crm_follow_ups: mergedReminders,
-        };
-        const { error } = planData?.id
-          ? await supabase
-              .from("generated_plans")
-              .update({ mini_site_data: nextMiniSiteData })
-              .eq("id", planData.id)
-          : await supabase.from("generated_plans").insert([
-              {
-                business_id: business.id,
-                mini_site_data: nextMiniSiteData,
-                social_media_calendar: [],
-                whatsapp_templates: [],
-              },
-            ]);
+      const hasUnsyncedLocal = Object.keys(localReminders).some(
+        (customerId) =>
+          JSON.stringify(localReminders[customerId]) !==
+          JSON.stringify(cloudReminders[customerId]),
+      );
 
-        if (!error) window.localStorage.removeItem(reminderStorageKey);
+      if (hasUnsyncedLocal) {
+        const saved = await saveCustomerFollowUps(business.id, mergedReminders);
+        if (saved) window.localStorage.removeItem(reminderStorageKey);
       } else if (Object.keys(cloudReminders).length > 0) {
         window.localStorage.removeItem(reminderStorageKey);
       }
@@ -177,40 +154,8 @@ export default function CrmTab({ business }: CrmTabProps) {
       return true;
     }
 
-    const { data: planData, error: findError } = await supabase
-      .from("generated_plans")
-      .select("id, mini_site_data")
-      .eq("business_id", business.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (findError) {
-      setReminderSaveStatus("error");
-      return false;
-    }
-
-    const miniSiteData =
-      (planData?.mini_site_data as Record<string, unknown> | null) || {};
-    const nextMiniSiteData = {
-      ...miniSiteData,
-      crm_follow_ups: nextReminders,
-    };
-    const { error } = planData?.id
-      ? await supabase
-          .from("generated_plans")
-          .update({ mini_site_data: nextMiniSiteData })
-          .eq("id", planData.id)
-      : await supabase.from("generated_plans").insert([
-          {
-            business_id: business.id,
-            mini_site_data: nextMiniSiteData,
-            social_media_calendar: [],
-            whatsapp_templates: [],
-          },
-        ]);
-
-    if (error) {
+    const saved = await saveCustomerFollowUps(business.id, nextReminders);
+    if (!saved) {
       setReminderSaveStatus("error");
       return false;
     }

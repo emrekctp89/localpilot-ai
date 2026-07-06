@@ -1,6 +1,17 @@
 import { supabase } from "@/lib/supabase";
 import type { MiniSiteData } from "@/lib/domain-types";
 
+const MIGRATED_MINI_SITE_FIELDS: (keyof MiniSiteData)[] = [
+  "appointments",
+  "orders",
+  "tasks",
+  "decision_cycles",
+  "google_business_checklist",
+  "sector_workflow_items",
+  "crm_follow_ups",
+  "campaigns",
+];
+
 export async function loadLegacyMiniSiteData(
   businessId: string,
 ): Promise<MiniSiteData> {
@@ -48,4 +59,34 @@ export async function updateLegacyMiniSiteData(
       ]);
 
   return !error;
+}
+
+export async function stripLegacyMiniSiteField(
+  businessId: string,
+  field: keyof MiniSiteData,
+): Promise<void> {
+  await updateLegacyMiniSiteData(businessId, (current) => {
+    if (!(field in current)) return current;
+    const next = { ...current };
+    delete next[field];
+    return next;
+  });
+}
+
+export async function stripMigratedOperationalFields(
+  businessId: string,
+): Promise<boolean> {
+  return updateLegacyMiniSiteData(businessId, (current) => {
+    const next = { ...current };
+    let changed = false;
+
+    for (const field of MIGRATED_MINI_SITE_FIELDS) {
+      if (field in next) {
+        delete next[field];
+        changed = true;
+      }
+    }
+
+    return changed ? next : current;
+  });
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
 import { listCampaigns } from "@/lib/repositories/campaigns";
+import { stripMigratedOperationalFields } from "@/lib/repositories/plan-legacy";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
 import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard";
 export interface OnboardingDraftHandlers {
@@ -90,6 +91,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
               ? storedCampaigns
               : getCampaignsFromPlan(planData ?? undefined),
           );
+          void stripMigratedOperationalFields(bizData.id);
         } else {
           try {
             const storedDraft = window.localStorage.getItem(draftStorageKey);

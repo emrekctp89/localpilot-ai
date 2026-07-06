@@ -145,6 +145,26 @@ async function replaceAllInTable(
   return !insertError;
 }
 
+async function clearLegacyPlanContent(businessId: string): Promise<void> {
+  const { data: planData } = await supabase
+    .from("generated_plans")
+    .select("id")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!planData?.id) return;
+
+  await supabase
+    .from("generated_plans")
+    .update({
+      social_media_calendar: [],
+      whatsapp_templates: [],
+    })
+    .eq("id", planData.id);
+}
+
 async function persistLegacyContent(
   businessId: string,
   socialPosts: SocialPost[],
@@ -210,6 +230,7 @@ export async function listContentItems(
         legacy.socialPosts,
         legacy.waTemplates,
       );
+      await clearLegacyPlanContent(businessId);
       return legacy;
     }
     return { socialPosts: [], waTemplates: [] };
@@ -228,6 +249,9 @@ export async function saveContentItems(
     socialPosts,
     waTemplates,
   );
-  if (savedToTable) return true;
+  if (savedToTable) {
+    await clearLegacyPlanContent(businessId);
+    return true;
+  }
   return persistLegacyContent(businessId, socialPosts, waTemplates);
 }

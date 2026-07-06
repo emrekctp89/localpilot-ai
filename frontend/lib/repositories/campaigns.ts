@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import type { Campaign } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
+import { stripLegacyMiniSiteField } from "./plan-legacy";
 
 interface CampaignRow {
   id: string;
@@ -124,6 +125,7 @@ export async function listCampaigns(businessId: string): Promise<Campaign[]> {
     const legacy = await loadLegacyCampaigns(businessId);
     if (legacy.length > 0) {
       await replaceAllInTable(businessId, legacy);
+      await stripLegacyMiniSiteField(businessId, "campaigns");
       return legacy;
     }
     return [];
@@ -137,6 +139,9 @@ export async function saveCampaigns(
   campaigns: Campaign[],
 ): Promise<boolean> {
   const savedToTable = await replaceAllInTable(businessId, campaigns);
-  if (savedToTable) return true;
+  if (savedToTable) {
+    await stripLegacyMiniSiteField(businessId, "campaigns");
+    return true;
+  }
   return persistLegacyCampaigns(businessId, campaigns);
 }

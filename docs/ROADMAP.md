@@ -105,11 +105,13 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] `campaigns` tablosu + repository (`003_campaigns_content.sql`, `useCampaigns.ts`)
 - [x] `content_items` tablosu + repository (`IcerikTab.tsx`)
 - [ ] `003_campaigns_content.sql` migration'ını Supabase'de çalıştır
-- [ ] `crm_activities` — churn analizi, durum geçmişi (JSON'dan ayrıştır)
+- [x] `crm_activities` — takip tarihi + durum geçmişi (`CrmTab`, `004_crm_activities.sql`)
+- [ ] `004_crm_activities.sql` migration'ını Supabase'de çalıştır
 
 ### 2.2 Legacy temizliği
-- [ ] Dual-read migrasyonu tamamlandıktan sonra `plan-legacy.ts` fallback'ini kaldır
-- [ ] `mini_site_data` yalnızca mini site içeriği + AI plan çıktıları için kalsın
+- [x] Tablo kaydı sonrası JSON alanlarını temizle (`stripLegacyMiniSiteField`)
+- [x] Dashboard açılışında toplu legacy temizlik (`stripMigratedOperationalFields`)
+- [ ] Dual-read fallback'i kaldır (tüm migration'lar production'da doğrulandıktan sonra)
 - [ ] `docs/database/architecture.mmd` diyagramını güncelle
 
 ### 2.3 Veri tutarlılığı

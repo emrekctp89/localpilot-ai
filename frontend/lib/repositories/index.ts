@@ -10,3 +10,11 @@ export {
 export { loadOperationalSnapshot } from "./operations";
 export { listCampaigns, saveCampaigns } from "./campaigns";
 export { listContentItems, saveContentItems } from "./content-items";
+export {
+  listCustomerFollowUps,
+  saveCustomerFollowUps,
+} from "./crm-activities";
+export {
+  stripLegacyMiniSiteField,
+  stripMigratedOperationalFields,
+} from "./plan-legacy";
