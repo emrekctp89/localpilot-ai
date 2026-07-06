@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type {
   Business,
   SocialPost,
   WhatsappTemplate,
 } from "@/lib/domain-types";
+import {
+  WHATSAPP_BUSINESS_API_NOTES,
+  buildWhatsAppFallbackUrl,
+  buildWhatsAppTemplateSendPlan,
+  getWhatsAppBusinessIntegrationStatus,
+} from "@/lib/integrations";
 import {
   listContentItems,
   saveContentItems,
@@ -75,6 +81,15 @@ export default function IcerikTab({ business }: IcerikTabProps) {
   const [historyStatus, setHistoryStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const whatsappIntegration = getWhatsAppBusinessIntegrationStatus();
+  const whatsappSendPlan = useMemo(
+    () => buildWhatsAppTemplateSendPlan(business, waTemplates),
+    [business, waTemplates],
+  );
+  const whatsappPlanById = useMemo(
+    () => new Map(whatsappSendPlan.map((item) => [item.templateId, item])),
+    [whatsappSendPlan],
+  );
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -385,7 +400,25 @@ export default function IcerikTab({ business }: IcerikTabProps) {
       )}
 
       {activeSubTab === "whatsapp" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
+        <div className="space-y-6 animate-fade-in-up">
+          <section className="rounded-2xl border border-green-100 bg-green-50 p-5">
+            <p className="text-xs font-black uppercase tracking-widest text-green-700">
+              WhatsApp Business API
+            </p>
+            <h3 className="mt-1 text-lg font-black text-gray-900">
+              {whatsappIntegration.label}
+            </h3>
+            <p className="mt-2 text-sm text-green-900">
+              {whatsappIntegration.detail}
+            </p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-green-800">
+              {WHATSAPP_BUSINESS_API_NOTES.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {waTemplates.length === 0 ? (
             <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-gray-100">
               <h3 className="font-bold text-gray-800">
@@ -396,15 +429,34 @@ export default function IcerikTab({ business }: IcerikTabProps) {
               </p>
             </div>
           ) : (
-            waTemplates.map((template, idx) => (
+            waTemplates.map((template, idx) => {
+              const readiness = whatsappPlanById.get(
+                String(template.id ?? template.name),
+              );
+              const fallbackUrl = buildWhatsAppFallbackUrl(
+                business,
+                template.text,
+              );
+
+              return (
               <div
                 key={template.id || idx}
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-md transition"
               >
                 <div className="flex items-start justify-between gap-3 bg-green-50 border-b border-green-100 p-4">
-                  <h4 className="font-bold text-green-900 text-sm">
-                    {template.name}
-                  </h4>
+                  <div>
+                    <h4 className="font-bold text-green-900 text-sm">
+                      {template.name}
+                    </h4>
+                    {readiness && (
+                      <p className="mt-1 text-[11px] font-bold text-green-700">
+                        {readiness.channel === "cloud_api"
+                          ? "Cloud API'ye hazır"
+                          : "Derin link yedeği"}{" "}
+                        · {readiness.suggestedCategory}
+                      </p>
+                    )}
+                  </div>
                   <p className="text-[11px] font-medium text-green-700/60">
                     {formatHistoryDate(template.created_at)}
                   </p>
@@ -422,10 +474,14 @@ export default function IcerikTab({ business }: IcerikTabProps) {
                     {copyStatus === `wa-${idx}` ? "Kopyalandı" : "Kopyala"}
                   </button>
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(template.text)}`}
+                    href={fallbackUrl || "#"}
                     target="_blank"
                     rel="noreferrer"
-                    className="bg-green-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-600 transition text-center flex items-center justify-center gap-1"
+                    className="bg-green-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-600 transition text-center flex items-center justify-center gap-1 disabled:pointer-events-none disabled:opacity-50"
+                    aria-disabled={!fallbackUrl}
+                    onClick={(event) => {
+                      if (!fallbackUrl) event.preventDefault();
+                    }}
                   >
                     Gönder
                   </a>
@@ -439,9 +495,16 @@ export default function IcerikTab({ business }: IcerikTabProps) {
                     Sil
                   </button>
                 </div>
+                {readiness && readiness.blockers.length > 0 && (
+                  <div className="border-t border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                    {readiness.blockers.join(" ")}
+                  </div>
+                )}
               </div>
-            ))
+            );
+            })
           )}
+          </div>
         </div>
       )}
     </div>

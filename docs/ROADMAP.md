@@ -170,9 +170,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Review analizi → aksiyon önerisi → Karar Merkezi köprüsü
 
 ### 4.2 Harici entegrasyonlar
-- [ ] Google Business Profile API (checklist → canlı profil önerileri)
-- [ ] WhatsApp Business API araştırması (şablon gönderimi)
-- [ ] Takvim sync (Google Calendar) — randevu modülü
+- [x] Google Business Profile API (checklist → canlı profil önerileri)
+- [x] WhatsApp Business API araştırması (şablon gönderimi)
+- [x] Takvim sync (Google Calendar) — randevu modülü
 
 ### 4.3 Performans
 - [ ] Render cold start azaltma (paid plan veya keep-warm cron)

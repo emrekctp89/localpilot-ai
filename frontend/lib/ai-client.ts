@@ -1,4 +1,5 @@
 import type { Campaign } from "./domain-types";
+import type { GoogleProfileSuggestion } from "./integrations/types";
 import { supabase } from "./supabase";
 
 export class AiServiceError extends Error {
@@ -125,6 +126,20 @@ export async function forecastFinance(input: {
   transactions: { date: string; amount: number; type: string }[];
 }): Promise<FinanceForecastResult> {
   return postJson("/forecast-finance", input);
+}
+
+export async function fetchGoogleProfileSuggestions(input: {
+  business_name: string;
+  industry?: string;
+  sector?: string;
+  city?: string;
+  address?: string;
+  whatsapp_number?: string;
+  working_hours?: string;
+  about_us?: string;
+  pending_checklist_ids: string[];
+}): Promise<{ suggestions: GoogleProfileSuggestion[] }> {
+  return postJson("/integration/google-profile-suggestions", input);
 }
 
 export async function generateCampaigns(input: {

@@ -305,7 +305,19 @@ class CustomerInput(BaseModel):
 class ChurnRequest(BaseModel):
     business_name: str
     customers: List[CustomerInput]
-    
+
+
+class GoogleProfileSuggestionsRequest(BaseModel):
+    business_name: str
+    industry: str = ""
+    sector: str = ""
+    city: str = ""
+    address: str = ""
+    whatsapp_number: str = ""
+    working_hours: str = ""
+    about_us: str = ""
+    pending_checklist_ids: List[str] = Field(default_factory=list)
+
 # ------------------------------------------------------------
 # ENDPOINTS
 # ------------------------------------------------------------
@@ -583,6 +595,60 @@ async def forecast_finance(data: FinanceForecastRequest):
     
     
     
+@app.post("/integration/google-profile-suggestions")
+async def google_profile_suggestions(data: GoogleProfileSuggestionsRequest):
+    try:
+        if not data.pending_checklist_ids:
+            return {"suggestions": []}
+
+        profile = build_business_profile_block(
+            business_name=data.business_name,
+            sector=data.sector,
+            industry=data.industry,
+            city=data.city,
+            target_audience="",
+            top_products="",
+            unique_selling_point=data.about_us,
+            brand_tone="",
+        )
+        pending_items = ", ".join(data.pending_checklist_ids)
+
+        system_instruction = """
+        Sen LocalPilot AI'ın Google İşletme Profili danışmanısın.
+        Eksik checklist maddeleri için işletmeye özel, kopyalanabilir profil önerileri üret.
+        Çıktın kesinlikle JSON olmalı:
+        {
+          "suggestions": [
+            {
+              "checklistItemId": "description-written",
+              "title": "Madde başlığı",
+              "suggestedText": "Google profiline yapıştırılabilir metin",
+              "actionLabel": "Kopyalanacak aksiyon etiketi",
+              "priority": "high | medium | low"
+            }
+          ]
+        }
+        """
+        user_prompt = f"""
+        {profile}
+        Adres: {data.address or 'Belirtilmedi'}
+        WhatsApp: {data.whatsapp_number or 'Belirtilmedi'}
+        Çalışma Saatleri: {data.working_hours or 'Belirtilmedi'}
+        Eksik Checklist Maddeleri: {pending_items}
+        """
+        result = generate_ai_json(system_instruction, user_prompt, temperature=0.5)
+        suggestions = result.get("suggestions", [])
+        if not isinstance(suggestions, list):
+            suggestions = []
+        return {"suggestions": suggestions}
+    except Exception as e:
+        print(f"🚨 GOOGLE PROFILE SUGGESTION HATASI: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Google profil önerileri oluşturulamadı: {str(e)}",
+        )
+
+
 @app.post("/analyze-churn")
 async def analyze_churn(data: ChurnRequest):
     try:

@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Appointment, Business } from "@/lib/domain-types";
+import {
+  appointmentToCalendarEvent,
+  buildGoogleCalendarUrl,
+  exportAppointmentsToCalendar,
+  getGoogleCalendarIntegrationStatus,
+  readCalendarSyncState,
+  writeCalendarSyncState,
+} from "@/lib/integrations";
 import { listAppointments, saveAppointments } from "@/lib/repositories";
 
 interface RandevuTabProps {
@@ -34,6 +42,10 @@ export default function RandevuTab({ business }: RandevuTabProps) {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [referenceTime] = useState(() => Date.now());
+  const [calendarSyncState, setCalendarSyncState] = useState(
+    readCalendarSyncState(business.id || "preview"),
+  );
+  const calendarIntegration = getGoogleCalendarIntegrationStatus();
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -142,6 +154,38 @@ export default function RandevuTab({ business }: RandevuTabProps) {
     (appointment) =>
       new Date(appointment.startsAt).toLocaleDateString("en-CA") === today,
   ).length;
+  const upcomingAppointments = appointments.filter(
+    (appointment) =>
+      appointment.status === "planlandi" &&
+      new Date(appointment.startsAt).getTime() >= referenceTime,
+  );
+
+  const recordCalendarSync = (exportedCount: number, mode: "ics_export" | "google_url") => {
+    if (!business.id) return;
+    const nextState = {
+      provider: "google_calendar" as const,
+      lastSyncedAt: new Date().toISOString(),
+      exportedCount,
+      mode,
+    };
+    writeCalendarSyncState(business.id, nextState);
+    setCalendarSyncState(nextState);
+  };
+
+  const handleExportUpcomingIcs = () => {
+    const result = exportAppointmentsToCalendar(
+      upcomingAppointments,
+      business,
+      "ics_export",
+    );
+    recordCalendarSync(result.exportedCount, result.mode);
+  };
+
+  const handleOpenInGoogleCalendar = (appointment: Appointment) => {
+    const event = appointmentToCalendarEvent(appointment, business);
+    window.open(buildGoogleCalendarUrl(event), "_blank", "noopener,noreferrer");
+    recordCalendarSync(1, "google_url");
+  };
 
   if (loading) {
     return (
@@ -177,6 +221,37 @@ export default function RandevuTab({ business }: RandevuTabProps) {
           </div>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-cyan-700">
+              Google Calendar Sync
+            </p>
+            <h3 className="mt-1 text-lg font-black text-gray-900">
+              {calendarIntegration.label}
+            </h3>
+            <p className="mt-2 text-sm text-cyan-900">
+              {calendarIntegration.detail}
+            </p>
+            {calendarSyncState?.lastSyncedAt && (
+              <p className="mt-2 text-xs font-medium text-cyan-800">
+                Son dışa aktarma:{" "}
+                {new Date(calendarSyncState.lastSyncedAt).toLocaleString("tr-TR")}{" "}
+                ({calendarSyncState.exportedCount} randevu)
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleExportUpcomingIcs}
+            disabled={upcomingAppointments.length === 0}
+            className="rounded-xl bg-cyan-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-800 disabled:bg-gray-400"
+          >
+            Yaklaşan Randevuları ICS İndir
+          </button>
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <form
@@ -333,7 +408,14 @@ export default function RandevuTab({ business }: RandevuTabProps) {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenInGoogleCalendar(appointment)}
+                      className="rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm font-bold text-cyan-700 hover:bg-cyan-50"
+                    >
+                      Takvime Ekle
+                    </button>
                     <select
                       value={appointment.status}
                       onChange={(event) =>

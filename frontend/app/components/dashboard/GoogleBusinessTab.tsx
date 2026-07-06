@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchGoogleProfileSuggestions } from "@/lib/ai-client";
 import type { Business, GoogleBusinessChecklist } from "@/lib/domain-types";
+import {
+  buildGoogleMapsSearchUrl,
+  buildGoogleProfileSuggestions,
+  getGoogleBusinessIntegrationStatus,
+  getGoogleBusinessManagerUrl,
+  mergeGoogleProfileSuggestions,
+} from "@/lib/integrations";
 import { loadGoogleChecklist, saveGoogleChecklist } from "@/lib/repositories";
 
 interface GoogleBusinessTabProps {
@@ -28,6 +36,12 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [isEnhancingSuggestions, setIsEnhancingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
+  const [enhancedSuggestions, setEnhancedSuggestions] = useState<
+    ReturnType<typeof buildGoogleProfileSuggestions>
+  >([]);
+  const integrationStatus = getGoogleBusinessIntegrationStatus();
 
   useEffect(() => {
     const loadChecklist = async () => {
@@ -82,6 +96,51 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
     CHECKLIST_ITEMS.some((item) => item[0] === id),
   ).length;
   const progress = Math.round((completedCount / CHECKLIST_ITEMS.length) * 100);
+  const localSuggestions = useMemo(
+    () => buildGoogleProfileSuggestions(business, checklist),
+    [business, checklist],
+  );
+  const profileSuggestions = useMemo(
+    () => mergeGoogleProfileSuggestions(localSuggestions, enhancedSuggestions),
+    [localSuggestions, enhancedSuggestions],
+  );
+
+  const handleEnhanceSuggestions = async () => {
+    if (!business.id || localSuggestions.length === 0) return;
+    setIsEnhancingSuggestions(true);
+    setSuggestionError("");
+    try {
+      const data = await fetchGoogleProfileSuggestions({
+        business_name: business.name || "",
+        industry: business.industry || "",
+        sector: business.sector || "",
+        city: business.city || "",
+        address: business.address || "",
+        whatsapp_number: business.whatsapp_number || "",
+        working_hours: business.working_hours || "",
+        pending_checklist_ids: localSuggestions.map(
+          (item) => item.checklistItemId,
+        ),
+      });
+      setEnhancedSuggestions(data.suggestions || []);
+    } catch (error) {
+      setSuggestionError(
+        error instanceof Error
+          ? error.message
+          : "Profil önerileri alınamadı.",
+      );
+    } finally {
+      setIsEnhancingSuggestions(false);
+    }
+  };
+
+  const handleCopySuggestion = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
 
   if (loading) {
     return (
@@ -134,6 +193,93 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
           {saveStatus === "error" && "Kaydedilemedi"}
         </span>
       </div>
+
+      <section className="rounded-2xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-amber-700">
+              Google Business Profile API
+            </p>
+            <h3 className="mt-1 text-lg font-black text-gray-900">
+              {integrationStatus.label}
+            </h3>
+            <p className="mt-2 text-sm text-amber-900">
+              {integrationStatus.detail}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={getGoogleBusinessManagerUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-amber-800 border border-amber-200 hover:bg-amber-100"
+            >
+              Profil Yöneticisi
+            </a>
+            <a
+              href={buildGoogleMapsSearchUrl(business)}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700"
+            >
+              Haritada Gör
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {profileSuggestions.length > 0 && (
+        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-black text-gray-900">
+                Canlı Profil Önerileri
+              </h3>
+              <p className="text-sm text-gray-500">
+                Eksik checklist maddeleri için kopyalanabilir metinler.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleEnhanceSuggestions}
+              disabled={isEnhancingSuggestions}
+              className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700 disabled:bg-gray-400"
+            >
+              {isEnhancingSuggestions ? "AI önerileri alınıyor..." : "AI ile Zenginleştir"}
+            </button>
+          </div>
+          {suggestionError && (
+            <p className="mb-4 text-sm font-medium text-red-600" role="alert">
+              {suggestionError}
+            </p>
+          )}
+          <div className="grid gap-3 lg:grid-cols-2">
+            {profileSuggestions.map((suggestion) => (
+              <article
+                key={suggestion.checklistItemId}
+                className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="font-black text-gray-900">{suggestion.title}</h4>
+                  <span className="rounded-full bg-orange-100 px-2 py-1 text-[10px] font-black uppercase text-orange-700">
+                    {suggestion.priority}
+                  </span>
+                </div>
+                <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-gray-700">
+                  {suggestion.suggestedText}
+                </pre>
+                <button
+                  type="button"
+                  onClick={() => handleCopySuggestion(suggestion.suggestedText)}
+                  className="mt-3 rounded-lg border border-orange-200 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50"
+                >
+                  {suggestion.actionLabel}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         {categories.map((category) => {

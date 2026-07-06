@@ -272,6 +272,35 @@ test("sector packs adapt one workflow component to each business", async () => {
   assert.match(domainSource, /export interface SectorWorkflowItem/);
 });
 
+test("external integrations wire google, whatsapp, and calendar flows", async () => {
+  const repoRoot = path.resolve(frontendRoot, "..");
+  const readRepoSource = (relativePath) =>
+    readFile(path.join(repoRoot, relativePath), "utf8");
+
+  const [
+    googleTabSource,
+    randevuSource,
+    icerikSource,
+    integrationsSource,
+    aiServiceSource,
+  ] = await Promise.all([
+    readSource("app/components/dashboard/GoogleBusinessTab.tsx"),
+    readSource("app/components/dashboard/RandevuTab.tsx"),
+    readSource("app/components/dashboard/IcerikTab.tsx"),
+    readSource("lib/integrations/google-business.ts"),
+    readRepoSource("ai-service/main.py"),
+  ]);
+
+  assert.match(integrationsSource, /buildGoogleProfileSuggestions/);
+  assert.match(googleTabSource, /Canlı Profil Önerileri/);
+  assert.match(googleTabSource, /fetchGoogleProfileSuggestions/);
+  assert.match(randevuSource, /Google Calendar Sync/);
+  assert.match(randevuSource, /Takvime Ekle/);
+  assert.match(icerikSource, /WhatsApp Business API/);
+  assert.match(icerikSource, /buildWhatsAppTemplateSendPlan/);
+  assert.match(aiServiceSource, /integration\/google-profile-suggestions/);
+});
+
 test("ai quality upgrades wire campaigns, reviews, and finance forecast", async () => {
   const repoRoot = path.resolve(frontendRoot, "..");
   const readRepoSource = (relativePath) =>
