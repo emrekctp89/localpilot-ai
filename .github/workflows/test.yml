@@ -40,6 +40,9 @@ jobs:
         run: npm run test:e2e -- e2e/auth-guard.spec.ts
         env:
           CI: true
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ci-placeholder
+          NEXT_PUBLIC_AI_SERVICE_URL: https://localpilot-ai-service.onrender.com
 
   e2e-authenticated:
     runs-on: ubuntu-latest
