@@ -37,7 +37,7 @@ export default function AuthPage() {
         // GİRİŞ YAP
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push('/'); // Başarılıysa ana sayfaya yönlendir
+        router.push('/dashboard');
       } else {
         // KAYIT OL
         const { error } = await supabase.auth.signUp({ email, password });

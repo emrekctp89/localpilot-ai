@@ -197,9 +197,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Karar Merkezi ilk onay süresi
 
 ### 5.3 Pazarlama site
-- [ ] Landing page (`/`) ürün değer önerisi
-- [ ] Sektör bazlı demo / screenshot
-- [ ] Fiyatlandırma sayfası
+- [x] Landing page (`/`) ürün değer önerisi
+- [x] Sektör bazlı demo / screenshot
+- [x] Fiyatlandırma sayfası
 
 ---
 

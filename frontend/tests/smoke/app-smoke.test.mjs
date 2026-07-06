@@ -19,6 +19,7 @@ test("auth screen keeps email, password, signup, and Google login flows", async 
   assert.match(source, /signUp/);
   assert.match(source, /signInWithOAuth/);
   assert.match(source, /provider:\s*['"]google['"]/);
+  assert.match(source, /router\.push\(['"]\/dashboard['"]\)/);
 });
 
 test("dashboard protects unauthenticated access and exposes onboarding", async () => {
@@ -536,6 +537,22 @@ test("shared domain models remain available to dashboard modules", async () => {
   ]) {
     assert.match(source, new RegExp(`export interface ${model}\\b`));
   }
+});
+
+test("marketing site exposes landing, sector demos and pricing page", async () => {
+  const [landingSource, pricingSource, marketingLibSource] = await Promise.all([
+    readSource("app/page.tsx"),
+    readSource("app/fiyatlandirma/page.tsx"),
+    readSource("lib/marketing-site.ts"),
+  ]);
+
+  assert.match(landingSource, /MARKETING_VALUE_PROPS/);
+  assert.match(landingSource, /SectorDemoShowcase/);
+  assert.match(landingSource, /İşletmenizi yönetin, AI ile büyütün/);
+  assert.doesNotMatch(landingSource, /redirect\(/);
+  assert.match(pricingSource, /PricingCards/);
+  assert.match(marketingLibSource, /SECTOR_DEMOS/);
+  assert.match(marketingLibSource, /PRICING_PLANS/);
 });
 
 test("activation metrics surface onboarding rate and milestone durations", async () => {
