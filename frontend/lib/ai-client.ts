@@ -1,6 +1,6 @@
 import type { Campaign } from "./domain-types";
 import type { GoogleProfileSuggestion } from "./integrations/types";
-import { supabase } from "./supabase";
+import { ensureSupabaseSession } from "./supabase-auth";
 
 export class AiServiceError extends Error {
   constructor(message: string) {
@@ -28,10 +28,7 @@ async function buildAuthHeaders(): Promise<Record<string, string>> {
     "Content-Type": "application/json",
   };
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
+  const session = await ensureSupabaseSession();
   if (session?.access_token) {
     headers.Authorization = `Bearer ${session.access_token}`;
   }

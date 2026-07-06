@@ -72,18 +72,34 @@ def create_auth_middleware(supabase_client: Client, api_key: str):
         ):
             return await call_next(request)
 
-        if not require_auth:
-            request.state.auth_subject = "anonymous"
-            return await call_next(request)
+        has_credentials = bool(
+            extract_bearer_token(request) or request.headers.get("X-API-Key", "").strip()
+        )
 
-        allowed, subject = await verify_access(request, supabase_client, api_key)
-        if not allowed:
+        if has_credentials:
+            allowed, subject = await verify_access(
+                request, supabase_client, api_key
+            )
+            if allowed:
+                request.state.auth_subject = subject
+                return await call_next(request)
+            if require_auth:
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "detail": "Yetkisiz erişim. Oturum veya API anahtarı gerekli."
+                    },
+                )
+
+        if require_auth:
             return JSONResponse(
                 status_code=401,
-                content={"detail": "Yetkisiz erişim. Oturum veya API anahtarı gerekli."},
+                content={
+                    "detail": "Yetkisiz erişim. Oturum veya API anahtarı gerekli."
+                },
             )
 
-        request.state.auth_subject = subject
+        request.state.auth_subject = "anonymous"
         return await call_next(request)
 
     return auth_middleware

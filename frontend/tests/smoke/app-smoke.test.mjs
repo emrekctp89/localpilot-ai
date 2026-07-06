@@ -441,7 +441,7 @@ test("every rendered dashboard tab has a matching view", async () => {
 test("ai client attaches Supabase session token to protected requests", async () => {
   const source = await readSource("lib/ai-client.ts");
 
-  assert.match(source, /supabase\.auth\.getSession\(\)/);
+  assert.match(source, /ensureSupabaseSession/);
   assert.match(source, /Authorization/);
   assert.match(source, /Bearer \$\{session\.access_token\}/);
 });
