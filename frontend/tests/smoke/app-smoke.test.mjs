@@ -236,23 +236,39 @@ test("decision center closes the data-to-measurement loop", async () => {
 });
 
 test("sector packs adapt one workflow component to each business", async () => {
-  const [workflowSource, packsSource, domainSource] = await Promise.all([
-    readSource("app/components/dashboard/SektorIsAkisiTab.tsx"),
-    readSource("lib/sector-packs.ts"),
-    readSource("lib/domain-types.ts"),
-  ]);
+  const [workflowSource, packsSource, domainSource, onboardingSource] =
+    await Promise.all([
+      readSource("app/components/dashboard/SektorIsAkisiTab.tsx"),
+      readSource("lib/sector-packs.ts"),
+      readSource("lib/domain-types.ts"),
+      readSource("app/components/dashboard/OnboardingWizard.tsx"),
+    ]);
 
   assert.match(packsSource, /id:\s*"salon"/);
   assert.match(packsSource, /id:\s*"field_service"/);
   assert.match(packsSource, /id:\s*"auto_gallery"/);
+  assert.match(packsSource, /id:\s*"restaurant"/);
+  assert.match(packsSource, /id:\s*"clinic"/);
+  assert.match(packsSource, /id:\s*"real_estate"/);
   assert.match(packsSource, /Kuaför ve Güzellik/);
-  assert.match(packsSource, /Tesisat ve Saha Servisi/);
-  assert.match(packsSource, /Otomotiv Galeri/);
+  assert.match(packsSource, /Restoran ve Yeme-İçme/);
+  assert.match(packsSource, /Klinik ve Sağlık/);
+  assert.match(packsSource, /Gayrimenkul ve Emlak/);
   assert.match(packsSource, /resolveSectorPack/);
+  assert.match(packsSource, /resolveSectorPackFromIndustry/);
+  assert.match(packsSource, /computePackMetricCards/);
+  assert.match(packsSource, /getActiveSectorAutomations/);
+  assert.match(packsSource, /onboardingMatches/);
   assert.match(workflowSource, /saveSectorWorkflowItems/);
   assert.match(workflowSource, /pack\.stages/);
   assert.match(workflowSource, /handleStageChange/);
+  assert.match(workflowSource, /computePackMetricCards/);
+  assert.match(workflowSource, /getActiveSectorAutomations/);
+  assert.match(onboardingSource, /resolveSectorPackFromIndustry/);
+  assert.match(onboardingSource, /Atanan sektör paketi/);
   assert.match(domainSource, /export interface SectorPack/);
+  assert.match(domainSource, /export interface SectorPackMetricDef/);
+  assert.match(domainSource, /export interface SectorAutomationDef/);
   assert.match(domainSource, /export interface SectorWorkflowItem/);
 });
 

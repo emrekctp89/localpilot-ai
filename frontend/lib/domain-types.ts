@@ -166,10 +166,54 @@ export interface SectorStage {
   label: string;
 }
 
+export type SectorMetricKind =
+  | "active_count"
+  | "completed_count"
+  | "stage_count"
+  | "pipeline_value"
+  | "completion_rate";
+
+export interface SectorPackMetricDef {
+  id: string;
+  label: string;
+  kind: SectorMetricKind;
+  stageIds?: string[];
+}
+
+export type SectorAutomationTrigger =
+  | "items_in_stage"
+  | "stalled_in_stage"
+  | "high_pipeline";
+
+export interface SectorAutomationDef {
+  id: string;
+  title: string;
+  description: string;
+  trigger: SectorAutomationTrigger;
+  triggerStageId?: string;
+  suggestedAction: string;
+}
+
+export interface SectorPackMetricCard {
+  id: string;
+  label: string;
+  value: number;
+  displayValue: string;
+}
+
+export interface SectorPackAutomationSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  suggestedAction: string;
+  affectedCount: number;
+}
+
 export interface SectorPack {
   id: string;
   name: string;
   matches: string[];
+  onboardingMatches?: string[];
   itemName: string;
   titleLabel: string;
   customerLabel: string;
@@ -177,6 +221,8 @@ export interface SectorPack {
   valueLabel: string;
   stages: SectorStage[];
   metricLabel: string;
+  metrics: SectorPackMetricDef[];
+  automations: SectorAutomationDef[];
 }
 
 export interface SectorWorkflowItem {

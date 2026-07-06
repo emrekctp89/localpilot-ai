@@ -137,12 +137,12 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Dosyalar:** `lib/business-os.ts`, `KararMerkeziTab.tsx`, `decision-cycles.ts`
 
 ### 3.2 Sektör paketleri v2
-- [ ] Her pack için özel metrik kartları (`SektorIsAkisiTab.tsx`)
-- [ ] Sektöre özel otomasyon kuralları (ör. salon → randevu hatırlatma)
-- [ ] Onboarding'de sektör seçimini pack eşlemesine bağla
-- [ ] Yeni pack adayları: restoran, klinik, emlak
+- [x] Her pack için özel metrik kartları (`SektorIsAkisiTab.tsx`)
+- [x] Sektöre özel otomasyon kuralları (ör. salon → randevu hatırlatma)
+- [x] Onboarding'de sektör seçimini pack eşlemesine bağla
+- [x] Yeni pack adayları: restoran, klinik, emlak
 
-**Dosyalar:** `lib/sector-packs.ts`, `SektorIsAkisiTab.tsx`
+**Dosyalar:** `lib/sector-packs.ts`, `SektorIsAkisiTab.tsx`, `OnboardingWizard.tsx`
 
 ### 3.3 Mini site ve lead akışı
 - [ ] Lead form başarı → CRM bildirimi (toast / e-posta hazırlığı)

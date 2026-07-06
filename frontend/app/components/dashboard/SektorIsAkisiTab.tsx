@@ -5,7 +5,11 @@ import {
   listSectorWorkflowItems,
   saveSectorWorkflowItems,
 } from "@/lib/repositories";
-import { resolveSectorPack } from "@/lib/sector-packs";
+import {
+  computePackMetricCards,
+  getActiveSectorAutomations,
+  resolveSectorPack,
+} from "@/lib/sector-packs";
 import type { Business, SectorWorkflowItem } from "@/lib/domain-types";
 
 interface SektorIsAkisiTabProps {
@@ -101,6 +105,14 @@ export default function SektorIsAkisiTab({
   const completedValue = items
     .filter((item) => item.stage === completedStage)
     .reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const metricCards = useMemo(
+    () => computePackMetricCards(pack, items),
+    [items, pack],
+  );
+  const automationSuggestions = useMemo(
+    () => getActiveSectorAutomations(pack, items),
+    [items, pack],
+  );
 
   if (loading) {
     return (
@@ -138,6 +150,65 @@ export default function SektorIsAkisiTab({
           </span>
         </div>
       </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metricCards.map((metric) => (
+          <article
+            key={metric.id}
+            className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+          >
+            <p className="text-xs font-black uppercase tracking-widest text-gray-400">
+              {metric.label}
+            </p>
+            <p className="mt-2 text-3xl font-black text-gray-900">
+              {metric.displayValue}
+            </p>
+          </article>
+        ))}
+      </section>
+
+      {automationSuggestions.length > 0 && (
+        <section className="rounded-2xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-amber-700">
+                Sektör Otomasyonları
+              </p>
+              <h3 className="mt-1 text-lg font-black text-amber-950">
+                Şu an uygulanabilir öneriler
+              </h3>
+            </div>
+            <span className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-amber-800">
+              {automationSuggestions.length} kural aktif
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {automationSuggestions.map((automation) => (
+              <article
+                key={automation.id}
+                className="rounded-2xl border border-amber-100 bg-white p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-black text-gray-900">
+                      {automation.title}
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {automation.description}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-lg bg-amber-100 px-2 py-1 text-xs font-black text-amber-800">
+                    {automation.affectedCount}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-medium text-amber-900">
+                  {automation.suggestedAction}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
         <form

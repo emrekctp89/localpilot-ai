@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { resolveSectorPackFromIndustry } from "@/lib/sector-packs";
 
 export interface OnboardingData {
   name: string;
@@ -65,6 +66,7 @@ const SECTOR_CATEGORIES = [
     items: [
       "Yazılım ve Teknoloji Ajansı",
       "Kuaför & Güzellik Salonu",
+      "Sağlık & Klinik",
       "Spor Salonu & Fitness",
       "Oto Bakım, Yıkama & Servis",
       "Gayrimenkul & Emlak",
@@ -204,6 +206,11 @@ export default function OnboardingWizard({
     return {};
   };
 
+  const selectedPack = useMemo(
+    () => resolveSectorPackFromIndustry(data.industry),
+    [data.industry],
+  );
+
   const stepErrors = getStepErrors();
   const missingFields = Object.values(stepErrors).filter(Boolean);
   const showErrors = attemptedSteps.includes(step);
@@ -329,6 +336,20 @@ export default function OnboardingWizard({
               errors={stepErrors}
               visible={showErrors}
             />
+            {data.industry && (
+              <div className="mt-3 rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3">
+                <p className="text-xs font-black uppercase tracking-widest text-cyan-700">
+                  Atanan sektör paketi
+                </p>
+                <p className="mt-1 text-sm font-bold text-cyan-950">
+                  {selectedPack.name}
+                </p>
+                <p className="mt-1 text-xs text-cyan-800">
+                  {selectedPack.itemName} akışı ve {selectedPack.stages.length}{" "}
+                  aşamalı operasyon paneli kurulacak.
+                </p>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
