@@ -13,7 +13,7 @@ def activate_pro_membership(
             supabase_client.table("profiles")
             .select("is_pro")
             .eq("id", user_id)
-            .single()
+            .maybe_single()
             .execute()
         )
         if response.data and response.data.get("is_pro"):
@@ -33,11 +33,22 @@ def activate_pro_membership(
             )
             .eq("id", user_id)
             .select("id,is_pro")
-            .single()
             .execute()
         )
-        if response.data and response.data.get("is_pro"):
+        rows = response.data or []
+        if rows and rows[0].get("is_pro"):
             return True, None
+
+        verify = (
+            supabase_client.table("profiles")
+            .select("is_pro")
+            .eq("id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if verify.data and verify.data.get("is_pro"):
+            return True, None
+
         print(f"pro_activation_profile_update_unverified user={user_id}")
         return False, "Profil güncellenemedi: is_pro doğrulanamadı."
     except Exception as error:

@@ -13,11 +13,11 @@ class StripeCheckoutTests(unittest.TestCase):
             "metadata": {"user_id": "user-123"},
         }
         supabase = MagicMock()
-        supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
+        supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
             data={"is_pro": False}
         )
-        supabase.table.return_value.update.return_value.eq.return_value.select.return_value.single.return_value.execute.return_value = MagicMock(
-            data={"id": "user-123", "is_pro": True}
+        supabase.table.return_value.update.return_value.eq.return_value.select.return_value.execute.return_value = MagicMock(
+            data=[{"id": "user-123", "is_pro": True}]
         )
 
         payload, status = confirm_pro_checkout(
@@ -53,11 +53,11 @@ class StripeCheckoutTests(unittest.TestCase):
             "metadata": {"user_id": "user-456"},
         }
         supabase = MagicMock()
-        supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
+        supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
             data={"is_pro": False}
         )
-        supabase.table.return_value.update.return_value.eq.return_value.select.return_value.single.return_value.execute.return_value = MagicMock(
-            data={"id": "user-456", "is_pro": True}
+        supabase.table.return_value.update.return_value.eq.return_value.select.return_value.execute.return_value = MagicMock(
+            data=[{"id": "user-456", "is_pro": True}]
         )
 
         payload, status = confirm_pro_checkout(
@@ -80,7 +80,7 @@ class StripeCheckoutTests(unittest.TestCase):
             ]
         }
         supabase = MagicMock()
-        supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
+        supabase.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
             data={"is_pro": True}
         )
 

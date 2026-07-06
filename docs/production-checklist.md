@@ -29,9 +29,18 @@ Stripe **Test mode** açıkken gerçek kart gerekmez. `sk_test_` anahtarı kulla
 - [ ] Stripe Dashboard (Test mode) → Webhooks → `checkout.session.completed`
 - [ ] Test kartı: `4242 4242 4242 4242`, SKT: gelecek tarih, CVC: `123`
 - [ ] Checkout → Pro plan aktif
-- [ ] Webhook sonrası panelde `is_pro` güncelleniyor (yenile veya polling)
+- [ ] Webhook veya `confirm-pro-checkout` sonrası panelde `is_pro` güncelleniyor
+- [ ] Ayarlar → *LocalPilot Pro — Aktif* ve kota kartı kayboluyor
 
-**Yerel geliştirme:** Webhook olmadan da çalışır — ödeme sonrası panel `confirm-pro-checkout` ile Stripe oturumunu doğrular.
+**Yerel geliştirme:** Webhook olmadan da çalışır — ödeme sonrası panel `confirm-pro-checkout` ile Stripe `session_id` doğrular.
+
+**Sorun giderme (Pro aktivasyonu):**
+
+1. AI service log: `pro_activation_profile_update_failed` veya `confirm-pro-checkout` 500?
+2. `ai-service/.env` → `SUPABASE_SERVICE_ROLE_KEY` dolu mu?
+3. AI servisini yeniden başlatın (`uvicorn` / Render redeploy)
+4. Supabase `profiles` tablosunda kullanıcı satırı ve `is_pro` kolonu var mı?
+5. Ayarlar → *Üyelik Durumunu Yenile* veya yeni test ödemesi
 
 Opsiyonel webhook (arka plan senkronu):
 

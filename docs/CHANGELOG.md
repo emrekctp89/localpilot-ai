@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 - Unreleased
+
+### Fixed
+- Fixed Pro activation failing on Supabase Python client (`update().single()` not supported).
+- Fixed Stripe Checkout session metadata reads for SDK objects (`stripe_utils.py`).
+- Fixed dashboard Pro state sync after payment (`useProCheckoutActivation`, `refreshProStatus`).
+- Fixed free-tier UI showing after successful Pro payment when `isPro` was stale.
+
+### Added
+- Added panel-level Pro checkout activation hook with visible error messages.
+- Added optional live Supabase activation integration test (`RUN_STRIPE_INTEGRATION=1`).
+- Added v2.1 roadmap focused on billing reliability and production hardening.
+
 ## 2.0.0 - 2026-07-06
 
 ### Added

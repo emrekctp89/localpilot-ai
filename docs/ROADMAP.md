@@ -1,8 +1,8 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `2.0.0`  
-**Son güncelleme:** Temmuz 2026  
-**Durum:** Production (Vercel + Render + Supabase)
+**Güncel sürüm:** `2.0.0` → hedef `2.1.0`  
+**Son güncelleme:** 6 Temmuz 2026  
+**Durum:** Production (Vercel + Render + Supabase) — **Pro ödeme aktivasyonu sertleştirme sprinti**
 
 ---
 
@@ -12,34 +12,33 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 ---
 
-## Mevcut Durum Özeti
+## Mevcut Durum (v2.0.0)
 
 ### Canlı ve çalışan
 
 | Alan | Durum |
 |------|-------|
 | Auth + onboarding | Supabase Auth, taslak kayıt, inline validasyon |
-| Dashboard modülleri | Vitrin, Karar Merkezi, İş Akışı, İçerik, CRM, Randevu, Sipariş, Görevler, Finans, Menü, Google Profil, AI Araçları, Ayarlar |
-| Operasyonel tablolar | `appointments`, `orders`, `staff_tasks`, `decision_cycles`, `google_checklists`, `sector_workflow_items` |
-| Repository katmanı | Dual-read (JSON → tablo migrasyonu) |
+| Dashboard modülleri | 14+ sekme (CRM, randevu, karar merkezi, AI araçları, platform vb.) |
+| Operasyonel tablolar + RLS | `001`–`007` migration seti |
 | AI service | Gemini, Stripe checkout, auth + rate limit + CORS |
-| Mini site | `/site/[id]`, tema, lead form → CRM |
-| Test altyapısı | Smoke, integration, E2E (auth-guard), CI workflow |
-| Deploy | Vercel (frontend), Render (AI service), `fra1` |
+| Pro hunisi | Kota kartı, upgrade CTA, aktivasyon checklist |
+| Platform | Ekip rolleri, ajans modu, audit log, i18n |
+| Test / CI | Smoke, integration, production smoke workflow |
 
-### Bilinen boşluklar
+### Aktif sorun alanı: Pro ödeme aktivasyonu
 
-| Alan | Durum |
-|------|-------|
-| `sosyal_medya` sekmesi | `TabMenu`'de tanımlı ama render edilmiyor |
-| Kampanyalar | Tabloya taşındı; dual-read aktif |
-| İçerik geçmişi | `content_items` tablosu; dual-read aktif |
-| CRM churn / bazı metadata | `crm_activities` tablosu; dual-read aktif |
-| Sektör paketleri | 5 pack var; sektöre özel otomasyon ve metrikler sınırlı |
-| Stripe webhook | Endpoint hazır; production doğrulaması gerekli |
-| RLS politikaları | Operasyonel tablolar için migration sonrası audit gerekli |
-| E2E kapsamı | CI'da yalnızca `auth-guard`; tam paket env gerektiriyor |
-| Observability | Merkezi log / hata izleme yok |
+Ödeme Stripe'da tamamlanıyor ancak `profiles.is_pro` otomatik güncellenmiyordu. Kök nedenler ve durum:
+
+| Sorun | Durum |
+|-------|-------|
+| Stripe SDK `metadata.get()` → 500 | ✅ `stripe_utils.py` ile düzeltildi |
+| Supabase `update().single()` desteklenmiyor | ✅ `maybe_single` + liste doğrulama |
+| Panel `isPro` senkronu gecikmesi | ✅ `useProCheckoutActivation` + `refreshProStatus` |
+| Yerelde webhook yok | ✅ `confirm-pro-checkout` + `session_id` fallback (dev) |
+| Hata mesajı görünmüyor | ✅ Ayarlar'da detaylı aktivasyon hatası |
+
+**Sizin yapmanız gereken:** AI servisini yeniden başlatın, ardından test ödemesi veya Ayarlar → *Üyelik Durumunu Yenile*.
 
 ---
 
@@ -47,221 +46,150 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 | Öncelik | Anlam |
 |---------|-------|
-| **P0** | Production güvenilirliği — hemen |
-| **P1** | Çekirdek ürün değeri — 2–4 hafta |
-| **P2** | Büyüme ve farklılaşma — 1–2 ay |
-| **P3** | Uzun vadeli platform |
+| **P0** | Gelir ve güven — hemen |
+| **P1** | Ürün değeri ve tutma — 2–4 hafta |
+| **P2** | Büyüme — 1–2 ay |
+| **P3** | Platform ölçeği |
 
 ---
 
-## Faz 1 — Production Sağlamlaştırma (P0)
+## Faz A — Pro Billing Güvenilirliği (P0) → v2.1.0
+
+**Hedef:** Test ve production'da ödeme → `is_pro=true` → panel senkronu %100 güvenilir.  
+**Süre:** 1 hafta
+
+### A.1 Backend aktivasyon
+- [x] Stripe SDK uyumlu metadata okuma (`middleware/stripe_utils.py`)
+- [x] Supabase profil güncelleme (`.single()` kaldırıldı, doğrulama eklendi)
+- [x] `confirm-pro-checkout` dev modda `session_id` ile JWT'siz fallback
+- [x] Webhook + confirm idempotent aktivasyon (`activate_pro_membership`)
+- [ ] Canlı Supabase entegrasyon testi CI'da (`RUN_STRIPE_INTEGRATION=1`)
+- [ ] Production Stripe webhook endpoint kaydı ve canlı doğrulama
+
+**Başarı kriteri:** Test kartı → 30 sn içinde panelde *LocalPilot Pro — Aktif*, `is_pro=true` (manuel müdahale yok).
+
+### A.2 Frontend deneyim
+- [x] Panel seviyesinde aktivasyon hook (`useProCheckoutActivation`)
+- [x] `isPro` + AI kota UI senkronu
+- [x] Aktivasyon hata mesajı kullanıcıya gösterilir
+- [ ] Toast ile global başarı/hata bildirimi (Ayarlar dışında da)
+- [ ] Pro durumu için Supabase realtime veya periyodik poll (opsiyonel)
+
+### A.3 Operasyon
+- [ ] `docs/production-checklist.md` §4 tamamlandı işaretle
+- [ ] Render env: `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_WEBHOOK_SECRET` doğrula
+- [ ] Yerel geliştirme notu: `stripe listen --forward-to localhost:8000/stripe-webhook`
+
+---
+
+## Faz B — Production Sağlamlaştırma (P0) → v2.1.x
 
 **Hedef:** Canlı ortamda güvenilir, izlenebilir, geri alınabilir sistem.  
 **Süre:** 1–2 hafta
 
-### 1.1 Ödeme ve plan akışı
-- [x] Stripe webhook handler (idempotent, 500 retry, structured log)
-- [x] Checkout → `profiles.is_pro` güncelleme akışı
-- [x] Pro guard middleware (production AI endpoint'leri)
-- [x] Ödeme success/cancel UI + Pro aktivasyon polling
-- [ ] Stripe Dashboard webhook kaydı (production manuel doğrulama — bkz. `docs/production-checklist.md`)
+### B.1 Migration ve RLS
+- [x] `007_fix_rls_recursion.sql` (businesses / business_members)
+- [ ] Tüm migration'ların (`001`–`007`) production Supabase'de doğrulanması
+- [ ] RLS audit: çapraz kullanıcı erişim testi
 
-**Başarı kriteri:** Test kartıyla Pro'ya geçiş, webhook sonrası panelde plan güncellenmesi.
+### B.2 CI/CD ve E2E
+- [x] AI service unit test suite CI'da
+- [x] Production smoke workflow (6 saatte bir)
+- [ ] GitHub Secrets: `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`, `E2E_TEST_HAS_BUSINESS`
+- [ ] E2E: Stripe test ödeme → Pro aktivasyon senaryosu
 
-### 1.2 Güvenlik ve veri erişimi
-- [x] Operasyonel tablo RLS (`001_operational_tables.sql`)
-- [x] Core tablo RLS (`002_core_rls.sql` — Supabase'de çalıştır)
-- [ ] `002_core_rls.sql` migration'ını Supabase SQL Editor'de uygula
-- [ ] `005_ai_usage.sql` ve `006_platform.sql` migration'larını Supabase'de uygula
-- [x] `SUPABASE_SERVICE_ROLE_KEY` yalnızca AI service'te
-- [x] CORS: Vercel preview + production origin'lerinin doğrulanması (smoke-production workflow)
-- [ ] Rate limit eşiklerini production trafiğine göre ayarla
-
-**Başarı kriteri:** Başka kullanıcının verisine erişim mümkün değil (manuel + otomatik test).
-
-### 1.3 Gözlemlenebilirlik
-- [x] `/health` degraded mode + config checks (gemini, supabase, stripe)
-- [x] Webhook structured error logging
-- [x] Render uptime izleme (harici ping — `smoke-production.yml`, 6 saatte bir)
-- [x] Frontend error boundary + opsiyonel hata raporlama (`NEXT_PUBLIC_ERROR_REPORT_URL`)
-
-**Başarı kriteri:** Bir AI hatası 5 dk içinde tespit edilebilir.
-
-### 1.4 CI/CD genişletme
-- [x] CI: tüm `ai-service/tests/test_*.py` suite
-- [x] E2E: authenticated + public site jobs (GitHub Secrets ile)
-- [x] Production smoke workflow (`smoke-production.yml`, 6 saatte bir)
-- [ ] GitHub Secrets ekle: `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`, `E2E_TEST_HAS_BUSINESS`
-
-**Başarı kriteri:** `main` push'ta yeşil pipeline; kırık deploy önlenir.
+### B.3 Gözlemlenebilirlik
+- [x] `/health` + structured webhook log
+- [x] Frontend error boundary + opsiyonel raporlama
+- [ ] Merkezi log (Render + Vercel) veya Sentry entegrasyonu
+- [ ] Pro aktivasyon metrikleri (başarı / hata oranı)
 
 ---
 
-## Faz 2 — Veri Mimarisi Tamamlama (P0 → P1)
+## Faz C — Veri Mimarisi Kapanışı (P1) → v2.2.0
 
-**Hedef:** Operasyonel veri ilişkisel tablolarda; JSON yalnızca AI çıktıları ve eski uyumluluk için.  
+**Hedef:** JSON legacy tamamen kaldırılsın; tek yazma yolu tablolar.  
 **Süre:** 2–3 hafta
 
-### 2.1 Yeni tablolar
-- [x] `campaigns` tablosu + repository (`003_campaigns_content.sql`, `useCampaigns.ts`)
-- [x] `content_items` tablosu + repository (`IcerikTab.tsx`)
-- [x] `003_campaigns_content.sql` migration'ını Supabase'de çalıştır
-- [x] `crm_activities` — takip tarihi + durum geçmişi (`CrmTab`, `004_crm_activities.sql`)
-- [x] `004_crm_activities.sql` migration'ını Supabase'de çalıştır
-
-### 2.2 Legacy temizliği
-- [x] Tablo kaydı sonrası JSON alanlarını temizle (`stripLegacyMiniSiteField`)
-- [x] Dashboard açılışında toplu legacy temizlik (`stripMigratedOperationalFields`)
-- [ ] Dual-read fallback'i kaldır (tüm migration'lar production'da doğrulandıktan sonra)
-- [x] `docs/database/architecture.mmd` diyagramını güncelle
-
-### 2.3 Veri tutarlılığı
-- [x] Repository katmanında tek yazma yolu (dual-write kaldır)
-- [x] Supabase migration dosyalarını `supabase/migrations/` altında versiyonla
+- [x] Kampanya, içerik, CRM aktiviteleri tablolara taşındı
+- [ ] Dual-read fallback kaldır (production doğrulama sonrası)
 - [ ] Seed / rollback script'leri
-
-**Başarı kriteri:** Yeni randevu/sipariş/görev yalnızca tablolara yazılır; JSON'da operasyonel veri kalmaz.
+- [ ] Migration versiyon takibi (Supabase CLI veya migration history tablosu)
 
 ---
 
-## Faz 3 — Ürün Derinliği (P1)
+## Faz D — Ürün Derinliği (P1) → v2.2.x
 
-**Hedef:** Sektör paketleri ve karar motoru gerçek iş değeri üretsin.  
 **Süre:** 3–4 hafta
 
-### 3.1 Karar Merkezi güçlendirme
-- [x] Sinyal kaynaklarını genişlet (finans trendi, CRM churn, boş randevu slotları)
-- [x] Öneri → görev → sonuç döngüsünde dashboard özeti
-- [x] Öğrenme geçmişini UI'da göster (confidence + evidence count)
-- [x] Onay politikalarını mesaj / kampanya / finans için ayrı UX
-
-**Dosyalar:** `lib/business-os.ts`, `KararMerkeziTab.tsx`, `decision-cycles.ts`
-
-### 3.2 Sektör paketleri v2
-- [x] Her pack için özel metrik kartları (`SektorIsAkisiTab.tsx`)
-- [x] Sektöre özel otomasyon kuralları (ör. salon → randevu hatırlatma)
-- [x] Onboarding'de sektör seçimini pack eşlemesine bağla
-- [x] Yeni pack adayları: restoran, klinik, emlak
-
-**Dosyalar:** `lib/sector-packs.ts`, `SektorIsAkisiTab.tsx`, `OnboardingWizard.tsx`
-
-### 3.3 Mini site ve lead akışı
-- [x] Lead form başarı → CRM bildirimi (toast / e-posta hazırlığı)
-- [x] Mini site SEO: meta, OG image, structured data
-- [x] WhatsApp tıkla-yaz derin linki
-- [x] Yayın / taslak durumu netleştirme
-
-**Dosyalar:** `app/site/[id]/`, `LeadForm.tsx`, `AyarlarTab.tsx`, `lib/mini-site.ts`
-
-### 3.4 Eksik modül kararı
-- [x] `sosyal_medya` sekmesini ya implement et ya da `TabMenu`'den kaldır
-- [x] İçerik sekmesi ile sosyal medya planlamasını birleştir veya ayır (İçerik sekmesinde birleşik)
+- [x] Karar Merkezi v2 (sinyaller, öğrenme geçmişi, onay UX)
+- [x] Sektör paketleri v2 (5+ pack, metrik kartları)
+- [x] Mini site SEO + lead → CRM
+- [ ] Sektör otomasyonlarında gerçek zamanlı tetikleyiciler (webhook / cron)
+- [ ] Karar Merkezi → WhatsApp / Google aksiyon köprüsü (tek tık gönderim)
 
 ---
 
-## Faz 4 — AI ve Entegrasyonlar (P1 → P2)
+## Faz E — AI ve Entegrasyonlar (P1–P2) → v2.3.0
 
-**Hedef:** AI çıktıları işletme bağlamına daha iyi otursun.  
-**Süre:** 2–3 hafta
-
-### 4.1 AI kalitesi
-- [x] Prompt'ları sektör + işletme profiline göre zenginleştir (`ai-service/main.py`)
-- [x] Kampanya regenerate / varyant üretimi
-- [x] Finans tahmini için daha fazla geçmiş veri (min. 3 ay)
-- [x] Review analizi → aksiyon önerisi → Karar Merkezi köprüsü
-
-### 4.2 Harici entegrasyonlar
-- [x] Google Business Profile API (checklist → canlı profil önerileri)
-- [x] WhatsApp Business API araştırması (şablon gönderimi)
-- [x] Takvim sync (Google Calendar) — randevu modülü
-
-### 4.3 Performans
-- [x] Render cold start azaltma (paid plan veya keep-warm cron)
-- [x] AI yanıt cache (benzer istekler)
-- [x] Frontend: dashboard veri yükleme paralelleştirme
+- [x] Sektör bağlamlı prompt'lar, AI cache, keep-warm
+- [x] Google profil önerileri, takvim ICS, WhatsApp şablon hazırlığı
+- [ ] WhatsApp Business API canlı gönderim (onaylı şablon)
+- [ ] Google Business Profile API yazma (sadece okuma/öneri değil)
+- [ ] AI yanıt kalite skoru + kullanıcı geri bildirimi
 
 ---
 
-## Faz 5 — Büyüme ve Monetizasyon (P2)
+## Faz F — Büyüme ve Monetizasyon (P2)
 
-**Hedef:** Pro dönüşümü ve kullanıcı tutma.  
-**Süre:** 2–3 hafta
-
-### 5.1 Pro hunisi
-- [x] Free kullanıcı için AI kullanım limiti (günlük / aylık)
-- [x] Pro özelliklerini panelde net göster (upgrade CTA)
-- [x] Checkout sonrası onboarding checklist (ilk 7 gün)
-
-### 5.2 Aktivasyon metrikleri
-- [x] Onboarding tamamlama oranı
-- [x] İlk randevu / ilk müşteri / ilk AI kampanya süreleri
-- [x] Karar Merkezi ilk onay süresi
-
-### 5.3 Pazarlama site
-- [x] Landing page (`/`) ürün değer önerisi
-- [x] Sektör bazlı demo / screenshot
-- [x] Fiyatlandırma sayfası
+- [x] Free tier AI limiti, upgrade CTA, 7 günlük aktivasyon checklist
+- [x] Aktivasyon metrikleri, pazarlama sitesi, fiyatlandırma
+- [ ] A/B test: upgrade CTA metinleri ve konumları
+- [ ] Yıllık plan / indirimli fiyatlandırma (Stripe Price ID)
+- [ ] Referans programı veya ajans komisyon modeli
 
 ---
 
-## Faz 6 — Platform ve Ölçek (P3)
+## Faz G — Platform Ölçeği (P3) — v2.0 tamamlandı, genişletme
 
-**Hedef:** Ajans ve çoklu işletme desteği.
-
-- [x] Ekip rolleri (owner, staff, read-only)
-- [x] Ajans modu: çoklu işletme yönetimi (`profiles.role = agency`)
-- [x] Audit log (kim neyi değiştirdi)
-- [x] Public API / webhook'lar (üçüncü parti entegrasyon)
-- [x] Çoklu dil (TR → EN)
+- [x] Ekip rolleri, ajans modu, audit log, public API, i18n
+- [ ] Çoklu işletme faturalandırma (işletme başına plan)
+- [ ] White-label mini site (özel domain)
+- [ ] Marketplace / eklenti API'si
 
 ---
 
-## Sürüm Planı
+## Sürüm Planı (güncel)
 
-| Sürüm | Odak | Tahmini |
-|-------|------|---------|
-| **1.0.0** | Faz 1 tamamlandı → stable release etiketi | +2 hafta |
-| **1.1.0** | Faz 2 veri migrasyonu | +4 hafta |
-| **1.2.0** | Faz 3 karar + sektör v2 | +8 hafta |
-| **1.3.0** | Faz 4 AI + entegrasyonlar | +12 hafta |
-| **2.0.0** | Faz 6 platform | Tamamlandı |
-
----
-
-## Hızlı Kazanımlar (bu hafta)
-
-1. [ ] Stripe webhook production testi (checklist §4)
-2. [x] Vercel + Render env'lerinin dokümantasyonu (`deploy/production.env.template`)
-3. ~~`sosyal_medya` sekmesi kararı~~ → İçerik sekmesinde birleşik
-4. [x] Health + ana akış manuel test checklist'i (`docs/production-checklist.md`)
+| Sürüm | Odak | Durum |
+|-------|------|-------|
+| **2.0.0** | Platform + Pro hunisi + pazarlama | ✅ Yayında |
+| **2.1.0** | Pro billing güvenilirliği (Faz A) | 🔄 Bu sprint |
+| **2.1.1** | Production sertleştirme (Faz B) | Planlı |
+| **2.2.0** | Veri migrasyonu kapanışı (Faz C) | Planlı |
+| **2.3.0** | AI + canlı entegrasyonlar (Faz E) | Planlı |
 
 ---
 
-## Tamamlanan Fazlar (arşiv)
+## Bu Hafta — Hızlı Kazanımlar
+
+1. [x] Pro aktivasyon backend fix (Stripe SDK + Supabase update)
+2. [x] Panel seviyesinde aktivasyon hook
+3. [ ] AI servisi restart + test ödeme doğrulama (sizin ortamınızda)
+4. [ ] Production Stripe webhook kaydı
+5. [ ] `007_fix_rls_recursion.sql` production'da doğrulandı mı kontrol
+
+---
+
+## Tamamlanan Büyük Fazlar (arşiv)
 
 <details>
-<summary>v0.9.x → v1.0.0-rc.1 (tıkla)</summary>
+<summary>v0.9.x → v2.0.0 (tıkla)</summary>
 
-### v0.9.9
-- Google Business Profile checklist
-- Onboarding validasyonu
-- Pro billing ve ayarlar
-
-### v0.9.0
-- Randevu, sipariş, görev modülleri
-- Operasyon özeti
-
-### v0.3.0 – v0.2.0
-- Onboarding draft, içerik geçmişi, CRM takibi
-- Dashboard modülerleştirme, smoke testler
-
-### v1.0.0-rc.1
-- Karar Merkezi + Business OS motoru
-- Sektör iş akışı pack'leri (5 sektör)
-- Repository katmanı + operasyonel tablolar
-- AI service güvenlik (auth, rate limit, CORS)
-- Playwright E2E + CI
-- Production deploy (Vercel + Render)
+- v0.9.x: Onboarding, CRM, randevu, sipariş, görev modülleri
+- v1.0.0-rc: Karar Merkezi, Business OS, sektör pack'leri, repository katmanı
+- v1.x: Veri migrasyonu, AI kalitesi, entegrasyonlar, performans
+- v2.0.0: Platform (ekip, ajans, audit, API, i18n), Pro hunisi, pazarlama sitesi
 
 </details>
 
@@ -269,7 +197,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 ## Nasıl kullanılır?
 
-1. Her sprint başında bu dosyadan **bir faz + 2–3 madde** seçin.
+1. Her sprint **bir faz + 2–3 madde** seçin (şu an: **Faz A**).
 2. Tamamlanan maddeleri `[x]` ile işaretleyin.
-3. Büyük değişiklikler için `docs/CHANGELOG.md` güncelleyin.
-4. Veri modeli değişikliklerinde önce `supabase/migrations/` + `architecture.mmd`.
+3. Billing / güvenlik değişikliklerinde `docs/CHANGELOG.md` ve `docs/production-checklist.md` güncelleyin.
+4. Veri modeli değişikliklerinde önce `supabase/migrations/` + `docs/database/architecture.mmd`.

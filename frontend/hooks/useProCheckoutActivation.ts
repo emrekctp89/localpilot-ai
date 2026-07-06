@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { confirmProCheckout } from "@/lib/ai-client";
+import { AiServiceError, confirmProCheckout } from "@/lib/ai-client";
 
 interface UseProCheckoutActivationOptions {
   paymentReturn: "success" | "cancel" | null;
@@ -21,6 +21,7 @@ export function useProCheckoutActivation({
   onHandled,
 }: UseProCheckoutActivationOptions) {
   const [billingMessage, setBillingMessage] = useState("");
+  const [activationError, setActivationError] = useState("");
   const [isActivating, setIsActivating] = useState(false);
 
   useEffect(() => {
@@ -33,7 +34,9 @@ export function useProCheckoutActivation({
     }
 
     let cancelled = false;
+    let lastError = "";
     setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
+    setActivationError("");
     setIsActivating(true);
 
     const tryActivate = async () => {
@@ -46,7 +49,14 @@ export function useProCheckoutActivation({
           onActivated?.();
           return true;
         }
+        lastError = "Ödeme onaylandı ancak Pro bayrağı dönmedi.";
+        setActivationError(lastError);
       } catch (error) {
+        lastError =
+          error instanceof AiServiceError
+            ? error.message
+            : "Pro aktivasyon isteği başarısız oldu.";
+        setActivationError(lastError);
         console.warn("confirmProCheckout failed", error);
       }
 
@@ -71,7 +81,9 @@ export function useProCheckoutActivation({
 
       if (!cancelled) {
         setBillingMessage(
-          "Ödeme alındı. Pro aktivasyonu tamamlanamadı; Ayarlar'dan 'Üyelik Durumunu Yenile' ile tekrar deneyin.",
+          lastError
+            ? `Pro aktivasyonu tamamlanamadı: ${lastError}`
+            : "Ödeme alındı. Pro aktivasyonu tamamlanamadı; Ayarlar'dan 'Üyelik Durumunu Yenile' ile tekrar deneyin.",
         );
         setIsActivating(false);
         onHandled?.();
@@ -93,5 +105,10 @@ export function useProCheckoutActivation({
     refreshProStatus,
   ]);
 
-  return { billingMessage, isActivating, setBillingMessage };
+  return {
+    billingMessage,
+    activationError,
+    isActivating,
+    setBillingMessage,
+  };
 }
