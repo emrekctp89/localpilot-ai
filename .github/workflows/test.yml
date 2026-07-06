@@ -43,7 +43,6 @@ jobs:
 
   e2e-authenticated:
     runs-on: ubuntu-latest
-    if: ${{ secrets.E2E_TEST_EMAIL != '' && secrets.E2E_TEST_PASSWORD != '' }}
     defaults:
       run:
         working-directory: frontend
@@ -51,19 +50,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Skip when E2E credentials are not configured
+        id: e2e_auth_gate
+        env:
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_TEST_HAS_BUSINESS: ${{ secrets.E2E_TEST_HAS_BUSINESS }}
+        run: |
+          if [ -z "$E2E_TEST_EMAIL" ] || [ -z "$E2E_TEST_PASSWORD" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "E2E credentials not configured; skipping authenticated suite."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$E2E_TEST_HAS_BUSINESS" = "true" ]; then
+            echo "has_business=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_business=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.e2e_auth_gate.outputs.skip != 'true'
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.e2e_auth_gate.outputs.skip != 'true'
         run: npm ci
 
       - name: Install Playwright browser
+        if: steps.e2e_auth_gate.outputs.skip != 'true'
         run: npx playwright install chromium --with-deps
 
       - name: E2E tests (authenticated dashboard)
+        if: steps.e2e_auth_gate.outputs.skip != 'true'
         run: npm run test:e2e -- e2e/dashboard.spec.ts e2e/decision-center.spec.ts
         env:
           CI: true
@@ -72,7 +94,7 @@ jobs:
           E2E_TEST_HAS_BUSINESS: ${{ secrets.E2E_TEST_HAS_BUSINESS }}
 
       - name: E2E tests (appointment flow)
-        if: ${{ secrets.E2E_TEST_HAS_BUSINESS == 'true' }}
+        if: steps.e2e_auth_gate.outputs.skip != 'true' && steps.e2e_auth_gate.outputs.has_business == 'true'
         run: npm run test:e2e -- e2e/appointment.spec.ts
         env:
           CI: true
@@ -82,7 +104,6 @@ jobs:
 
   e2e-public-site:
     runs-on: ubuntu-latest
-    if: ${{ secrets.E2E_PUBLIC_BUSINESS_ID != '' }}
     defaults:
       run:
         working-directory: frontend
@@ -90,19 +111,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Skip when public site business id is not configured
+        id: e2e_public_gate
+        env:
+          E2E_PUBLIC_BUSINESS_ID: ${{ secrets.E2E_PUBLIC_BUSINESS_ID }}
+        run: |
+          if [ -z "$E2E_PUBLIC_BUSINESS_ID" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "E2E_PUBLIC_BUSINESS_ID not configured; skipping public site suite."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.e2e_public_gate.outputs.skip != 'true'
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.e2e_public_gate.outputs.skip != 'true'
         run: npm ci
 
       - name: Install Playwright browser
+        if: steps.e2e_public_gate.outputs.skip != 'true'
         run: npx playwright install chromium --with-deps
 
       - name: E2E tests (public mini site)
+        if: steps.e2e_public_gate.outputs.skip != 'true'
         run: npm run test:e2e -- e2e/public-site.spec.ts
         env:
           CI: true
