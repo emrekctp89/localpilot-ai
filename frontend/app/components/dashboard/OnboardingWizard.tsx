@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { buildDraftOnboardingRate } from "@/lib/activation-metrics";
 import { resolveSectorPackFromIndustry } from "@/lib/sector-packs";
 
 export interface OnboardingData {
@@ -255,6 +256,9 @@ export default function OnboardingWizard({
         </div>
         <p className="mt-3 text-xs font-medium text-gray-400">
           İlerlemeniz bu cihazda otomatik olarak kaydedilir.
+        </p>
+        <p className="mt-2 text-sm font-bold text-indigo-700">
+          Onboarding tamamlama: %{buildDraftOnboardingRate(step)}
         </p>
         {showErrors && missingFields.length > 0 && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">

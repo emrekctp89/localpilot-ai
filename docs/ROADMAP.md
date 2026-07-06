@@ -192,9 +192,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Checkout sonrası onboarding checklist (ilk 7 gün)
 
 ### 5.2 Aktivasyon metrikleri
-- [ ] Onboarding tamamlama oranı
-- [ ] İlk randevu / ilk müşteri / ilk AI kampanya süreleri
-- [ ] Karar Merkezi ilk onay süresi
+- [x] Onboarding tamamlama oranı
+- [x] İlk randevu / ilk müşteri / ilk AI kampanya süreleri
+- [x] Karar Merkezi ilk onay süresi
 
 ### 5.3 Pazarlama site
 - [ ] Landing page (`/`) ürün değer önerisi

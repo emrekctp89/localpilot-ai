@@ -1,5 +1,7 @@
 import React from "react";
 import type { Business, GeneratedPlan } from "@/lib/domain-types";
+import { useActivationMetrics } from "@/hooks/useActivationMetrics";
+import AktivasyonMetrikleri from "./AktivasyonMetrikleri";
 import OperasyonOzeti from "./OperasyonOzeti";
 // import { supabase } from '@/lib/supabase'; // Gerçek projede bunu açın
 
@@ -58,6 +60,8 @@ export default function OzetTab({
   plan,
   setActiveTab,
 }: OzetTabProps) {
+  const activationMetrics = useActivationMetrics(business);
+
   // Canvas'ta hata vermemesi için plan yoksa mock veriyi kullanıyoruz.
   const activePlan = plan?.business_diagnosis ? plan : mockPlan;
 
@@ -111,6 +115,13 @@ export default function OzetTab({
           🚀
         </div>
       </div>
+
+      <AktivasyonMetrikleri
+        metrics={activationMetrics.metrics}
+        loading={activationMetrics.loading}
+        error={activationMetrics.error}
+        onNavigate={setActiveTab}
+      />
 
       {/* 📊 2. YAPAY ZEKA İŞLETME TEŞHİSİ */}
       <OperasyonOzeti business={business} setActiveTab={setActiveTab} />

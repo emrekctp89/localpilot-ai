@@ -75,6 +75,7 @@ test("onboarding keeps five steps with inline validation and setup feedback", as
   assert.match(source, /attemptedSteps/);
   assert.match(source, /handleContinue/);
   assert.match(source, /handleComplete/);
+  assert.match(source, /buildDraftOnboardingRate/);
   assert.match(source, /aria-invalid/);
   assert.match(source, /<FieldError\s+field="name"/);
   assert.match(source, /<FieldError\s+field="whatsapp_number"/);
@@ -535,6 +536,19 @@ test("shared domain models remain available to dashboard modules", async () => {
   ]) {
     assert.match(source, new RegExp(`export interface ${model}\\b`));
   }
+});
+
+test("activation metrics surface onboarding rate and milestone durations", async () => {
+  const [ozetSource, metricsSource, componentSource] = await Promise.all([
+    readSource("app/components/dashboard/OzetTab.tsx"),
+    readSource("lib/activation-metrics.ts"),
+    readSource("app/components/dashboard/AktivasyonMetrikleri.tsx"),
+  ]);
+
+  assert.match(ozetSource, /AktivasyonMetrikleri/);
+  assert.match(metricsSource, /buildActivationMetrics/);
+  assert.match(metricsSource, /first_decision_approval/);
+  assert.match(componentSource, /Aktivasyon Metrikleri/);
 });
 
 test("pro funnel exposes usage limits, upgrade CTA and activation checklist", async () => {

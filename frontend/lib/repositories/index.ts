@@ -9,6 +9,7 @@ export {
 } from "./sector-workflow";
 export { loadDecisionContext, loadOperationalSnapshot } from "./operations";
 export { listCampaigns, saveCampaigns } from "./campaigns";
+export { loadActivationMetricSignals } from "./activation-metrics";
 export { listContentItems, saveContentItems } from "./content-items";
 export {
   listCustomerFollowUps,

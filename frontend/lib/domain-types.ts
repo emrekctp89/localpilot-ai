@@ -35,6 +35,7 @@ export interface MiniSiteData {
 export interface Business {
   id?: string;
   owner_id?: string;
+  created_at?: string;
   name?: string;
   sector?: string;
   industry?: string;
