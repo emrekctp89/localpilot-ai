@@ -27,8 +27,8 @@ class StripeWebhookTests(unittest.TestCase):
         client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
             data={"is_pro": False}
         )
-        client.table.return_value.update.return_value.eq.return_value.execute.return_value = (
-            MagicMock()
+        client.table.return_value.update.return_value.eq.return_value.select.return_value.single.return_value.execute.return_value = MagicMock(
+            data={"id": "user-123", "is_pro": True}
         )
 
         ok, error = activate_pro_membership(client, "user-123")
@@ -43,8 +43,8 @@ class StripeWebhookTests(unittest.TestCase):
         client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
             data={"is_pro": False}
         )
-        client.table.return_value.update.return_value.eq.return_value.execute.return_value = (
-            MagicMock()
+        client.table.return_value.update.return_value.eq.return_value.select.return_value.single.return_value.execute.return_value = MagicMock(
+            data={"id": "user-123", "is_pro": True}
         )
 
         payload, status = handle_stripe_event(

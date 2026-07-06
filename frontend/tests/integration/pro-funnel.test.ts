@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   activationProgress,
   buildActivationChecklist,
+  buildProUsageSnapshot,
   formatUsageLabel,
   isWithinActivationWindow,
   PRO_FEATURES,
@@ -59,6 +60,14 @@ describe("pro funnel integration", () => {
       ),
       false,
     );
+  });
+
+  it("builds pro usage snapshot without limits", () => {
+    const snapshot = buildProUsageSnapshot();
+    assert.equal(snapshot.is_pro, true);
+    assert.equal(snapshot.can_use_ai, true);
+    assert.equal(snapshot.daily.limit, null);
+    assert.equal(formatUsageLabel(snapshot.daily), "Sınırsız");
   });
 
   it("formats usage labels", () => {

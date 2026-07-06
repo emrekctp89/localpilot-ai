@@ -44,6 +44,7 @@ import {
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAiUsage } from "@/hooks/useAiUsage";
 import { useProActivationChecklist } from "@/hooks/useProActivationChecklist";
+import { useProCheckoutActivation } from "@/hooks/useProCheckoutActivation";
 import ProActivationChecklist from "../components/dashboard/ProActivationChecklist";
 import {
   cacheBusinessSnapshot,
@@ -96,6 +97,21 @@ export default function Dashboard() {
 
   const aiUsageApi = useAiUsage(session.isPro, Boolean(session.business));
 
+  const proActivation = useProCheckoutActivation({
+    paymentReturn,
+    checkoutSessionId,
+    ready: !session.loading && Boolean(session.business),
+    refreshProStatus: session.refreshProStatus,
+    onActivated: () => {
+      void aiUsageApi.refresh();
+    },
+    onHandled: () => {
+      setPaymentReturn(null);
+      setCheckoutSessionId(null);
+      clearPaymentReturnFromUrl();
+    },
+  });
+
   const campaignsApi = useCampaigns({
     business: session.business,
     seedCampaigns: session.seedCampaigns,
@@ -145,11 +161,6 @@ export default function Dashboard() {
     setCheckoutSessionId(readCheckoutSessionId());
     setActiveTab("ayarlar");
   }, []);
-
-  useEffect(() => {
-    if (!paymentReturn || session.loading || !session.business) return;
-    clearPaymentReturnFromUrl();
-  }, [paymentReturn, session.business, session.loading]);
 
   const canUseAi = aiUsageApi.canUseAi;
 
@@ -476,12 +487,13 @@ export default function Dashboard() {
                   isPro={session.isPro}
                   handleUpgradeToPro={handleUpgradeToPro}
                   refreshProStatus={session.refreshProStatus}
-                  paymentReturn={paymentReturn}
-                  checkoutSessionId={checkoutSessionId}
-                  onPaymentReturnHandled={() => {
-                    setPaymentReturn(null);
-                    setCheckoutSessionId(null);
+                  onProActivated={() => {
+                    void aiUsageApi.refresh();
                   }}
+                  checkoutSessionId={checkoutSessionId}
+                  billingMessage={proActivation.billingMessage}
+                  onBillingMessageChange={proActivation.setBillingMessage}
+                  isActivatingPro={proActivation.isActivating}
                   aiUsage={aiUsageApi.usage}
                   activationItems={activationChecklist.items}
                   showActivationChecklist={activationChecklist.visible}

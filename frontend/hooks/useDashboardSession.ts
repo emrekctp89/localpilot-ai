@@ -167,8 +167,8 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         );
         if (shouldStop()) return;
 
-        if (context.isPro) setIsPro(true);
-        if (context.proActivatedAt) setProActivatedAt(context.proActivatedAt);
+        setIsPro(Boolean(context.isPro));
+        setProActivatedAt(context.proActivatedAt ?? null);
         setProfileRole(context.profileRole);
         setBusinesses(context.businesses);
         setPlatformAccess(context.platformAccess);
@@ -279,8 +279,8 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
       setBusinesses(context.businesses);
       setPlatformAccess(context.platformAccess);
-      if (context.isPro) setIsPro(true);
-      if (context.proActivatedAt) setProActivatedAt(context.proActivatedAt);
+      setIsPro(Boolean(context.isPro));
+      setProActivatedAt(context.proActivatedAt ?? null);
 
       if (context.business?.id) {
         draftHandlers.clearOnboardingDraft(onboardingDraftKey(userId));

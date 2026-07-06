@@ -19,17 +19,29 @@ def activate_pro_membership(
         if response.data and response.data.get("is_pro"):
             return True, None
     except Exception as error:
+        print(f"pro_activation_profile_read_failed user={user_id} error={error}")
         return False, f"Profil okunamadı: {error}"
 
     try:
-        supabase_client.table("profiles").update(
-            {
-                "is_pro": True,
-                "pro_activated_at": datetime.now(timezone.utc).isoformat(),
-            }
-        ).eq("id", user_id).execute()
-        return True, None
+        response = (
+            supabase_client.table("profiles")
+            .update(
+                {
+                    "is_pro": True,
+                    "pro_activated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            .eq("id", user_id)
+            .select("id,is_pro")
+            .single()
+            .execute()
+        )
+        if response.data and response.data.get("is_pro"):
+            return True, None
+        print(f"pro_activation_profile_update_unverified user={user_id}")
+        return False, "Profil güncellenemedi: is_pro doğrulanamadı."
     except Exception as error:
+        print(f"pro_activation_profile_update_failed user={user_id} error={error}")
         return False, f"Profil güncellenemedi: {error}"
 
 

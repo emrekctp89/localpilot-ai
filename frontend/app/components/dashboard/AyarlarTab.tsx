@@ -18,9 +18,11 @@ interface AyarlarTabProps {
   isPro?: boolean;
   handleUpgradeToPro?: () => Promise<void>;
   refreshProStatus?: () => Promise<boolean>;
-  paymentReturn?: "success" | "cancel" | null;
+  onProActivated?: () => void;
   checkoutSessionId?: string | null;
-  onPaymentReturnHandled?: () => void;
+  billingMessage?: string;
+  onBillingMessageChange?: (message: string) => void;
+  isActivatingPro?: boolean;
   aiUsage?: AiUsageSnapshot | null;
   activationItems?: ActivationChecklistItem[];
   showActivationChecklist?: boolean;
@@ -38,9 +40,11 @@ export default function AyarlarTab({
   isPro = false,
   handleUpgradeToPro,
   refreshProStatus,
-  paymentReturn = null,
+  onProActivated,
   checkoutSessionId = null,
-  onPaymentReturnHandled,
+  billingMessage: billingMessageProp = "",
+  onBillingMessageChange,
+  isActivatingPro = false,
   aiUsage = null,
   activationItems = [],
   showActivationChecklist = false,
@@ -65,7 +69,9 @@ export default function AyarlarTab({
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
-  const [billingMessage, setBillingMessage] = useState("");
+  const [localBillingMessage, setLocalBillingMessage] = useState("");
+  const billingMessage = billingMessageProp || localBillingMessage;
+  const setBillingMessage = onBillingMessageChange ?? setLocalBillingMessage;
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [isRefreshingPlan, setIsRefreshingPlan] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(
@@ -96,62 +102,6 @@ export default function AyarlarTab({
       ...plan.mini_site_data,
     });
   }, [plan?.mini_site_data]);
-
-  useEffect(() => {
-    if (!paymentReturn) return;
-
-    if (paymentReturn === "cancel") {
-      setBillingMessage("Ödeme işlemi iptal edildi. Hesabınızda değişiklik yok.");
-      onPaymentReturnHandled?.();
-      return;
-    }
-
-    let cancelled = false;
-    setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
-
-    const activatePro = async () => {
-      const tryActivate = async () => {
-        try {
-          const confirmed = await confirmProCheckout({
-            session_id: checkoutSessionId,
-          });
-          if (confirmed.is_pro) return true;
-        } catch {
-          // Webhook veya Stripe gecikmesi — profil yenilemeye düş.
-        }
-        if (!refreshProStatus) return false;
-        return refreshProStatus();
-      };
-
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        if (cancelled) return;
-        const active = await tryActivate();
-        if (active) {
-          setBillingMessage("Pro üyeliğiniz aktif!");
-          onPaymentReturnHandled?.();
-          return;
-        }
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-      }
-
-      if (!cancelled) {
-        setBillingMessage(
-          "Ödeme alındı. Pro aktivasyonu biraz sürebilir; 'Üyelik Durumunu Yenile' ile kontrol edin.",
-        );
-        onPaymentReturnHandled?.();
-      }
-    };
-
-    void activatePro();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    checkoutSessionId,
-    paymentReturn,
-    refreshProStatus,
-    onPaymentReturnHandled,
-  ]);
 
   const inputClass =
     "w-full border border-gray-300 rounded-md p-3 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-800 outline-none transition";
@@ -346,6 +296,7 @@ export default function AyarlarTab({
       if (!active && refreshProStatus) {
         active = await refreshProStatus();
       }
+      if (active) onProActivated?.();
       setBillingMessage(
         active
           ? "Pro üyeliğiniz aktif."
@@ -434,7 +385,7 @@ export default function AyarlarTab({
             <button
               type="button"
               onClick={checkPlanStatus}
-              disabled={isRefreshingPlan || !refreshProStatus}
+              disabled={isRefreshingPlan || isActivatingPro || !refreshProStatus}
               className="rounded-xl border border-indigo-200 bg-white px-5 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
             >
               {isRefreshingPlan ? "Kontrol ediliyor..." : "Üyelik Durumunu Yenile"}

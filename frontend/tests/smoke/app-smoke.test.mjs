@@ -197,11 +197,11 @@ test("settings exposes account and Pro membership controls", async () => {
   assert.match(settingsSource, /Hesap ve Üyelik/);
   assert.match(settingsSource, /Pro'ya Yükselt/);
   assert.match(settingsSource, /Üyelik Durumunu Yenile/);
-  assert.match(settingsSource, /paymentReturn\?:\s*"success"/);
-  assert.match(settingsSource, /paymentReturn === "cancel"/);
   assert.match(settingsSource, /confirmProCheckout/);
   assert.match(settingsSource, /checkoutSessionId/);
-  assert.match(settingsSource, /Ödeme tamamlandı/);
+  assert.match(settingsSource, /Üyelik Durumunu Yenile/);
+  assert.match(dashboardSource, /useProCheckoutActivation/);
+  assert.match(dashboardSource, /readPaymentReturn/);
   assert.match(dashboardSource, /refreshProStatus/);
   assert.match(dashboardSource, /accountEmail=\{session\.accountEmail\}/);
   assert.match(dashboardSource, /isPro=\{session\.isPro\}/);

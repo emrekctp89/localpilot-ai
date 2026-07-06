@@ -30,10 +30,10 @@ def find_recent_paid_session(stripe_client: Any, user_id: str) -> Optional[Any]:
 def confirm_pro_checkout(
     stripe_client: Any,
     supabase_client: Any,
-    user_id: str,
+    user_id: Optional[str],
     session_id: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], int]:
-    if not user_id:
+    if not user_id and not session_id:
         return {"status": "error", "detail": "Kullanıcı kimliği gerekli."}, 401
 
     session = None
@@ -45,7 +45,7 @@ def confirm_pro_checkout(
                 "status": "error",
                 "detail": f"Ödeme oturumu bulunamadı: {error}",
             }, 404
-    else:
+    elif user_id:
         try:
             session = find_recent_paid_session(stripe_client, user_id)
         except Exception as error:
@@ -53,6 +53,12 @@ def confirm_pro_checkout(
                 "status": "error",
                 "detail": f"Ödeme oturumları alınamadı: {error}",
             }, 503
+    else:
+        return {
+            "status": "error",
+            "detail": "Ödeme oturumu kimliği gerekli.",
+            "is_pro": False,
+        }, 400
 
     if not session:
         return {
@@ -61,12 +67,22 @@ def confirm_pro_checkout(
             "is_pro": False,
         }, 404
 
-    if _session_user_id(session) != user_id:
+    session_user_id = _session_user_id(session)
+    if not session_user_id:
+        return {
+            "status": "error",
+            "detail": "Ödeme oturumunda kullanıcı bilgisi bulunamadı.",
+            "is_pro": False,
+        }, 400
+
+    if user_id and session_user_id != user_id:
         return {
             "status": "forbidden",
             "detail": "Bu ödeme oturumu hesabınıza ait değil.",
             "is_pro": False,
         }, 403
+
+    effective_user_id = user_id or session_user_id
 
     if not _is_paid_checkout_session(session):
         return {
@@ -75,7 +91,7 @@ def confirm_pro_checkout(
             "is_pro": False,
         }, 402
 
-    ok, error = activate_pro_membership(supabase_client, user_id)
+    ok, error = activate_pro_membership(supabase_client, effective_user_id)
     if not ok:
         return {
             "status": "error",

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchAiUsage } from "@/lib/ai-client";
-import type { AiUsageSnapshot } from "@/lib/pro-funnel";
+import { buildProUsageSnapshot, type AiUsageSnapshot } from "@/lib/pro-funnel";
 
 export function useAiUsage(isPro: boolean, enabled = true) {
   const [usage, setUsage] = useState<AiUsageSnapshot | null>(null);
@@ -35,8 +35,10 @@ export function useAiUsage(isPro: boolean, enabled = true) {
   const canUseAi =
     isPro || process.env.NODE_ENV === "development" || usage?.can_use_ai === true;
 
+  const effectiveUsage = isPro ? buildProUsageSnapshot() : usage;
+
   return {
-    usage,
+    usage: effectiveUsage,
     loading,
     error,
     refresh,

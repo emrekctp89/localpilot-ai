@@ -167,3 +167,12 @@ export function formatUsageLabel(period: AiUsagePeriod): string {
   }
   return `${period.used}/${period.limit}`;
 }
+
+export function buildProUsageSnapshot(): AiUsageSnapshot {
+  return {
+    is_pro: true,
+    daily: { used: 0, limit: null, remaining: null, period_key: null },
+    monthly: { used: 0, limit: null, remaining: null, period_key: null },
+    can_use_ai: true,
+  };
+}

@@ -55,6 +55,10 @@ def parse_allow_origin_regex(frontend_url: str) -> Optional[str]:
     return None
 
 
+def is_development() -> bool:
+    return os.getenv("ENVIRONMENT", "development").lower() == "development"
+
+
 def auth_is_required() -> bool:
     explicit = os.getenv("AI_SERVICE_REQUIRE_AUTH", "").lower()
     if explicit in {"0", "false", "no"}:

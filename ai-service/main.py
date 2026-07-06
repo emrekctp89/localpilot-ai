@@ -19,7 +19,7 @@ from middleware.ai_usage import (
     get_usage_snapshot,
 )
 from middleware.billing import create_pro_guard_middleware, fetch_user_is_pro
-from middleware.config import resolve_stripe_mode
+from middleware.config import is_development, resolve_stripe_mode
 from middleware.platform_api import (
     fetch_business_summary,
     verify_business_api_key,
@@ -582,13 +582,15 @@ async def confirm_pro_checkout_endpoint(
     request: Request, data: ConfirmCheckoutInput
 ):
     subject = getattr(request.state, "auth_subject", "")
-    if not subject.startswith("user:"):
-        raise HTTPException(
-            status_code=401,
-            detail="Pro onayı için oturum açmanız gerekir.",
-        )
+    user_id = subject.split(":", 1)[1] if subject.startswith("user:") else None
 
-    user_id = subject.split(":", 1)[1]
+    if not user_id:
+        if not (is_development() and data.session_id):
+            raise HTTPException(
+                status_code=401,
+                detail="Pro onayı için oturum açmanız gerekir.",
+            )
+
     result, status_code = confirm_pro_checkout(
         stripe,
         supabase,
