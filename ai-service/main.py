@@ -24,6 +24,10 @@ from middleware.security import (
     parse_allowed_origins,
 )
 from middleware.stripe_webhook import handle_stripe_event
+from prompt_context import (
+    build_business_profile_block,
+    build_campaign_mode_instruction,
+)
 
 # ------------------------------------------------------------
 # ENV / CLIENT SETUP
@@ -143,13 +147,24 @@ class BusinessInput(BaseModel):
 class ReviewInput(BaseModel):
     business_name: str
     reviews: List[str]
+    sector: str = ""
+    industry: str = ""
+    city: str = ""
 
 
 class CampaignInput(BaseModel):
     business_name: str
     sector: str
     city: str
-    target_audience: str
+    target_audience: str = ""
+    industry: str = ""
+    goals: List[str] = Field(default_factory=list)
+    top_products: str = ""
+    unique_selling_point: str = ""
+    brand_tone: str = ""
+    mode: str = "fresh"
+    existing_campaigns: List[Dict[str, Any]] = Field(default_factory=list)
+    variant_index: Optional[int] = None
 
 
 class CheckoutInput(BaseModel):
@@ -314,12 +329,12 @@ async def generate_plan(business: BusinessInput):
           }
         }
         """
-        user_prompt = f"""
-        İşletme Adı: {business.name}
-        Sektör: {business.sector}
-        Şehir: {business.city}
-        Hedef Kitle: {business.target_audience}
-        """
+        user_prompt = build_business_profile_block(
+            business_name=business.name,
+            sector=business.sector,
+            city=business.city,
+            target_audience=business.target_audience,
+        )
         return generate_ai_json(system_instruction, user_prompt, temperature=0.6)
     except Exception as e:
         print(f"🚨 GENERATE PLAN HATASI: {str(e)}")
@@ -332,6 +347,7 @@ async def analyze_reviews(data: ReviewInput):
         system_instruction = """
         Sen LocalPilot AI'sın. Sana bir işletmenin müşteri yorumları verilecek.
         Bu yorumları analiz et ve işletme sahibi için yapıcı bir özet çıkar.
+        Sektör ve şehir bağlamına göre önerileri özelleştir.
         Çıktın kesinlikle JSON olmalı.
         {
           "positive_highlights": ["...", "..."],
@@ -341,12 +357,27 @@ async def analyze_reviews(data: ReviewInput):
           "reply_templates": [
             {"type": "positive_review", "message": "..."},
             {"type": "negative_review", "message": "..."}
-          ]
+          ],
+          "decision_bridge": {
+            "signal": "Yorumlardan çıkan en kritik sinyal (1 cümle).",
+            "analysis": "Neden önemli olduğunu açıkla (1-2 cümle).",
+            "recommendation": "Karar Merkezi'nde onaylanacak net aksiyon.",
+            "expected_result": "Beklenen iş sonucu.",
+            "metric": "Ölçülecek metrik adı.",
+            "priority": "high | medium | low"
+          }
         }
         """
         reviews_text = "\n".join([f"- {r}" for r in data.reviews])
+        profile = build_business_profile_block(
+            business_name=data.business_name,
+            sector=data.sector,
+            industry=data.industry,
+            city=data.city,
+        )
         user_prompt = f"""
-        İşletme Adı: {data.business_name}
+        {profile}
+
         Müşteri Yorumları:
         {reviews_text}
         """
@@ -358,28 +389,39 @@ async def analyze_reviews(data: ReviewInput):
 @app.post("/generate-campaigns")
 async def generate_campaigns(data: CampaignInput):
     try:
-        system_instruction = """
+        mode_instruction = build_campaign_mode_instruction(
+            data.mode,
+            data.existing_campaigns,
+            data.variant_index,
+        )
+        system_instruction = f"""
         Sen LocalPilot AI'sın. İşletmelerin satışlarını artıracak yaratıcı ve yerel pazarlama kampanyaları üretirsin.
-        Verilen işletme bilgileri ve hedef kitleye uygun 3 adet uygulanabilir kampanya fikri oluştur.
+        Verilen işletme profiline, sektör notlarına ve hedef kitleye uygun kampanyalar oluştur.
+        {mode_instruction}
         Çıktın kesinlikle JSON olmalı.
-        {
+        {{
           "campaigns": [
-            {
+            {{
               "campaign_name": "...",
               "goal": "...",
               "offer": "...",
               "strategy": "...",
               "sms_whatsapp_template": "..."
-            }
+            }}
           ]
-        }
+        }}
         """
-        user_prompt = f"""
-        İşletme Adı: {data.business_name}
-        Sektör: {data.sector}
-        Şehir: {data.city}
-        Hedef Kitle: {data.target_audience}
-        """
+        user_prompt = build_business_profile_block(
+            business_name=data.business_name,
+            sector=data.sector,
+            industry=data.industry or data.sector,
+            city=data.city,
+            target_audience=data.target_audience,
+            goals=data.goals,
+            top_products=data.top_products,
+            unique_selling_point=data.unique_selling_point,
+            brand_tone=data.brand_tone,
+        )
         return generate_ai_json(system_instruction, user_prompt, temperature=0.8)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Kampanya Hatası: {str(e)}")
@@ -443,35 +485,40 @@ async def stripe_webhook(request: Request):
 @app.post("/forecast-finance")
 async def forecast_finance(data: FinanceForecastRequest):
     try:
-        # 1. ADIM: Sadece gelir işlemlerini filtrele (Ciro Tahmini için)
         incomes = [t for t in data.transactions if t.type == "gelir"]
-        
-        # En az 3 veri noktası yoksa tahmin yapmak istatistiksel olarak yanıltıcı olur
-        if len(incomes) < 3:
-             return {
-                 "status": "insufficient_data",
-                 "message": "Sağlıklı bir yapay zeka tahmini yapabilmemiz için sistemde en az 3 gelir işlemine ihtiyacımız var."
-             }
-             
-        # 2. ADIM: Verileri tarihe göre grupla ve günlük toplam ciroyu bul
-        daily_revenue = defaultdict(float)
-        for t in incomes:
-            date_str = t.date.split("T")[0] # Sadece YYYY-MM-DD kısmını al
-            daily_revenue[date_str] += t.amount
-            
-        sorted_dates = sorted(daily_revenue.keys())
-        
-        # 3. ADIM: Makine Öğrenmesi için X (Günler) ve y (Ciro) matrislerini hazırla
-        start_date = datetime.strptime(sorted_dates[0], "%Y-%m-%d")
-        
+
+        monthly_revenue = defaultdict(float)
+        for tx in incomes:
+            month_key = tx.date.split("T")[0][:7]
+            monthly_revenue[month_key] += tx.amount
+
+        months_covered = len(monthly_revenue)
+        if months_covered < 3:
+            return {
+                "status": "insufficient_data",
+                "months_covered": months_covered,
+                "months_required": 3,
+                "message": (
+                    "Sağlıklı bir yapay zeka tahmini için en az 3 farklı aya ait gelir "
+                    "işlemi gerekiyor. Şu an "
+                    f"{months_covered} ay veri var."
+                ),
+            }
+
+        sorted_months = sorted(monthly_revenue.keys())
+        start_month = datetime.strptime(f"{sorted_months[0]}-01", "%Y-%m-%d")
+
         X = []
         y = []
-        
-        for d_str in sorted_dates:
-            d_obj = datetime.strptime(d_str, "%Y-%m-%d")
-            delta_days = (d_obj - start_date).days
-            X.append([delta_days])
-            y.append(daily_revenue[d_str])
+
+        for month_key in sorted_months:
+            month_start = datetime.strptime(f"{month_key}-01", "%Y-%m-%d")
+            delta_months = (
+                (month_start.year - start_month.year) * 12
+                + (month_start.month - start_month.month)
+            )
+            X.append([delta_months])
+            y.append(monthly_revenue[month_key])
             
         X = np.array(X)
         y = np.array(y)
@@ -480,21 +527,20 @@ async def forecast_finance(data: FinanceForecastRequest):
         model = LinearRegression()
         model.fit(X, y)
         
-        # Gelecek 30 günü tahmin et
-        last_day = X[-1][0]
-        future_X = np.array([[last_day + i] for i in range(1, 31)])
+        last_month_index = X[-1][0]
+        future_X = np.array([[last_month_index + i] for i in range(1, 2)])
         future_predictions = model.predict(future_X)
-        
-        # İstatistiksel sapmaları (negatif ciro ihtimalini) 0'a sabitle
         future_predictions = np.maximum(future_predictions, 0)
-        
-        predicted_next_30_days_total = float(np.sum(future_predictions))
-        current_total = float(np.sum(y))
-        
-        # Yüzdelik büyüme/küçülme trendi
+
+        predicted_next_month_total = float(np.sum(future_predictions))
+        recent_month_total = float(y[-1]) if y else 0.0
+        trailing_three_month_total = float(np.sum(y[-3:]))
+
         trend_percentage = 0.0
-        if current_total > 0:
-            trend_percentage = ((predicted_next_30_days_total - current_total) / current_total) * 100
+        if recent_month_total > 0:
+            trend_percentage = (
+                (predicted_next_month_total - recent_month_total) / recent_month_total
+            ) * 100
             
         # 5. ADIM: LLM (Generative AI) ile sonuçları işletme sahibi için yorumla
         system_instruction = """
@@ -512,8 +558,10 @@ async def forecast_finance(data: FinanceForecastRequest):
         
         user_prompt = f"""
         İşletme: {data.business_name}
-        Mevcut Toplam Ciro: {current_total} TL
-        Gelecek 30 Gün Tahmini: {predicted_next_30_days_total:.2f} TL
+        Kapsanan Ay Sayısı: {months_covered}
+        Son Ay Cirosu: {recent_month_total:.2f} TL
+        Son 3 Ay Toplamı: {trailing_three_month_total:.2f} TL
+        Gelecek Ay Tahmini: {predicted_next_month_total:.2f} TL
         Trend: %{trend_percentage:.2f}
         """
         
@@ -521,11 +569,12 @@ async def forecast_finance(data: FinanceForecastRequest):
             
         return {
             "status": "success",
-            "current_revenue": current_total,
-            "predicted_revenue": round(predicted_next_30_days_total, 2),
+            "months_covered": months_covered,
+            "current_revenue": round(recent_month_total, 2),
+            "predicted_revenue": round(predicted_next_month_total, 2),
             "trend_percentage": round(trend_percentage, 1),
             "ai_insight": ai_commentary.get("ai_insight"),
-            "action_recommendation": ai_commentary.get("action_recommendation")
+            "action_recommendation": ai_commentary.get("action_recommendation"),
         }
 
     except Exception as e:

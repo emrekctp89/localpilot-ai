@@ -164,10 +164,10 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Süre:** 2–3 hafta
 
 ### 4.1 AI kalitesi
-- [ ] Prompt'ları sektör + işletme profiline göre zenginleştir (`ai-service/main.py`)
-- [ ] Kampanya regenerate / varyant üretimi
-- [ ] Finans tahmini için daha fazla geçmiş veri (min. 3 ay)
-- [ ] Review analizi → aksiyon önerisi → Karar Merkezi köprüsü
+- [x] Prompt'ları sektör + işletme profiline göre zenginleştir (`ai-service/main.py`)
+- [x] Kampanya regenerate / varyant üretimi
+- [x] Finans tahmini için daha fazla geçmiş veri (min. 3 ay)
+- [x] Review analizi → aksiyon önerisi → Karar Merkezi köprüsü
 
 ### 4.2 Harici entegrasyonlar
 - [ ] Google Business Profile API (checklist → canlı profil önerileri)

@@ -151,7 +151,8 @@ export interface DecisionCycle {
     | "growth_review"
     | "finance_decline"
     | "crm_churn_risk"
-    | "empty_appointment_slots";
+    | "empty_appointment_slots"
+    | "review_insight";
   signal: string;
   analysis: string;
   recommendation: string;

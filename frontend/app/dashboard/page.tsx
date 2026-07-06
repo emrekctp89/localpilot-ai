@@ -8,6 +8,11 @@ import {
   createCheckoutSession,
   type ReviewAnalysisResult,
 } from "@/lib/ai-client";
+import { buildReviewDecisionCycle } from "@/lib/business-os";
+import {
+  listDecisionCycles,
+  saveDecisionCycles,
+} from "@/lib/repositories";
 import OnboardingWizard from "../components/dashboard/OnboardingWizard";
 import type { OnboardingData } from "../components/dashboard/OnboardingWizard";
 import TabMenu from "../components/dashboard/TabMenu";
@@ -57,6 +62,7 @@ export default function Dashboard() {
   const [analysisResult, setAnalysisResult] =
     useState<ReviewAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSendingReviewDecision, setIsSendingReviewDecision] = useState(false);
 
   const draftHandlers = useMemo(
     () =>
@@ -132,6 +138,9 @@ export default function Dashboard() {
       const data = await analyzeReviews({
         business_name: session.business.name || "",
         reviews,
+        sector: session.business.sector || "",
+        industry: session.business.industry || "",
+        city: session.business.city || "",
       });
       setAnalysisResult(data);
     } catch (error) {
@@ -140,6 +149,50 @@ export default function Dashboard() {
       );
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleSendReviewToDecisionCenter = async () => {
+    if (!session.business?.id || !analysisResult?.decision_bridge) {
+      onError("Önce yorum analizi çalıştırın.");
+      return;
+    }
+
+    setIsSendingReviewDecision(true);
+    try {
+      const existingCycles = await listDecisionCycles(session.business.id);
+      const recommendation = analysisResult.decision_bridge.recommendation;
+      const duplicate = existingCycles.some(
+        (cycle) =>
+          cycle.recommendation === recommendation && cycle.status !== "olculdu",
+      );
+      if (duplicate) {
+        showToast("Bu yorum önerisi zaten Karar Merkezi'nde.", "info");
+        setActiveTab("karar");
+        return;
+      }
+
+      const nextCycle = {
+        ...buildReviewDecisionCycle(analysisResult.decision_bridge),
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      const saved = await saveDecisionCycles(session.business.id, [
+        nextCycle,
+        ...existingCycles,
+      ]);
+      if (!saved) throw new Error("Karar önerisi kaydedilemedi.");
+
+      showToast("Yorum analizi Karar Merkezi'ne aktarıldı.", "success");
+      setActiveTab("karar");
+    } catch (error) {
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Karar Merkezi köprüsü başarısız oldu.",
+      );
+    } finally {
+      setIsSendingReviewDecision(false);
     }
   };
 
@@ -305,12 +358,18 @@ export default function Dashboard() {
                   isGeneratingCampaigns={campaignsApi.isGeneratingCampaigns}
                   campaignSaveStatus={campaignsApi.campaignSaveStatus}
                   handleGenerateCampaigns={campaignsApi.handleGenerateCampaigns}
+                  handleGenerateCampaignVariant={
+                    campaignsApi.handleGenerateCampaignVariant
+                  }
                   handleUpdateCampaign={campaignsApi.handleUpdateCampaign}
+                  variantIndex={campaignsApi.variantIndex}
                   reviewsText={reviewsText}
                   setReviewsText={setReviewsText}
                   isAnalyzing={isAnalyzing}
                   handleAnalyzeReviews={handleAnalyzeReviews}
                   analysisResult={analysisResult}
+                  onSendReviewToDecisionCenter={handleSendReviewToDecisionCenter}
+                  isSendingReviewDecision={isSendingReviewDecision}
                   copyToClipboard={copyToClipboard}
                   isPro={canUseProTools}
                   handleUpgradeToPro={handleUpgradeToPro}

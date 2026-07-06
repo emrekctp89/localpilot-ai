@@ -83,6 +83,7 @@ export const RECOMMENDATION_LABELS: Record<
   finance_decline: "Finans Trendi",
   crm_churn_risk: "CRM Churn",
   empty_appointment_slots: "Boş Randevu",
+  review_insight: "Yorum Analizi",
 };
 
 export const APPROVAL_POLICY: Record<AutomationAction, true> = {
@@ -430,9 +431,39 @@ export function getAutomationActionForKey(
     case "growth_review":
     case "empty_appointment_slots":
       return "publish_campaign";
+    case "review_insight":
+      return "create_task";
     default:
       return "create_task";
   }
+}
+
+export interface ReviewDecisionBridge {
+  signal: string;
+  analysis: string;
+  recommendation: string;
+  expected_result: string;
+  metric: string;
+  priority?: "high" | "medium" | "low";
+}
+
+export function buildReviewDecisionCycle(
+  bridge: ReviewDecisionBridge,
+): Omit<DecisionCycle, "id" | "createdAt"> {
+  const priorityScore =
+    bridge.priority === "high" ? 82 : bridge.priority === "low" ? 58 : 70;
+
+  return {
+    recommendationKey: "review_insight",
+    signal: bridge.signal,
+    analysis: bridge.analysis,
+    recommendation: bridge.recommendation,
+    expectedResult: bridge.expected_result,
+    metric: bridge.metric,
+    status: "oneri",
+    confidenceScore: priorityScore,
+    learningEvidenceCount: 0,
+  };
 }
 
 export function getLearningHistory(

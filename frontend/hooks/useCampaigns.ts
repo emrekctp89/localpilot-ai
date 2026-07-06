@@ -14,6 +14,46 @@ interface UseCampaignsOptions {
   onError: (message: string) => void;
 }
 
+function buildCampaignRequest(
+  business: Business,
+  mode: "fresh" | "regenerate" | "variant",
+  existingCampaigns: Campaign[] = [],
+  variantIndex?: number,
+) {
+  return {
+    business_name: business.name || "",
+    sector: business.sector || business.industry || "",
+    industry: business.industry || "",
+    city: business.city || "",
+    target_audience: business.target_audience || "",
+    mode,
+    existing_campaigns: existingCampaigns,
+    variant_index: variantIndex,
+  };
+}
+
+async function persistCampaignState(
+  businessId: string,
+  nextCampaigns: Campaign[],
+  setPlan: React.Dispatch<React.SetStateAction<GeneratedPlan | null>>,
+) {
+  const saved = await saveCampaigns(businessId, nextCampaigns);
+  if (!saved) throw new Error("Kampanyalar kaydedilemedi.");
+
+  setPlan((currentPlan) =>
+    currentPlan
+      ? {
+          ...currentPlan,
+          campaigns: nextCampaigns,
+          mini_site_data: {
+            ...currentPlan.mini_site_data,
+            campaigns: nextCampaigns,
+          },
+        }
+      : currentPlan,
+  );
+}
+
 export function useCampaigns({
   business,
   seedCampaigns,
@@ -25,7 +65,9 @@ export function useCampaigns({
   useEffect(() => {
     setCampaigns(seedCampaigns);
   }, [seedCampaigns]);
+
   const [isGeneratingCampaigns, setIsGeneratingCampaigns] = useState(false);
+  const [variantIndex, setVariantIndex] = useState<number | null>(null);
   const [campaignSaveStatus, setCampaignSaveStatus] =
     useState<CampaignSaveStatus>("idle");
 
@@ -36,38 +78,59 @@ export function useCampaigns({
     }
 
     setIsGeneratingCampaigns(true);
+    setVariantIndex(null);
     setCampaignSaveStatus("idle");
     try {
-      const data = await generateCampaigns({
-        business_name: business.name || "",
-        sector: business.sector || business.industry || "",
-        city: business.city || "",
-        target_audience: business.target_audience || "",
-      });
+      const mode = campaigns.length > 0 ? "regenerate" : "fresh";
+      const data = await generateCampaigns(
+        buildCampaignRequest(business, mode, campaigns),
+      );
       const nextCampaigns = Array.isArray(data.campaigns) ? data.campaigns : [];
       setCampaigns(nextCampaigns);
-      const saved = await saveCampaigns(business.id, nextCampaigns);
-      if (!saved) throw new Error("Kampanyalar kaydedilemedi.");
-      setPlan((currentPlan) =>
-        currentPlan
-          ? {
-              ...currentPlan,
-              campaigns: nextCampaigns,
-              mini_site_data: {
-                ...currentPlan.mini_site_data,
-                campaigns: nextCampaigns,
-              },
-            }
-          : currentPlan,
-      );
+      await persistCampaignState(business.id, nextCampaigns, setPlan);
       setCampaignSaveStatus("saved");
     } catch (error) {
       setCampaignSaveStatus("error");
       onError(
-        error instanceof Error ? error.message : "Kampanya uretimi basarisiz oldu.",
+        error instanceof Error ? error.message : "Kampanya üretimi başarısız oldu.",
       );
     } finally {
       setIsGeneratingCampaigns(false);
+    }
+  };
+
+  const handleGenerateCampaignVariant = async (campaignIndex: number) => {
+    if (!business?.id) {
+      onError("Önce işletme kurulumunu tamamlayın.");
+      return;
+    }
+
+    setIsGeneratingCampaigns(true);
+    setVariantIndex(campaignIndex);
+    setCampaignSaveStatus("idle");
+    try {
+      const data = await generateCampaigns(
+        buildCampaignRequest(business, "variant", campaigns, campaignIndex),
+      );
+      const variant = data.campaigns?.[0];
+      if (!variant) throw new Error("Kampanya varyantı üretilemedi.");
+
+      const nextCampaigns = campaigns.map((campaign, index) =>
+        index === campaignIndex ? variant : campaign,
+      );
+      setCampaigns(nextCampaigns);
+      await persistCampaignState(business.id, nextCampaigns, setPlan);
+      setCampaignSaveStatus("saved");
+    } catch (error) {
+      setCampaignSaveStatus("error");
+      onError(
+        error instanceof Error
+          ? error.message
+          : "Kampanya varyantı üretilemedi.",
+      );
+    } finally {
+      setIsGeneratingCampaigns(false);
+      setVariantIndex(null);
     }
   };
 
@@ -88,20 +151,7 @@ export function useCampaigns({
     setCampaigns(nextCampaigns);
     setCampaignSaveStatus("idle");
     try {
-      const saved = await saveCampaigns(business.id, nextCampaigns);
-      if (!saved) throw new Error("Kampanyalar kaydedilemedi.");
-      setPlan((currentPlan) =>
-        currentPlan
-          ? {
-              ...currentPlan,
-              campaigns: nextCampaigns,
-              mini_site_data: {
-                ...currentPlan.mini_site_data,
-                campaigns: nextCampaigns,
-              },
-            }
-          : currentPlan,
-      );
+      await persistCampaignState(business.id, nextCampaigns, setPlan);
       setCampaignSaveStatus("saved");
     } catch (error) {
       setCampaigns(previousCampaigns);
@@ -116,8 +166,10 @@ export function useCampaigns({
     campaigns,
     setCampaigns,
     isGeneratingCampaigns,
+    variantIndex,
     campaignSaveStatus,
     handleGenerateCampaigns,
+    handleGenerateCampaignVariant,
     handleUpdateCampaign,
   };
 }

@@ -67,10 +67,14 @@ export default function KasaTab({ business }: KasaTabProps) {
     fetchTransactions();
   }, [business?.id]);
 
-  const incomeCount = useMemo(
-    () => transactions.filter((tx) => tx.type === "gelir").length,
-    [transactions],
-  );
+  const incomeMonthCount = useMemo(() => {
+    const months = new Set<string>();
+    transactions.forEach((tx) => {
+      if (tx.type !== "gelir" || !tx.created_at) return;
+      months.add(tx.created_at.slice(0, 7));
+    });
+    return months.size;
+  }, [transactions]);
 
   const totalBalance = useMemo(
     () =>
@@ -248,16 +252,16 @@ export default function KasaTab({ business }: KasaTabProps) {
           <div>
             <h2 className="text-2xl font-bold">AI Gelecek Projeksiyonu</h2>
             <p className="text-gray-400 text-sm mt-1">
-              Gelecek 30 günlük tahmini cironuzu analiz edin.
+              En az 3 aylık gelir verisiyle gelecek ay cirosunu analiz edin.
             </p>
           </div>
           <button
             onClick={handleGetForecast}
-            disabled={isForecasting || incomeCount < 3}
+            disabled={isForecasting || incomeMonthCount < 3}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl transition disabled:bg-gray-700 disabled:cursor-not-allowed shadow-lg"
             title={
-              incomeCount < 3
-                ? "Tahminleme için en az 3 gelir işlemi gereklidir."
+              incomeMonthCount < 3
+                ? "Tahminleme için en az 3 farklı aya ait gelir işlemi gereklidir."
                 : ""
             }
           >
@@ -269,7 +273,7 @@ export default function KasaTab({ business }: KasaTabProps) {
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
             <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
               <span className="text-gray-400 text-sm font-semibold">
-                Gelecek Ay Ciro Tahmini
+                Gelecek Ay Ciro Tahmini (3+ ay veri)
               </span>
               <div className="text-3xl font-black mt-1 text-emerald-400">
                 {Number(forecast.predicted_revenue || 0).toLocaleString(

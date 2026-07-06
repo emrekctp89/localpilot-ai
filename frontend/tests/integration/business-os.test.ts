@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildReviewDecisionCycle,
   collectBusinessSignals,
   generateRecommendation,
   getAutomationActionForKey,
@@ -106,6 +107,22 @@ describe("business-os integration", () => {
     assert.equal(getAutomationActionForKey("finance_decline"), "financial_transaction");
     assert.equal(getAutomationActionForKey("empty_appointment_slots"), "publish_campaign");
     assert.equal(getAutomationActionForKey("overdue_tasks"), "create_task");
+    assert.equal(getAutomationActionForKey("review_insight"), "create_task");
+  });
+
+  it("builds review decision cycles for Karar Merkezi bridge", () => {
+    const cycle = buildReviewDecisionCycle({
+      signal: "Müşteriler bekleme süresinden şikayetçi.",
+      analysis: "Operasyonel gecikme tekrar eden yorumlarda görülüyor.",
+      recommendation: "Yoğun saatler için ekstra personel görevi planlayın.",
+      expected_result: "Bekleme şikayetlerini azaltmak.",
+      metric: "Olumsuz yorum oranı",
+      priority: "high",
+    });
+
+    assert.equal(cycle.recommendationKey, "review_insight");
+    assert.equal(cycle.status, "oneri");
+    assert.equal(cycle.confidenceScore, 82);
   });
 
   it("builds learning history from measured cycles", () => {

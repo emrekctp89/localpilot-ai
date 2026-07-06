@@ -57,12 +57,22 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+export interface ReviewDecisionBridge {
+  signal: string;
+  analysis: string;
+  recommendation: string;
+  expected_result: string;
+  metric: string;
+  priority?: "high" | "medium" | "low";
+}
+
 export interface ReviewAnalysisResult {
   positive_highlights?: string[];
   negative_highlights?: string[];
   actionable_advice?: string[];
   overall_sentiment?: string;
   reply_templates?: { type: string; message: string }[];
+  decision_bridge?: ReviewDecisionBridge;
 }
 
 export interface ChurnAnalysisResult {
@@ -78,6 +88,8 @@ export interface ChurnAnalysisResult {
 export interface FinanceForecastResult {
   status: string;
   message?: string;
+  months_covered?: number;
+  months_required?: number;
   current_revenue?: number;
   predicted_revenue?: number;
   trend_percentage?: number;
@@ -94,6 +106,9 @@ export interface SetupBusinessResult {
 export async function analyzeReviews(input: {
   business_name: string;
   reviews: string[];
+  sector?: string;
+  industry?: string;
+  city?: string;
 }): Promise<ReviewAnalysisResult> {
   return postJson("/analyze-reviews", input);
 }
@@ -116,7 +131,15 @@ export async function generateCampaigns(input: {
   business_name: string;
   sector: string;
   city: string;
-  target_audience: string;
+  target_audience?: string;
+  industry?: string;
+  goals?: string[];
+  top_products?: string;
+  unique_selling_point?: string;
+  brand_tone?: string;
+  mode?: "fresh" | "regenerate" | "variant";
+  existing_campaigns?: Campaign[];
+  variant_index?: number;
 }): Promise<{ campaigns: Campaign[] }> {
   return postJson("/generate-campaigns", input);
 }

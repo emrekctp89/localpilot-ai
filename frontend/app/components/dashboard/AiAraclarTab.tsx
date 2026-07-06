@@ -7,7 +7,11 @@ interface AiAraclarTabProps {
   isGeneratingCampaigns: boolean;
   campaignSaveStatus?: "idle" | "saved" | "error";
   handleGenerateCampaigns: () => void;
+  handleGenerateCampaignVariant: (index: number) => Promise<void>;
   handleUpdateCampaign: (index: number, campaign: Campaign) => Promise<void>;
+  variantIndex?: number | null;
+  onSendReviewToDecisionCenter?: () => void;
+  isSendingReviewDecision?: boolean;
   reviewsText: string;
   setReviewsText: (text: string) => void;
   isAnalyzing: boolean;
@@ -23,7 +27,11 @@ export default function AiAraclarTab({
   isGeneratingCampaigns,
   campaignSaveStatus = "idle",
   handleGenerateCampaigns,
+  handleGenerateCampaignVariant,
   handleUpdateCampaign,
+  variantIndex = null,
+  onSendReviewToDecisionCenter,
+  isSendingReviewDecision = false,
   reviewsText,
   setReviewsText,
   isAnalyzing,
@@ -79,11 +87,11 @@ export default function AiAraclarTab({
             disabled={isGeneratingCampaigns || !isPro}
             className="w-full md:w-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 disabled:bg-gray-400 transition shadow-sm whitespace-nowrap"
           >
-            {isGeneratingCampaigns
-              ? "Uretiliyor..."
+            {isGeneratingCampaigns && variantIndex === null
+              ? "Üretiliyor..."
               : campaigns.length > 0
-                ? "Tekrar Uret"
-                : "Fikir Uret"}
+                ? "Yeniden Üret"
+                : "Fikir Üret"}
           </button>
         </div>
 
@@ -178,12 +186,23 @@ export default function AiAraclarTab({
                       <h3 className="font-bold text-indigo-900 text-lg leading-tight">
                         {camp.campaign_name}
                       </h3>
-                      <button
-                        onClick={() => startEditingCampaign(camp, index)}
-                        className="text-xs bg-white hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded border border-indigo-200 font-bold"
-                      >
-                        Duzenle
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => startEditingCampaign(camp, index)}
+                          className="text-xs bg-white hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded border border-indigo-200 font-bold"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          onClick={() => handleGenerateCampaignVariant(index)}
+                          disabled={isGeneratingCampaigns}
+                          className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded font-bold disabled:bg-gray-400"
+                        >
+                          {isGeneratingCampaigns && variantIndex === index
+                            ? "Üretiliyor..."
+                            : "Varyant Üret"}
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-700 mb-4 flex-grow">
                       <strong>Strateji:</strong> {camp.strategy}
@@ -295,6 +314,29 @@ export default function AiAraclarTab({
                 ))}
               </ul>
             </div>
+            {analysisResult.decision_bridge && onSendReviewToDecisionCenter && (
+              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-violet-700">
+                  Karar Merkezi Köprüsü
+                </p>
+                <p className="mt-2 text-sm font-bold text-violet-950">
+                  {analysisResult.decision_bridge.signal}
+                </p>
+                <p className="mt-2 text-sm text-violet-900">
+                  {analysisResult.decision_bridge.recommendation}
+                </p>
+                <button
+                  type="button"
+                  onClick={onSendReviewToDecisionCenter}
+                  disabled={isSendingReviewDecision}
+                  className="mt-4 w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-gray-400"
+                >
+                  {isSendingReviewDecision
+                    ? "Karar Merkezi'ne aktarılıyor..."
+                    : "Karar Merkezi'ne Aktar"}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

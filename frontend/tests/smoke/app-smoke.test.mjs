@@ -272,6 +272,37 @@ test("sector packs adapt one workflow component to each business", async () => {
   assert.match(domainSource, /export interface SectorWorkflowItem/);
 });
 
+test("ai quality upgrades wire campaigns, reviews, and finance forecast", async () => {
+  const repoRoot = path.resolve(frontendRoot, "..");
+  const readRepoSource = (relativePath) =>
+    readFile(path.join(repoRoot, relativePath), "utf8");
+
+  const [aiServiceSource, promptSource, campaignsHookSource, aiToolsSource, dashboardSource, businessOsSource, kasaSource] =
+    await Promise.all([
+      readRepoSource("ai-service/main.py"),
+      readRepoSource("ai-service/prompt_context.py"),
+      readSource("hooks/useCampaigns.ts"),
+      readSource("app/components/dashboard/AiAraclarTab.tsx"),
+      readSource("app/dashboard/page.tsx"),
+      readSource("lib/business-os.ts"),
+      readSource("app/components/dashboard/KasaTab.tsx"),
+    ]);
+
+  assert.match(promptSource, /build_business_profile_block/);
+  assert.match(aiServiceSource, /decision_bridge/);
+  assert.match(aiServiceSource, /months_covered/);
+  assert.match(aiServiceSource, /build_campaign_mode_instruction/);
+  assert.match(campaignsHookSource, /handleGenerateCampaignVariant/);
+  assert.match(campaignsHookSource, /buildCampaignRequest\(business, "variant"/);
+  assert.match(aiToolsSource, /Varyant Üret/);
+  assert.match(aiToolsSource, /Karar Merkezi Köprüsü/);
+  assert.match(dashboardSource, /buildReviewDecisionCycle/);
+  assert.match(dashboardSource, /handleSendReviewToDecisionCenter/);
+  assert.match(businessOsSource, /review_insight/);
+  assert.match(businessOsSource, /buildReviewDecisionCycle/);
+  assert.match(kasaSource, /incomeMonthCount/);
+});
+
 test("mini site lead flow, seo, and publish status are wired", async () => {
   const [sitePageSource, leadFormSource, settingsSource, miniSiteSource, crmSource] =
     await Promise.all([
