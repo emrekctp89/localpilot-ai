@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.0.0 - 2026-07-06
+
+### Added
+- Added platform tab with team roles (owner, staff, read_only), audit log, API keys, and TR/EN locale switching.
+- Added agency mode for multi-business management via `profiles.role = agency`.
+- Added public API endpoint `GET /platform/business-summary` and outbound webhooks on lead creation.
+- Added Pro funnel with free-tier AI usage limits, upgrade CTA, and first-7-day activation checklist.
+- Added activation metrics (onboarding rate, first appointment/customer/campaign, decision approval time).
+- Added marketing site with landing page, sector demos, and pricing page.
+- Added client-side error reporting hook (`NEXT_PUBLIC_ERROR_REPORT_URL`) and global error boundary.
+- Added production verification checklist and expanded production smoke workflow (health, CORS, pricing).
+
+### Changed
+- Bumped frontend version to `2.0.0` after Faz 6 platform completion.
+- Updated `deploy/production.env.template` with migrations 005–006 and E2E secret documentation.
+
 ## 1.0.0 - Unreleased
 
 ### Added

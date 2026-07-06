@@ -5,16 +5,35 @@ on:
   schedule:
     - cron: "0 */6 * * *"
 
+env:
+  AI_SERVICE_URL: https://localpilot-ai-service.onrender.com
+  FRONTEND_URL: https://localpilot-ai-1b2h.vercel.app
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Check AI service health
         run: |
-          curl --fail --retry 3 --retry-delay 5 \
-            "https://localpilot-ai-service.onrender.com/health"
+          response=$(curl --fail --retry 3 --retry-delay 5 -s "$AI_SERVICE_URL/health")
+          echo "$response"
+          echo "$response" | jq -e '.service == "localpilot-ai"'
+          echo "$response" | jq -e '.checks.supabase == true'
+          echo "$response" | jq -e '.status == "ok" or .status == "degraded"'
+
+      - name: Check CORS preflight from production frontend
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS \
+            -H "Origin: $FRONTEND_URL" \
+            -H "Access-Control-Request-Method: GET" \
+            "$AI_SERVICE_URL/health")
+          echo "CORS preflight status: $status"
+          test "$status" = "200" -o "$status" = "204"
 
       - name: Check frontend home
         run: |
-          curl --fail --retry 3 --retry-delay 5 \
-            "https://localpilot-ai-1b2h.vercel.app"
+          curl --fail --retry 3 --retry-delay 5 "$FRONTEND_URL"
+
+      - name: Check frontend pricing page
+        run: |
+          curl --fail --retry 3 --retry-delay 5 "$FRONTEND_URL/fiyatlandirma"

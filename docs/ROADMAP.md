@@ -1,6 +1,6 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `1.0.0-rc.1`  
+**Güncel sürüm:** `2.0.0`  
 **Son güncelleme:** Temmuz 2026  
 **Durum:** Production (Vercel + Render + Supabase)
 
@@ -64,7 +64,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Checkout → `profiles.is_pro` güncelleme akışı
 - [x] Pro guard middleware (production AI endpoint'leri)
 - [x] Ödeme success/cancel UI + Pro aktivasyon polling
-- [ ] Stripe Dashboard webhook kaydı (production manuel doğrulama)
+- [ ] Stripe Dashboard webhook kaydı (production manuel doğrulama — bkz. `docs/production-checklist.md`)
 
 **Başarı kriteri:** Test kartıyla Pro'ya geçiş, webhook sonrası panelde plan güncellenmesi.
 
@@ -72,8 +72,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Operasyonel tablo RLS (`001_operational_tables.sql`)
 - [x] Core tablo RLS (`002_core_rls.sql` — Supabase'de çalıştır)
 - [ ] `002_core_rls.sql` migration'ını Supabase SQL Editor'de uygula
+- [ ] `005_ai_usage.sql` ve `006_platform.sql` migration'larını Supabase'de uygula
 - [x] `SUPABASE_SERVICE_ROLE_KEY` yalnızca AI service'te
-- [ ] CORS: Vercel preview + production origin'lerinin doğrulanması
+- [x] CORS: Vercel preview + production origin'lerinin doğrulanması (smoke-production workflow)
 - [ ] Rate limit eşiklerini production trafiğine göre ayarla
 
 **Başarı kriteri:** Başka kullanıcının verisine erişim mümkün değil (manuel + otomatik test).
@@ -81,8 +82,8 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 ### 1.3 Gözlemlenebilirlik
 - [x] `/health` degraded mode + config checks (gemini, supabase, stripe)
 - [x] Webhook structured error logging
-- [ ] Render uptime izleme (harici ping)
-- [ ] Frontend error boundary + opsiyonel Sentry
+- [x] Render uptime izleme (harici ping — `smoke-production.yml`, 6 saatte bir)
+- [x] Frontend error boundary + opsiyonel hata raporlama (`NEXT_PUBLIC_ERROR_REPORT_URL`)
 
 **Başarı kriteri:** Bir AI hatası 5 dk içinde tespit edilebilir.
 
@@ -223,16 +224,16 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | **1.1.0** | Faz 2 veri migrasyonu | +4 hafta |
 | **1.2.0** | Faz 3 karar + sektör v2 | +8 hafta |
 | **1.3.0** | Faz 4 AI + entegrasyonlar | +12 hafta |
-| **2.0.0** | Faz 6 platform | +6 ay |
+| **2.0.0** | Faz 6 platform | Tamamlandı |
 
 ---
 
 ## Hızlı Kazanımlar (bu hafta)
 
-1. Stripe webhook production testi
-2. Vercel + Render env'lerinin dokümantasyonu (`deploy/production.env.template` güncelle)
+1. [ ] Stripe webhook production testi (checklist §4)
+2. [x] Vercel + Render env'lerinin dokümantasyonu (`deploy/production.env.template`)
 3. ~~`sosyal_medya` sekmesi kararı~~ → İçerik sekmesinde birleşik
-4. Health + ana akış manuel test checklist'i
+4. [x] Health + ana akış manuel test checklist'i (`docs/production-checklist.md`)
 
 ---
 

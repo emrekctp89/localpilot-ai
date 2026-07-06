@@ -590,6 +590,42 @@ test("activation metrics surface onboarding rate and milestone durations", async
   assert.match(componentSource, /Aktivasyon Metrikleri/);
 });
 
+test("error boundaries report client errors and expose global fallback", async () => {
+  const [reportingSource, fallbackSource, globalErrorSource, appErrorSource] =
+    await Promise.all([
+      readSource("lib/error-reporting.ts"),
+      readSource("app/components/ErrorFallback.tsx"),
+      readSource("app/global-error.tsx"),
+      readSource("app/error.tsx"),
+    ]);
+
+  assert.match(reportingSource, /captureClientError/);
+  assert.match(reportingSource, /NEXT_PUBLIC_ERROR_REPORT_URL/);
+  assert.match(fallbackSource, /captureClientError/);
+  assert.match(globalErrorSource, /Uygulama yüklenemedi/);
+  assert.match(appErrorSource, /ErrorFallback/);
+});
+
+test("production checklist and env template document live verification", async () => {
+  const [checklistSource, prodEnv] = await Promise.all([
+    readFile(
+      path.join(path.resolve(testDirectory, "../.."), "../docs/production-checklist.md"),
+      "utf8",
+    ),
+    readFile(
+      path.join(path.resolve(testDirectory, "../.."), "../deploy/production.env.template"),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(checklistSource, /005_ai_usage\.sql/);
+  assert.match(checklistSource, /006_platform\.sql/);
+  assert.match(checklistSource, /CORS/);
+  assert.match(prodEnv, /005_ai_usage\.sql/);
+  assert.match(prodEnv, /006_platform\.sql/);
+  assert.match(prodEnv, /NEXT_PUBLIC_ERROR_REPORT_URL/);
+});
+
 test("pro funnel exposes usage limits, upgrade CTA and activation checklist", async () => {
   const [dashboardSource, funnelSource, bannerSource, checklistSource] =
     await Promise.all([
