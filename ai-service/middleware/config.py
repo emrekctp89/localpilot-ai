@@ -98,3 +98,13 @@ def build_rate_limiter() -> Optional[RateLimiter]:
         return None
 
     return RateLimiter(limit=limit, window_seconds=60)
+
+
+def resolve_stripe_mode(secret_key: Optional[str]) -> str:
+    if not secret_key:
+        return "unset"
+    if secret_key.startswith("sk_test_"):
+        return "test"
+    if secret_key.startswith("sk_live_"):
+        return "live"
+    return "unknown"

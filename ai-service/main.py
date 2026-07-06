@@ -19,6 +19,7 @@ from middleware.ai_usage import (
     get_usage_snapshot,
 )
 from middleware.billing import create_pro_guard_middleware, fetch_user_is_pro
+from middleware.config import resolve_stripe_mode
 from middleware.platform_api import (
     fetch_business_summary,
     verify_business_api_key,
@@ -105,6 +106,7 @@ async def health():
         "service": "localpilot-ai",
         "auth_required": auth_is_required(),
         "checks": checks,
+        "stripe_mode": resolve_stripe_mode(STRIPE_SECRET_KEY),
         "ai_cache": get_cache_stats(),
     }
 

@@ -7,6 +7,7 @@ from middleware.config import (
     auth_is_required,
     parse_allow_origin_regex,
     parse_allowed_origins,
+    resolve_stripe_mode,
 )
 
 
@@ -90,6 +91,13 @@ class SecurityConfigTests(unittest.TestCase):
         self.assertTrue(limiter.allow("client-a"))
         self.assertTrue(limiter.allow("client-a"))
         self.assertFalse(limiter.allow("client-a"))
+
+    def test_resolve_stripe_mode(self):
+        self.assertEqual(resolve_stripe_mode(None), "unset")
+        self.assertEqual(resolve_stripe_mode(""), "unset")
+        self.assertEqual(resolve_stripe_mode("sk_test_abc"), "test")
+        self.assertEqual(resolve_stripe_mode("sk_live_abc"), "live")
+        self.assertEqual(resolve_stripe_mode("rk_live_abc"), "unknown")
 
 
 if __name__ == "__main__":
