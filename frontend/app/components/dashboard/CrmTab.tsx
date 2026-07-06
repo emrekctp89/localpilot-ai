@@ -1,9 +1,14 @@
 /* eslint-disable react/no-unescaped-entities */
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 
-// 🚀 ÖNEMLİ DİKKAT: Kendi projenizde bu yorumu açıp sahte supabase'i SİLİN:
 import { analyzeChurn, getAiServiceUrl } from "@/lib/ai-client";
+import {
+  LEAD_CAPTURE_EVENT,
+  LEAD_CAPTURE_STORAGE_KEY,
+  type LeadCapturePayload,
+} from "@/lib/mini-site";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "../Toast";
 import {
   listCustomerFollowUps,
   saveCustomerFollowUps,
@@ -27,6 +32,7 @@ interface ChurnData {
 }
 
 export default function CrmTab({ business }: CrmTabProps) {
+  const { showToast } = useToast();
   const reminderStorageKey = `localpilot-crm-reminders-${business?.id || "preview"}`;
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,35 +75,69 @@ export default function CrmTab({ business }: CrmTabProps) {
   const formatDate = (date?: string) =>
     date ? new Date(date).toLocaleDateString("tr-TR") : "-";
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      if (!business?.id) {
-        // Canvas ortamı yedeği
-        const mockData = await supabase
-          .from("customers")
-          .select("*")
-          .eq("business_id", "123")
-          .order("created_at", { ascending: false });
-        setCustomers(mockData.data || []);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const { data, error } = await supabase
+  const fetchCustomers = useCallback(async () => {
+    if (!business?.id) {
+      const mockData = await supabase
         .from("customers")
         .select("*")
-        .eq("business_id", business.id)
+        .eq("business_id", "123")
         .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        setCustomers(data);
-      }
+      setCustomers(mockData.data || []);
       setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("business_id", business.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setCustomers(data);
+    }
+    setLoading(false);
+  }, [business?.id]);
+
+  useEffect(() => {
+    void fetchCustomers();
+  }, [fetchCustomers]);
+
+  useEffect(() => {
+    if (!business?.id) return;
+
+    const notifyLeadCapture = (payload: LeadCapturePayload) => {
+      if (payload.businessId !== business.id) return;
+      void fetchCustomers();
+      showToast(
+        `Yeni mini site lead: ${payload.fullName}. CRM listesi güncellendi; e-posta taslağı hazır.`,
+        "success",
+      );
     };
 
-    fetchCustomers();
-  }, [business]);
+    const handleLeadEvent = (event: Event) => {
+      const detail = (event as CustomEvent<LeadCapturePayload>).detail;
+      if (detail) notifyLeadCapture(detail);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== LEAD_CAPTURE_STORAGE_KEY || !event.newValue) return;
+      try {
+        notifyLeadCapture(JSON.parse(event.newValue) as LeadCapturePayload);
+      } catch {
+        // ignore malformed payloads
+      }
+    };
+
+    window.addEventListener(LEAD_CAPTURE_EVENT, handleLeadEvent);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(LEAD_CAPTURE_EVENT, handleLeadEvent);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [business?.id, fetchCustomers, showToast]);
 
   useEffect(() => {
     const loadReminders = async () => {

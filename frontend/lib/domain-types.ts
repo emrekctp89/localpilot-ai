@@ -9,11 +9,18 @@ export interface Campaign {
   sms_whatsapp_template: string;
 }
 
+export type MiniSitePublishStatus = "draft" | "published";
+
 export interface MiniSiteData {
   hero_slogan?: string;
   about_us?: string;
   cta_text?: string;
   features?: string[];
+  publish_status?: MiniSitePublishStatus;
+  seo_title?: string;
+  seo_description?: string;
+  og_image_url?: string;
+  whatsapp_prefill_message?: string;
   campaigns?: Campaign[];
   testimonials?: Testimonial[];
   crm_follow_ups?: Record<string, CustomerFollowUp>;

@@ -272,6 +272,36 @@ test("sector packs adapt one workflow component to each business", async () => {
   assert.match(domainSource, /export interface SectorWorkflowItem/);
 });
 
+test("mini site lead flow, seo, and publish status are wired", async () => {
+  const [sitePageSource, leadFormSource, settingsSource, miniSiteSource, crmSource] =
+    await Promise.all([
+      readSource("app/site/[id]/page.tsx"),
+      readSource("app/site/[id]/LeadForm.tsx"),
+      readSource("app/components/dashboard/AyarlarTab.tsx"),
+      readSource("lib/mini-site.ts"),
+      readSource("app/components/dashboard/CrmTab.tsx"),
+    ]);
+
+  assert.match(sitePageSource, /generateMetadata/);
+  assert.match(sitePageSource, /openGraph/);
+  assert.match(sitePageSource, /application\/ld\+json/);
+  assert.match(sitePageSource, /buildWhatsAppDeepLink/);
+  assert.match(sitePageSource, /<LeadForm/);
+  assert.match(sitePageSource, /MiniSiteDraft/);
+  assert.match(leadFormSource, /recordLeadCapture/);
+  assert.match(leadFormSource, /buildLeadEmailDraft/);
+  assert.match(leadFormSource, /Yeni Potansiyel/);
+  assert.match(settingsSource, /publish_status/);
+  assert.match(settingsSource, /seo_title/);
+  assert.match(settingsSource, /whatsapp_prefill_message/);
+  assert.match(settingsSource, /Yayına Al/);
+  assert.match(settingsSource, /Taslağa Al/);
+  assert.match(miniSiteSource, /buildWhatsAppDeepLink/);
+  assert.match(miniSiteSource, /buildLocalBusinessJsonLd/);
+  assert.match(crmSource, /LEAD_CAPTURE_EVENT/);
+  assert.match(crmSource, /mini site lead/);
+});
+
 test("every rendered dashboard tab has a matching view", async () => {
   const [menuSource, dashboardSource] = await Promise.all([
     readSource("app/components/dashboard/TabMenu.tsx"),

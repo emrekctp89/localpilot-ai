@@ -145,12 +145,12 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Dosyalar:** `lib/sector-packs.ts`, `SektorIsAkisiTab.tsx`, `OnboardingWizard.tsx`
 
 ### 3.3 Mini site ve lead akışı
-- [ ] Lead form başarı → CRM bildirimi (toast / e-posta hazırlığı)
-- [ ] Mini site SEO: meta, OG image, structured data
-- [ ] WhatsApp tıkla-yaz derin linki
-- [ ] Yayın / taslak durumu netleştirme
+- [x] Lead form başarı → CRM bildirimi (toast / e-posta hazırlığı)
+- [x] Mini site SEO: meta, OG image, structured data
+- [x] WhatsApp tıkla-yaz derin linki
+- [x] Yayın / taslak durumu netleştirme
 
-**Dosyalar:** `app/site/[id]/`, `LeadForm.tsx`, `AyarlarTab.tsx`
+**Dosyalar:** `app/site/[id]/`, `LeadForm.tsx`, `AyarlarTab.tsx`, `lib/mini-site.ts`
 
 ### 3.4 Eksik modül kararı
 - [x] `sosyal_medya` sekmesini ya implement et ya da `TabMenu`'den kaldır

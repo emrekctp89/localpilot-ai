@@ -1,0 +1,179 @@
+import type {
+  Business,
+  MiniSiteData,
+  MiniSitePublishStatus,
+  Product,
+} from "./domain-types";
+
+export interface LeadCapturePayload {
+  businessId: string;
+  fullName: string;
+  phone: string;
+  notes: string;
+  capturedAt: string;
+}
+
+export const LEAD_CAPTURE_STORAGE_KEY = "localpilot:last-lead";
+export const LEAD_CAPTURE_EVENT = "localpilot:lead-captured";
+
+export function getSiteBaseUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return "http://localhost:3000";
+}
+
+export function getMiniSitePath(businessId: string) {
+  return `/site/${businessId}`;
+}
+
+export function getMiniSiteUrl(businessId: string) {
+  return `${getSiteBaseUrl()}${getMiniSitePath(businessId)}`;
+}
+
+export function resolveMiniSitePublishStatus(
+  siteData?: MiniSiteData | null,
+): MiniSitePublishStatus {
+  return siteData?.publish_status === "draft" ? "draft" : "published";
+}
+
+export function isMiniSitePublished(siteData?: MiniSiteData | null) {
+  return resolveMiniSitePublishStatus(siteData) === "published";
+}
+
+export function normalizeWhatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (digits.startsWith("90")) return digits;
+  if (digits.startsWith("0")) return `90${digits.slice(1)}`;
+  return digits;
+}
+
+export function buildWhatsAppDeepLink(
+  phone: string,
+  message?: string,
+) {
+  const normalized = normalizeWhatsAppNumber(phone);
+  if (!normalized) return "";
+
+  const base = `https://wa.me/${normalized}`;
+  if (!message?.trim()) return base;
+
+  return `${base}?text=${encodeURIComponent(message.trim())}`;
+}
+
+export function buildDefaultWhatsAppMessage(
+  business: Pick<Business, "name" | "city">,
+  siteData?: MiniSiteData | null,
+) {
+  if (siteData?.whatsapp_prefill_message?.trim()) {
+    return siteData.whatsapp_prefill_message.trim();
+  }
+
+  const location = business.city ? ` (${business.city})` : "";
+  return `Merhaba ${business.name || "işletme"}${location}, bilgi almak istiyorum.`;
+}
+
+export function buildMiniSiteSeo(
+  business: Business,
+  siteData?: MiniSiteData | null,
+) {
+  const title =
+    siteData?.seo_title?.trim() ||
+    `${business.name || "İşletme"} | ${business.city || "Türkiye"}`;
+  const description =
+    siteData?.seo_description?.trim() ||
+    siteData?.hero_slogan?.trim() ||
+    `${business.city || "Türkiye"} bölgesinde hizmet veren ${business.name || "işletme"}. İletişim ve teklif için mini siteyi ziyaret edin.`;
+
+  return { title, description };
+}
+
+export function buildLocalBusinessJsonLd(
+  business: Business,
+  siteData: MiniSiteData,
+  products: Product[],
+  canonicalUrl: string,
+) {
+  const priceOffers = products
+    .filter((product) => typeof product.price === "number")
+    .slice(0, 8)
+    .map((product) => ({
+      "@type": "Offer",
+      itemOffered: {
+        "@type": "Service",
+        name: product.name,
+        description: product.description || undefined,
+      },
+      price: product.price,
+      priceCurrency: "TRY",
+    }));
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: business.name,
+    description: siteData.about_us || siteData.hero_slogan,
+    url: canonicalUrl,
+    telephone: business.whatsapp_number || undefined,
+    address: business.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: business.address,
+          addressLocality: business.city,
+          addressCountry: "TR",
+        }
+      : undefined,
+    areaServed: business.city || undefined,
+    openingHours: business.working_hours || undefined,
+    makesOffer: priceOffers.length > 0 ? priceOffers : undefined,
+  };
+}
+
+export function recordLeadCapture(payload: LeadCapturePayload) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(LEAD_CAPTURE_STORAGE_KEY, JSON.stringify(payload));
+  window.dispatchEvent(
+    new CustomEvent<LeadCapturePayload>(LEAD_CAPTURE_EVENT, {
+      detail: payload,
+    }),
+  );
+}
+
+export function readStoredLeadCapture(): LeadCapturePayload | null {
+  if (typeof window === "undefined") return null;
+
+  const raw = window.localStorage.getItem(LEAD_CAPTURE_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as LeadCapturePayload;
+  } catch {
+    return null;
+  }
+}
+
+export function buildLeadEmailDraft(
+  payload: LeadCapturePayload,
+  businessName?: string,
+) {
+  const businessLabel = businessName || "işletmeniz";
+  return [
+    `Konu: ${businessLabel} — Yeni mini site lead`,
+    "",
+    `Ad Soyad: ${payload.fullName}`,
+    `Telefon: ${payload.phone}`,
+    `Talep: ${payload.notes}`,
+    `Kaynak: Mini site lead formu`,
+    `Zaman: ${new Date(payload.capturedAt).toLocaleString("tr-TR")}`,
+    "",
+    "Bu taslak e-posta bildirimi Faz 3.3 ile hazırlandı; gönderim entegrasyonu sonraki fazda bağlanacak.",
+  ].join("\n");
+}

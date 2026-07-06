@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
-import type { Business, GeneratedPlan } from "@/lib/domain-types";
+import type { Business, GeneratedPlan, MiniSitePublishStatus } from "@/lib/domain-types";
+import { isMiniSitePublished } from "@/lib/mini-site";
 
 interface AyarlarTabProps {
   business: Business;
@@ -34,6 +35,11 @@ export default function AyarlarTab({
       about_us: "",
       cta_text: "Bize Ulaşın",
       features: ["", "", ""],
+      publish_status: "published" as MiniSitePublishStatus,
+      seo_title: "",
+      seo_description: "",
+      og_image_url: "",
+      whatsapp_prefill_message: "",
     },
   );
 
@@ -52,7 +58,25 @@ export default function AyarlarTab({
 
   const publicPath = business?.id ? `/site/${business.id}` : "";
   const publicUrl = origin && publicPath ? `${origin}${publicPath}` : publicPath;
-  const isPublished = Boolean(business?.id);
+  const isPublished = isMiniSitePublished(siteData);
+  const previewPath =
+    publicPath && !isPublished ? `${publicPath}?preview=1` : publicPath;
+
+  useEffect(() => {
+    if (!plan?.mini_site_data) return;
+    setSiteData({
+      hero_slogan: "",
+      about_us: "",
+      cta_text: "Bize Ulaşın",
+      features: ["", "", ""],
+      publish_status: "published",
+      seo_title: "",
+      seo_description: "",
+      og_image_url: "",
+      whatsapp_prefill_message: "",
+      ...plan.mini_site_data,
+    });
+  }, [plan?.mini_site_data]);
 
   useEffect(() => {
     if (!paymentReturn) return;
@@ -254,8 +278,12 @@ export default function AyarlarTab({
   };
 
   const handleOpenPublicSite = () => {
-    if (!publicPath) return;
-    window.open(publicPath, "_blank", "noopener,noreferrer");
+    if (!previewPath) return;
+    window.open(previewPath, "_blank", "noopener,noreferrer");
+  };
+
+  const handlePublishStatusChange = (status: MiniSitePublishStatus) => {
+    setSiteData({ ...siteData, publish_status: status });
   };
 
   const startCheckout = async () => {
@@ -373,16 +401,41 @@ export default function AyarlarTab({
                 }`}
               />
               <span className="text-xs font-black uppercase tracking-widest text-emerald-700">
-                {isPublished ? "Yayinda" : "Taslak"}
+                {isPublished ? "Yayında" : "Taslak"}
               </span>
             </div>
             <h3 className="text-lg font-black text-gray-900">
               {business?.name || "Mini Site"}
             </h3>
             <p className="mt-1 text-sm text-gray-600">
-              Public mini site adresinizi buradan kopyalayabilir veya yeni
-              sekmede onizleyebilirsiniz.
+              {isPublished
+                ? "Mini siteniz herkese açık. Linki paylaşabilir veya önizleyebilirsiniz."
+                : "Site taslak modda. Ziyaretçiler göremez; önizleme için kaydedip önizleme butonunu kullanın."}
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handlePublishStatusChange("published")}
+                className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                  isPublished
+                    ? "bg-emerald-600 text-white"
+                    : "border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-100"
+                }`}
+              >
+                Yayına Al
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePublishStatusChange("draft")}
+                className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                  !isPublished
+                    ? "bg-amber-500 text-white"
+                    : "border border-amber-200 bg-white text-amber-700 hover:bg-amber-100"
+                }`}
+              >
+                Taslağa Al
+              </button>
+            </div>
             {publicUrl && (
               <p className="mt-3 break-all rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 border border-emerald-100">
                 {publicUrl}
@@ -394,7 +447,7 @@ export default function AyarlarTab({
             <button
               type="button"
               onClick={handleCopyPublicLink}
-              disabled={!isPublished}
+              disabled={!business?.id}
               className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-gray-800 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition"
             >
               Linki Kopyala
@@ -402,10 +455,10 @@ export default function AyarlarTab({
             <button
               type="button"
               onClick={handleOpenPublicSite}
-              disabled={!isPublished}
+              disabled={!business?.id}
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:bg-gray-400 transition"
             >
-              Siteyi Onizle
+              {isPublished ? "Siteyi Önizle" : "Taslağı Önizle"}
             </button>
           </div>
         </div>
@@ -542,6 +595,68 @@ export default function AyarlarTab({
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="block text-sm font-bold text-gray-700 mb-3">
+            SEO ve Paylaşım
+          </label>
+          <div className="space-y-4">
+            <input
+              type="text"
+              className={inputClass}
+              value={siteData.seo_title || ""}
+              onChange={(event) =>
+                setSiteData({ ...siteData, seo_title: event.target.value })
+              }
+              placeholder="SEO başlığı (boşsa işletme adı kullanılır)"
+            />
+            <textarea
+              rows={3}
+              className={`${inputClass} resize-none`}
+              value={siteData.seo_description || ""}
+              onChange={(event) =>
+                setSiteData({
+                  ...siteData,
+                  seo_description: event.target.value,
+                })
+              }
+              placeholder="Arama sonuçları ve paylaşım kartları için kısa açıklama"
+            />
+            <input
+              type="url"
+              className={inputClass}
+              value={siteData.og_image_url || ""}
+              onChange={(event) =>
+                setSiteData({ ...siteData, og_image_url: event.target.value })
+              }
+              placeholder="OG görsel URL (opsiyonel)"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Meta, Open Graph ve Twitter kartları bu alanlardan üretilir.
+          </p>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="block text-sm font-bold text-gray-700 mb-2">
+            WhatsApp Tıkla-Yaz Mesajı
+          </label>
+          <textarea
+            rows={2}
+            className={`${inputClass} resize-none`}
+            value={siteData.whatsapp_prefill_message || ""}
+            onChange={(event) =>
+              setSiteData({
+                ...siteData,
+                whatsapp_prefill_message: event.target.value,
+              })
+            }
+            placeholder="Örn: Merhaba, fiyat ve randevu bilgisi almak istiyorum."
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Mini sitedeki WhatsApp butonu bu metinle derin link açar.
+          </p>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

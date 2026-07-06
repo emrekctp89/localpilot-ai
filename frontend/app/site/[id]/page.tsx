@@ -1,16 +1,19 @@
 import { supabase } from "@/lib/supabase";
-import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import type { MiniSiteData, Product } from "@/lib/domain-types";
+import {
+  buildDefaultWhatsAppMessage,
+  buildLocalBusinessJsonLd,
+  buildMiniSiteSeo,
+  buildWhatsAppDeepLink,
+  getMiniSiteUrl,
+  isMiniSitePublished,
+} from "@/lib/mini-site";
+import LeadForm from "./LeadForm";
+import MiniSiteDraft from "./MiniSiteDraft";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedParams = await params;
-  const businessId = resolvedParams.id;
-
+async function loadMiniSiteContext(businessId: string) {
   const { data: business } = await supabase
     .from("businesses")
     .select("*")
@@ -23,51 +26,95 @@ export async function generateMetadata({
     .eq("business_id", businessId)
     .single();
 
+  const { data: products } = await supabase
+    .from("products")
+    .select("*")
+    .eq("business_id", businessId);
+
+  return {
+    business,
+    siteData: (plan?.mini_site_data || {}) as MiniSiteData,
+    products: (products || []) as Product[],
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+  const { business, siteData } = await loadMiniSiteContext(resolvedParams.id);
+
   if (!business) {
     return {
       title: "Sayfa Bulunamadı",
     };
   }
 
+  const { title, description } = buildMiniSiteSeo(business, siteData);
+  const canonicalUrl = getMiniSiteUrl(resolvedParams.id);
+  const published = isMiniSitePublished(siteData);
+  const ogImage = siteData.og_image_url?.trim();
+
   return {
-    title: `${business.name} | ${business.city}`,
-    description:
-      plan?.mini_site_data?.hero_slogan ||
-      `${business.city} şehrinde hizmet veren profesyonel işletme.`,
+    title,
+    description,
+    robots: published ? { index: true, follow: true } : { index: false, follow: false },
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: business.name || "LocalPilot Mini Site",
+      locale: "tr_TR",
+      type: "website",
+      images: ogImage ? [{ url: ogImage, alt: title }] : undefined,
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+    },
   };
 }
 
 export default async function BusinessSite({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ preview?: string }>;
 }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const businessId = resolvedParams.id;
+  const isOwnerPreview = resolvedSearchParams.preview === "1";
 
-  const { data: business } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("id", businessId)
-    .single();
-
-  const { data: plan } = await supabase
-    .from("generated_plans")
-    .select("*")
-    .eq("business_id", businessId)
-    .single();
-
-  const { data: products } = await supabase
-    .from("products")
-    .select("*")
-    .eq("business_id", businessId);
+  const { business, siteData, products: productList } =
+    await loadMiniSiteContext(businessId);
 
   if (!business) return notFound();
 
-  const siteData = (plan?.mini_site_data || {}) as MiniSiteData;
+  if (!isMiniSitePublished(siteData) && !isOwnerPreview) {
+    return <MiniSiteDraft business={business} />;
+  }
   const activeModules = business.active_modules || [];
-  const productList = (products || []) as Product[];
   const featuredProducts = productList.slice(0, 3);
+  const canonicalUrl = getMiniSiteUrl(businessId);
+  const structuredData = buildLocalBusinessJsonLd(
+    business,
+    siteData,
+    productList,
+    canonicalUrl,
+  );
+  const whatsappMessage = buildDefaultWhatsAppMessage(business, siteData);
+  const whatsappHref = business.whatsapp_number
+    ? buildWhatsAppDeepLink(business.whatsapp_number, whatsappMessage)
+    : "";
   const productCategories = Array.from(
     new Set(
       productList
@@ -157,27 +204,17 @@ export default async function BusinessSite({
 
   const theme = colorMap[themeColor] || colorMap.blue;
 
-  async function submitCrmForm(formData: FormData) {
-    "use server";
-
-    const fullName = formData.get("fullName") as string;
-    const phone = formData.get("phone") as string;
-    const message = formData.get("message") as string;
-
-    await supabase.from("customers").insert({
-      business_id: businessId,
-      full_name: fullName,
-      phone,
-      notes: `Web sitesinden ulaştı. Mesaj: ${message}`,
-      status: "Yeni Potansiyel",
-      last_visit_date: new Date().toISOString(),
-    });
-
-    revalidatePath(`/site/${businessId}`);
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-white text-gray-900 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      {!isMiniSitePublished(siteData) && isOwnerPreview && (
+        <div className="bg-amber-500 px-4 py-3 text-center text-sm font-bold text-white">
+          Taslak önizleme — site henüz yayında değil.
+        </div>
+      )}
       {/* Hero section */}
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden px-4">
         {/* Animated Background Globs */}
@@ -231,12 +268,9 @@ export default async function BusinessSite({
               {siteData.cta_text || "Bize Ulaşın"}
             </a>
 
-            {business.whatsapp_number && (
+            {whatsappHref && (
               <a
-                href={`https://wa.me/${String(business.whatsapp_number).replace(
-                  /\s+/g,
-                  "",
-                )}`}
+                href={whatsappHref}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-white text-gray-900 border border-gray-200 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
@@ -488,7 +522,7 @@ export default async function BusinessSite({
 
             <div className="relative z-10 text-center mb-10">
               <h2 className="text-3xl font-black mb-3 text-white">
-                Hazır mısınız?
+                Bize Ulaşın / Randevu Alın
               </h2>
 
               <p className="text-gray-400 font-medium">
@@ -496,40 +530,11 @@ export default async function BusinessSite({
               </p>
             </div>
 
-            <form action={submitCrmForm} className="relative z-10 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="fullName"
-                  required
-                  className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
-                  placeholder="Adınız Soyadınız"
-                />
-
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
-                  placeholder="Telefon Numaranız"
-                />
-              </div>
-
-              <textarea
-                name="message"
-                rows={3}
-                required
-                className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500 resize-none"
-                placeholder="Nasıl yardımcı olabiliriz?"
-              />
-
-              <button
-                type="submit"
-                className={`w-full ${theme.bg} text-white font-bold py-4 rounded-2xl hover:brightness-110 transition shadow-lg text-lg mt-2`}
-              >
-                Talebi Gönder
-              </button>
-            </form>
+            <LeadForm
+              businessId={businessId}
+              businessName={business.name}
+              themeButtonClass={`${theme.bg} hover:brightness-110`}
+            />
           </div>
         </section>
       </main>
