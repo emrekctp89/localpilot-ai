@@ -7,7 +7,7 @@ export {
   listSectorWorkflowItems,
   saveSectorWorkflowItems,
 } from "./sector-workflow";
-export { loadOperationalSnapshot } from "./operations";
+export { loadDecisionContext, loadOperationalSnapshot } from "./operations";
 export { listCampaigns, saveCampaigns } from "./campaigns";
 export { listContentItems, saveContentItems } from "./content-items";
 export {

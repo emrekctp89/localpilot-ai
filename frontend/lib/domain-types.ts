@@ -141,7 +141,10 @@ export interface DecisionCycle {
     | "overdue_tasks"
     | "open_orders"
     | "google_profile"
-    | "growth_review";
+    | "growth_review"
+    | "finance_decline"
+    | "crm_churn_risk"
+    | "empty_appointment_slots";
   signal: string;
   analysis: string;
   recommendation: string;

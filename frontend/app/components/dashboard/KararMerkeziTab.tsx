@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  createApprovedTaskAutomation,
+  applyApprovedAutomation,
+  AUTOMATION_ACTION_UX,
+  buildDecisionDashboardSummary,
+  collectBusinessSignals,
   generateRecommendation,
+  getAutomationActionForKey,
+  getLearningHistory,
   measureDecisionOutcome,
+  RECOMMENDATION_LABELS,
 } from "@/lib/business-os";
+import type { DecisionContext } from "@/lib/business-os";
 import type {
   Business,
   DecisionCycle,
@@ -14,7 +21,7 @@ import type {
 } from "@/lib/domain-types";
 import {
   listDecisionCycles,
-  loadOperationalSnapshot,
+  loadDecisionContext,
   saveDecisionCycles,
   saveStaffTasks,
 } from "@/lib/repositories";
@@ -35,7 +42,15 @@ export default function KararMerkeziTab({
   business,
   setActiveTab,
 }: KararMerkeziTabProps) {
-  const [miniSiteData, setMiniSiteData] = useState<MiniSiteData>({});
+  const [decisionContext, setDecisionContext] = useState<DecisionContext>({
+    appointments: [],
+    orders: [],
+    tasks: [],
+    google_business_checklist: { completedItemIds: [] },
+    transactions: [],
+    customers: [],
+    crmFollowUps: {},
+  });
   const [cycles, setCycles] = useState<DecisionCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<
@@ -50,18 +65,28 @@ export default function KararMerkeziTab({
         return;
       }
 
-      const [snapshot, storedCycles] = await Promise.all([
-        loadOperationalSnapshot(business.id),
+      const [context, storedCycles] = await Promise.all([
+        loadDecisionContext(business.id),
         listDecisionCycles(business.id),
       ]);
 
-      setMiniSiteData(snapshot);
+      setDecisionContext(context);
       setCycles(storedCycles);
       setLoading(false);
     };
 
     loadDecisionData();
   }, [business.id]);
+
+  const signals = useMemo(
+    () => collectBusinessSignals(decisionContext, referenceTime),
+    [decisionContext, referenceTime],
+  );
+  const summary = useMemo(
+    () => buildDecisionDashboardSummary(cycles),
+    [cycles],
+  );
+  const learningHistory = useMemo(() => getLearningHistory(cycles), [cycles]);
 
   const persistCycles = async (
     nextCycles: DecisionCycle[],
@@ -87,7 +112,10 @@ export default function KararMerkeziTab({
       }
     }
 
-    setMiniSiteData((current) => ({ ...current, ...additionalData }));
+    setDecisionContext((current) => ({
+      ...current,
+      ...additionalData,
+    }));
     setCycles(nextCycles);
     setSaveStatus("saved");
     window.setTimeout(() => setSaveStatus("idle"), 2000);
@@ -96,7 +124,7 @@ export default function KararMerkeziTab({
 
   const handleAnalyze = () => {
     const recommendation = generateRecommendation(
-      miniSiteData,
+      decisionContext,
       cycles,
       referenceTime,
     );
@@ -132,10 +160,10 @@ export default function KararMerkeziTab({
     });
 
   const handleAutomate = (cycle: DecisionCycle) => {
-    const existingTasks = Array.isArray(miniSiteData.tasks)
-      ? (miniSiteData.tasks as StaffTask[])
+    const existingTasks = Array.isArray(decisionContext.tasks)
+      ? (decisionContext.tasks as StaffTask[])
       : [];
-    const automation = createApprovedTaskAutomation(
+    const automation = applyApprovedAutomation(
       cycle,
       existingTasks,
       referenceTime,
@@ -144,7 +172,10 @@ export default function KararMerkeziTab({
       item.id === cycle.id ? automation.cycle : item,
     );
 
-    persistCycles(nextCycles, { tasks: automation.tasks });
+    persistCycles(nextCycles, automation.tasks ? { tasks: automation.tasks } : {});
+    if (automation.redirectTab) {
+      setActiveTab(automation.redirectTab);
+    }
   };
 
   const handleMeasure = (
@@ -158,13 +189,6 @@ export default function KararMerkeziTab({
           : cycle,
       ),
     );
-
-  const measuredCount = cycles.filter(
-    (cycle) => cycle.status === "olculdu",
-  ).length;
-  const successCount = cycles.filter(
-    (cycle) => cycle.result === "basarili",
-  ).length;
 
   if (loading) {
     return (
@@ -184,6 +208,9 @@ export default function KararMerkeziTab({
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-violet-100">
           Veri → analiz → öneri → onay → otomasyon → sonuç ölçümü
         </p>
+        <p className="mt-2 text-sm font-semibold text-violet-200">
+          {summary.activeStep}
+        </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
@@ -194,20 +221,42 @@ export default function KararMerkeziTab({
             Verileri Analiz Et
           </button>
           <span className="rounded-xl bg-white/10 px-4 py-3 text-sm font-bold">
-            {cycles.length} karar döngüsü
+            {summary.total} döngü · {summary.pendingApproval} onay ·{" "}
+            {summary.inAutomation} otomasyon
           </span>
           <span className="rounded-xl bg-white/10 px-4 py-3 text-sm font-bold">
-            {measuredCount} ölçüm · {successCount} başarılı
+            %{summary.successRate} başarı ({summary.measured} ölçüm)
           </span>
         </div>
       </section>
 
+      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          ["Tahsilat", `${signals.pendingPayment.toLocaleString("tr-TR")} ₺`],
+          ["Finans", `%${signals.monthlyIncomeChangePct} (${signals.financeTrend === "down" ? "düşüş" : signals.financeTrend === "up" ? "artış" : "durağan"})`],
+          ["CRM Risk", `${signals.churnRiskCustomers} müşteri`],
+          ["Boş Slot", `${signals.emptyAppointmentSlots} slot`],
+          ["Geciken", `${signals.overdueTasks} görev`],
+          ["Randevu", `${signals.upcomingAppointments} yaklaşan`],
+        ].map(([title, value]) => (
+          <div
+            key={title}
+            className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+          >
+            <p className="text-xs font-black uppercase tracking-wide text-gray-400">
+              {title}
+            </p>
+            <p className="mt-1 text-sm font-black text-gray-900">{value}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-5">
         {[
-          ["Veri", "Operasyon kayıtları"],
+          ["Veri", "Operasyon + finans + CRM"],
           ["Analiz", "Risk ve fırsat"],
-          ["Onay", "İnsan kontrolü"],
-          ["Otomasyon", "Göreve dönüşüm"],
+          ["Onay", "Aksiyon tipine göre"],
+          ["Otomasyon", "Görev / mesaj / kampanya"],
           ["Ölçüm", "Sonuç ve öğrenme"],
         ].map(([title, detail], index) => (
           <div
@@ -223,6 +272,31 @@ export default function KararMerkeziTab({
         ))}
       </div>
 
+      {learningHistory.length > 0 && (
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/40 p-6">
+          <h3 className="text-lg font-black text-gray-900">Öğrenme Geçmişi</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Geçmiş ölçümlerden güven skoru ve kanıt sayısı
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {learningHistory.map((item) => (
+              <div
+                key={item.key}
+                className="rounded-xl border border-white bg-white p-4 shadow-sm"
+              >
+                <p className="font-black text-gray-900">{item.label}</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  %{item.confidence} güven · {item.evidenceCount} ölçüm
+                </p>
+                <p className="mt-1 text-xs font-semibold text-emerald-700">
+                  {item.successes} başarılı · {item.failures} başarısız
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {cycles.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-indigo-200 bg-white p-12 text-center">
           <h3 className="font-black text-gray-900">Henüz karar döngüsü yok.</h3>
@@ -232,84 +306,126 @@ export default function KararMerkeziTab({
         </div>
       ) : (
         <div className="space-y-4">
-          {cycles.map((cycle) => (
-            <article
-              key={cycle.id}
-              className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                    {statusLabels[cycle.status]}
-                  </span>
-                  <p className="mt-3 text-sm font-bold text-gray-500">
-                    {cycle.signal}
-                  </p>
-                  <h3 className="mt-2 text-xl font-black text-gray-900">
-                    {cycle.recommendation}
-                  </h3>
+          {cycles.map((cycle) => {
+            const action = getAutomationActionForKey(cycle.recommendationKey);
+            const actionUx = AUTOMATION_ACTION_UX[action];
+
+            return (
+              <article
+                key={cycle.id}
+                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
+                        {statusLabels[cycle.status]}
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-black ${actionUx.badgeClass}`}
+                      >
+                        {RECOMMENDATION_LABELS[cycle.recommendationKey]}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-gray-500">
+                      {cycle.signal}
+                    </p>
+                    <h3 className="mt-2 text-xl font-black text-gray-900">
+                      {cycle.recommendation}
+                    </h3>
+                  </div>
+                  {typeof cycle.confidenceScore === "number" && (
+                    <div className="text-right">
+                      <span className="rounded-xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700">
+                        %{cycle.confidenceScore} güven
+                      </span>
+                      {typeof cycle.learningEvidenceCount === "number" &&
+                        cycle.learningEvidenceCount > 0 && (
+                          <p className="mt-2 text-xs font-semibold text-gray-500">
+                            {cycle.learningEvidenceCount} geçmiş ölçüm
+                          </p>
+                        )}
+                    </div>
+                  )}
                 </div>
-                {typeof cycle.confidenceScore === "number" && (
-                  <span className="rounded-xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700">
-                    %{cycle.confidenceScore} güven
-                  </span>
-                )}
-              </div>
 
-              <p className="mt-4 text-sm text-gray-600">{cycle.analysis}</p>
-              <p className="mt-2 text-sm font-semibold text-emerald-700">
-                Beklenen sonuç: {cycle.expectedResult}
-              </p>
+                <p className="mt-4 text-sm text-gray-600">{cycle.analysis}</p>
+                <p className="mt-2 text-sm font-semibold text-emerald-700">
+                  Beklenen sonuç: {cycle.expectedResult}
+                </p>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {cycle.status === "oneri" && (
-                  <button
-                    type="button"
-                    onClick={() => handleApprove(cycle.id)}
-                    className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-500"
-                  >
-                    Onayla
-                  </button>
-                )}
-                {cycle.status === "onaylandi" && (
-                  <button
-                    type="button"
-                    onClick={() => handleAutomate(cycle)}
-                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-500"
-                  >
-                    Göreve Dönüştür
-                  </button>
-                )}
-                {cycle.status === "otomasyonda" && (
-                  <>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {cycle.status === "oneri" && (
                     <button
                       type="button"
-                      onClick={() => handleMeasure(cycle.id, "basarili")}
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-500"
+                      onClick={() => handleApprove(cycle.id)}
+                      className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-500"
                     >
-                      Başarılı
+                      {actionUx.approveLabel}
                     </button>
+                  )}
+                  {cycle.status === "oneri" && (
+                    <span className="self-center text-xs text-gray-500">
+                      {actionUx.approveHint}
+                    </span>
+                  )}
+                  {cycle.status === "onaylandi" && (
                     <button
                       type="button"
-                      onClick={() => handleMeasure(cycle.id, "basarisiz")}
-                      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500"
+                      onClick={() => handleAutomate(cycle)}
+                      className={`rounded-xl px-4 py-2 text-sm font-bold text-white ${actionUx.buttonClass}`}
                     >
-                      Başarısız
+                      {actionUx.automateLabel}
                     </button>
-                  </>
-                )}
-                {cycle.status === "otomasyonda" && cycle.taskId && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("personel")}
-                    className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
-                  >
-                    Görevleri Gör
-                  </button>
-                )}
-              </div>
-            </article>
-          ))}
+                  )}
+                  {cycle.status === "otomasyonda" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleMeasure(cycle.id, "basarili")}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-500"
+                      >
+                        Başarılı
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMeasure(cycle.id, "basarisiz")}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500"
+                      >
+                        Başarısız
+                      </button>
+                    </>
+                  )}
+                  {cycle.status === "otomasyonda" && cycle.taskId && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("personel")}
+                      className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                    >
+                      Görevleri Gör
+                    </button>
+                  )}
+                  {cycle.status === "otomasyonda" && !cycle.taskId && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveTab(
+                          action === "send_message"
+                            ? "crm"
+                            : action === "publish_campaign"
+                              ? "icerik"
+                              : "kasa",
+                        )
+                      }
+                      className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                    >
+                      İlgili Sekmeye Git
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

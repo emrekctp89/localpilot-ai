@@ -76,11 +76,6 @@ export default function TabMenu({
       activeClass: "bg-emerald-600 text-white shadow-xl shadow-emerald-600/20",
     },
     {
-      id: "sosyal_medya",
-      title: "📲 Sosyal",
-      activeClass: "bg-sky-600 text-white shadow-xl shadow-sky-600/20",
-    },
-    {
       id: "google_business",
       title: "Google Profil",
       activeClass: "bg-yellow-600 text-white shadow-xl shadow-yellow-600/20",

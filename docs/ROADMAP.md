@@ -104,9 +104,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 ### 2.1 Yeni tablolar
 - [x] `campaigns` tablosu + repository (`003_campaigns_content.sql`, `useCampaigns.ts`)
 - [x] `content_items` tablosu + repository (`IcerikTab.tsx`)
-- [ ] `003_campaigns_content.sql` migration'ını Supabase'de çalıştır
+- [x] `003_campaigns_content.sql` migration'ını Supabase'de çalıştır
 - [x] `crm_activities` — takip tarihi + durum geçmişi (`CrmTab`, `004_crm_activities.sql`)
-- [ ] `004_crm_activities.sql` migration'ını Supabase'de çalıştır
+- [x] `004_crm_activities.sql` migration'ını Supabase'de çalıştır
 
 ### 2.2 Legacy temizliği
 - [x] Tablo kaydı sonrası JSON alanlarını temizle (`stripLegacyMiniSiteField`)
@@ -129,10 +129,10 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Süre:** 3–4 hafta
 
 ### 3.1 Karar Merkezi güçlendirme
-- [ ] Sinyal kaynaklarını genişlet (finans trendi, CRM churn, boş randevu slotları)
-- [ ] Öneri → görev → sonuç döngüsünde dashboard özeti
-- [ ] Öğrenme geçmişini UI'da göster (confidence + evidence count)
-- [ ] Onay politikalarını mesaj / kampanya / finans için ayrı UX
+- [x] Sinyal kaynaklarını genişlet (finans trendi, CRM churn, boş randevu slotları)
+- [x] Öneri → görev → sonuç döngüsünde dashboard özeti
+- [x] Öğrenme geçmişini UI'da göster (confidence + evidence count)
+- [x] Onay politikalarını mesaj / kampanya / finans için ayrı UX
 
 **Dosyalar:** `lib/business-os.ts`, `KararMerkeziTab.tsx`, `decision-cycles.ts`
 
@@ -153,8 +153,8 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Dosyalar:** `app/site/[id]/`, `LeadForm.tsx`, `AyarlarTab.tsx`
 
 ### 3.4 Eksik modül kararı
-- [ ] `sosyal_medya` sekmesini ya implement et ya da `TabMenu`'den kaldır
-- [ ] İçerik sekmesi ile sosyal medya planlamasını birleştir veya ayır
+- [x] `sosyal_medya` sekmesini ya implement et ya da `TabMenu`'den kaldır
+- [x] İçerik sekmesi ile sosyal medya planlamasını birleştir veya ayır (İçerik sekmesinde birleşik)
 
 ---
 
@@ -231,7 +231,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 1. Stripe webhook production testi
 2. Vercel + Render env'lerinin dokümantasyonu (`deploy/production.env.template` güncelle)
-3. `sosyal_medya` sekmesi kararı (kaldır veya planla)
+3. ~~`sosyal_medya` sekmesi kararı~~ → İçerik sekmesinde birleşik
 4. Health + ana akış manuel test checklist'i
 
 ---
