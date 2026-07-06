@@ -1,12 +1,24 @@
 erDiagram
     PROFILES ||--o{ BUSINESSES : "yönetir"
     BUSINESSES ||--o| GENERATED_PLANS : "sahiptir"
+    BUSINESSES ||--o{ CUSTOMERS : "sahiptir"
+    BUSINESSES ||--o{ TRANSACTIONS : "sahiptir"
+    BUSINESSES ||--o{ APPOINTMENTS : "sahiptir"
+    BUSINESSES ||--o{ ORDERS : "sahiptir"
+    BUSINESSES ||--o{ STAFF_TASKS : "sahiptir"
+    BUSINESSES ||--o{ DECISION_CYCLES : "sahiptir"
+    BUSINESSES ||--o| GOOGLE_CHECKLISTS : "sahiptir"
+    BUSINESSES ||--o{ SECTOR_WORKFLOW_ITEMS : "sahiptir"
+    BUSINESSES ||--o{ CAMPAIGNS : "sahiptir"
+    BUSINESSES ||--o{ CONTENT_ITEMS : "sahiptir"
+    BUSINESSES ||--o{ CRM_ACTIVITIES : "sahiptir"
 
     PROFILES {
         uuid id PK
         string email
         string full_name
         string role "owner, agency"
+        boolean is_pro
         timestamp created_at
     }
 
@@ -23,8 +35,116 @@ erDiagram
     GENERATED_PLANS {
         uuid id PK
         uuid business_id FK
-        jsonb mini_site_data "Web sitesi içeriği"
-        jsonb social_media_calendar "30 günlük içerik dizisi"
-        jsonb whatsapp_templates "Otomatik mesajlar"
+        jsonb mini_site_data "AI çıktıları + eski uyumluluk"
+        jsonb social_media_calendar "legacy read-only"
+        jsonb whatsapp_templates "legacy read-only"
+        jsonb campaigns "legacy read-only"
         timestamp created_at
+    }
+
+    CUSTOMERS {
+        uuid id PK
+        uuid business_id FK
+        string name
+        string phone
+        string email
+        string status
+        timestamp created_at
+    }
+
+    TRANSACTIONS {
+        uuid id PK
+        uuid business_id FK
+        string type
+        numeric amount
+        string category
+        timestamp created_at
+    }
+
+    APPOINTMENTS {
+        uuid id PK
+        uuid business_id FK
+        string customer_name
+        string service
+        timestamptz starts_at
+        string status
+        timestamp created_at
+    }
+
+    ORDERS {
+        uuid id PK
+        uuid business_id FK
+        string customer_name
+        string summary
+        numeric total
+        string channel
+        string status
+        string payment_status
+        timestamp created_at
+    }
+
+    STAFF_TASKS {
+        uuid id PK
+        uuid business_id FK
+        string title
+        string assignee
+        string priority
+        string status
+        timestamp created_at
+    }
+
+    DECISION_CYCLES {
+        uuid id PK
+        uuid business_id FK
+        string recommendation_key
+        string signal
+        string recommendation
+        string status
+        string result
+        timestamp created_at
+    }
+
+    GOOGLE_CHECKLISTS {
+        uuid business_id PK
+        jsonb completed_item_ids
+        timestamptz updated_at
+    }
+
+    SECTOR_WORKFLOW_ITEMS {
+        uuid id PK
+        uuid business_id FK
+        string pack_id
+        string title
+        string customer
+        string stage
+        timestamp created_at
+    }
+
+    CAMPAIGNS {
+        uuid id PK
+        uuid business_id FK
+        string campaign_name
+        string strategy
+        string sms_whatsapp_template
+        integer sort_order
+        timestamp created_at
+    }
+
+    CONTENT_ITEMS {
+        uuid id PK
+        uuid business_id FK
+        string content_type "social_post | whatsapp_template"
+        string platform
+        string label
+        text body
+        timestamp created_at
+    }
+
+    CRM_ACTIVITIES {
+        uuid id PK
+        uuid business_id FK
+        uuid customer_id FK
+        date follow_up_date
+        jsonb status_history
+        timestamptz updated_at
     }

@@ -1,11 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { CrmStatusHistoryItem, CustomerFollowUp } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import {
-  loadLegacyMiniSiteData,
-  stripLegacyMiniSiteField,
-  updateLegacyMiniSiteData,
-} from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface CrmActivityRow {
   id: string;
@@ -75,16 +72,6 @@ async function replaceAllInTable(
   return !insertError;
 }
 
-async function persistLegacyFollowUps(
-  businessId: string,
-  followUps: Record<string, CustomerFollowUp>,
-): Promise<boolean> {
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    crm_follow_ups: followUps,
-  }));
-}
-
 export async function listCustomerFollowUps(
   businessId: string,
 ): Promise<Record<string, CustomerFollowUp>> {
@@ -101,7 +88,7 @@ export async function listCustomerFollowUps(
     const legacy = await loadLegacyFollowUps(businessId);
     if (Object.keys(legacy).length > 0) {
       await replaceAllInTable(businessId, legacy);
-      await stripLegacyMiniSiteField(businessId, "crm_follow_ups");
+      await commitTableWrite(businessId, true, "crm_follow_ups");
       return legacy;
     }
     return {};
@@ -114,10 +101,9 @@ export async function saveCustomerFollowUps(
   businessId: string,
   followUps: Record<string, CustomerFollowUp>,
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, followUps);
-  if (savedToTable) {
-    await stripLegacyMiniSiteField(businessId, "crm_follow_ups");
-    return true;
-  }
-  return persistLegacyFollowUps(businessId, followUps);
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, followUps),
+    "crm_follow_ups",
+  );
 }

@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { SectorWorkflowItem } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface SectorWorkflowRow {
   id: string;
@@ -111,6 +112,7 @@ export async function listSectorWorkflowItems(
         legacyPackItems,
         otherPackItems,
       );
+      await commitTableWrite(businessId, true, "sector_workflow_items");
       return legacyPackItems;
     }
     return [];
@@ -128,26 +130,17 @@ export async function saveSectorWorkflowItems(
   packItems: SectorWorkflowItem[],
 ): Promise<boolean> {
   const tableItems = await listAllFromTable(businessId);
-  const otherPackItems =
-    tableItems?.filter((item) => item.packId !== packId) ?? [];
+  if (tableItems === null) return false;
 
-  if (tableItems !== null) {
-    const saved = await replacePackItemsInTable(
+  const otherPackItems = tableItems.filter((item) => item.packId !== packId);
+  return commitTableWrite(
+    businessId,
+    await replacePackItemsInTable(
       businessId,
       packId,
       packItems,
       otherPackItems,
-    );
-    if (saved) return true;
-  }
-
-  return updateLegacyMiniSiteData(businessId, (current) => {
-    const existing = Array.isArray(current.sector_workflow_items)
-      ? current.sector_workflow_items.filter((item) => item.packId !== packId)
-      : [];
-    return {
-      ...current,
-      sector_workflow_items: [...packItems, ...existing],
-    };
-  });
+    ),
+    "sector_workflow_items",
+  );
 }

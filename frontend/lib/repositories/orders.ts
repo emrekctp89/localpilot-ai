@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { Order } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface OrderRow {
   id: string;
@@ -80,6 +81,7 @@ export async function listOrders(businessId: string): Promise<Order[]> {
     const legacyItems = Array.isArray(legacy.orders) ? legacy.orders : [];
     if (legacyItems.length > 0) {
       await replaceAllInTable(businessId, legacyItems);
+      await commitTableWrite(businessId, true, "orders");
       return legacyItems;
     }
     return [];
@@ -93,11 +95,9 @@ export async function saveOrders(
   businessId: string,
   orders: Order[],
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, orders);
-  if (savedToTable) return true;
-
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    orders,
-  }));
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, orders),
+    "orders",
+  );
 }

@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { GoogleBusinessChecklist } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface GoogleChecklistRow {
   business_id: string;
@@ -57,6 +58,7 @@ export async function loadGoogleChecklist(
       legacyChecklist.completedItemIds.length > 0
     ) {
       await upsertInTable(businessId, legacyChecklist);
+      await commitTableWrite(businessId, true, "google_business_checklist");
       return legacyChecklist;
     }
     return EMPTY_CHECKLIST;
@@ -70,11 +72,9 @@ export async function saveGoogleChecklist(
   businessId: string,
   checklist: GoogleBusinessChecklist,
 ): Promise<boolean> {
-  const savedToTable = await upsertInTable(businessId, checklist);
-  if (savedToTable) return true;
-
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    google_business_checklist: checklist,
-  }));
+  return commitTableWrite(
+    businessId,
+    await upsertInTable(businessId, checklist),
+    "google_business_checklist",
+  );
 }

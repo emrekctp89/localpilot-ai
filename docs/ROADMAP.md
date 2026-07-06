@@ -32,9 +32,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Alan | Durum |
 |------|-------|
 | `sosyal_medya` sekmesi | `TabMenu`'de tanımlı ama render edilmiyor |
-| Kampanyalar | Hâlâ `generated_plans.mini_site_data` JSON içinde |
-| İçerik geçmişi | JSON (`mini_site_data`) |
-| CRM churn / bazı metadata | Kısmen JSON |
+| Kampanyalar | Tabloya taşındı; dual-read aktif |
+| İçerik geçmişi | `content_items` tablosu; dual-read aktif |
+| CRM churn / bazı metadata | `crm_activities` tablosu; dual-read aktif |
 | Sektör paketleri | 5 pack var; sektöre özel otomasyon ve metrikler sınırlı |
 | Stripe webhook | Endpoint hazır; production doğrulaması gerekli |
 | RLS politikaları | Operasyonel tablolar için migration sonrası audit gerekli |
@@ -112,11 +112,11 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Tablo kaydı sonrası JSON alanlarını temizle (`stripLegacyMiniSiteField`)
 - [x] Dashboard açılışında toplu legacy temizlik (`stripMigratedOperationalFields`)
 - [ ] Dual-read fallback'i kaldır (tüm migration'lar production'da doğrulandıktan sonra)
-- [ ] `docs/database/architecture.mmd` diyagramını güncelle
+- [x] `docs/database/architecture.mmd` diyagramını güncelle
 
 ### 2.3 Veri tutarlılığı
-- [ ] Repository katmanında tek yazma yolu (dual-write kaldır)
-- [ ] Supabase migration dosyalarını `supabase/migrations/` altında versiyonla
+- [x] Repository katmanında tek yazma yolu (dual-write kaldır)
+- [x] Supabase migration dosyalarını `supabase/migrations/` altında versiyonla
 - [ ] Seed / rollback script'leri
 
 **Başarı kriteri:** Yeni randevu/sipariş/görev yalnızca tablolara yazılır; JSON'da operasyonel veri kalmaz.

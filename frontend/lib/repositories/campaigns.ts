@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import type { Campaign } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
-import { stripLegacyMiniSiteField } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface CampaignRow {
   id: string;
@@ -74,42 +74,6 @@ async function replaceAllInTable(
   return !insertError;
 }
 
-async function persistLegacyCampaigns(
-  businessId: string,
-  campaigns: Campaign[],
-): Promise<boolean> {
-  const { data: existingPlan } = await supabase
-    .from("generated_plans")
-    .select("id, mini_site_data")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingPlan?.id) {
-    const miniSiteData = {
-      ...((existingPlan.mini_site_data as Record<string, unknown> | null) || {}),
-      campaigns,
-    };
-    const { error } = await supabase
-      .from("generated_plans")
-      .update({ campaigns, mini_site_data: miniSiteData })
-      .eq("id", existingPlan.id);
-    return !error;
-  }
-
-  const { error } = await supabase.from("generated_plans").insert([
-    {
-      business_id: businessId,
-      campaigns,
-      mini_site_data: { campaigns },
-      social_media_calendar: [],
-      whatsapp_templates: [],
-    },
-  ]);
-  return !error;
-}
-
 export async function listCampaigns(businessId: string): Promise<Campaign[]> {
   const { data, error } = await supabase
     .from("campaigns")
@@ -125,7 +89,7 @@ export async function listCampaigns(businessId: string): Promise<Campaign[]> {
     const legacy = await loadLegacyCampaigns(businessId);
     if (legacy.length > 0) {
       await replaceAllInTable(businessId, legacy);
-      await stripLegacyMiniSiteField(businessId, "campaigns");
+      await commitTableWrite(businessId, true, "campaigns");
       return legacy;
     }
     return [];
@@ -138,10 +102,9 @@ export async function saveCampaigns(
   businessId: string,
   campaigns: Campaign[],
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, campaigns);
-  if (savedToTable) {
-    await stripLegacyMiniSiteField(businessId, "campaigns");
-    return true;
-  }
-  return persistLegacyCampaigns(businessId, campaigns);
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, campaigns),
+    "campaigns",
+  );
 }

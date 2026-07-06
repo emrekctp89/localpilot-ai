@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { DecisionCycle } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface DecisionCycleRow {
   id: string;
@@ -111,6 +112,7 @@ export async function listDecisionCycles(
       : [];
     if (legacyItems.length > 0) {
       await replaceAllInTable(businessId, legacyItems);
+      await commitTableWrite(businessId, true, "decision_cycles");
       return legacyItems;
     }
     return [];
@@ -129,11 +131,9 @@ export async function saveDecisionCycles(
   businessId: string,
   cycles: DecisionCycle[],
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, cycles);
-  if (savedToTable) return true;
-
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    decision_cycles: cycles,
-  }));
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, cycles),
+    "decision_cycles",
+  );
 }

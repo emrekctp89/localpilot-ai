@@ -165,42 +165,6 @@ async function clearLegacyPlanContent(businessId: string): Promise<void> {
     .eq("id", planData.id);
 }
 
-async function persistLegacyContent(
-  businessId: string,
-  socialPosts: SocialPost[],
-  waTemplates: WhatsappTemplate[],
-): Promise<boolean> {
-  const { data: existingPlan } = await supabase
-    .from("generated_plans")
-    .select("id")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const payload = {
-    social_media_calendar: socialPosts,
-    whatsapp_templates: waTemplates,
-  };
-
-  if (existingPlan?.id) {
-    const { error } = await supabase
-      .from("generated_plans")
-      .update(payload)
-      .eq("id", existingPlan.id);
-    return !error;
-  }
-
-  const { error } = await supabase.from("generated_plans").insert([
-    {
-      business_id: businessId,
-      mini_site_data: {},
-      ...payload,
-    },
-  ]);
-  return !error;
-}
-
 export async function listContentItems(
   businessId: string,
 ): Promise<LegacyContent> {
@@ -249,9 +213,7 @@ export async function saveContentItems(
     socialPosts,
     waTemplates,
   );
-  if (savedToTable) {
-    await clearLegacyPlanContent(businessId);
-    return true;
-  }
-  return persistLegacyContent(businessId, socialPosts, waTemplates);
+  if (!savedToTable) return false;
+  await clearLegacyPlanContent(businessId);
+  return true;
 }

@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { StaffTask } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface StaffTaskRow {
   id: string;
@@ -82,6 +83,7 @@ export async function listStaffTasks(
     const legacyItems = Array.isArray(legacy.tasks) ? legacy.tasks : [];
     if (legacyItems.length > 0) {
       await replaceAllInTable(businessId, legacyItems);
+      await commitTableWrite(businessId, true, "tasks");
       return legacyItems;
     }
     return [];
@@ -95,11 +97,9 @@ export async function saveStaffTasks(
   businessId: string,
   tasks: StaffTask[],
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, tasks);
-  if (savedToTable) return true;
-
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    tasks,
-  }));
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, tasks),
+    "tasks",
+  );
 }

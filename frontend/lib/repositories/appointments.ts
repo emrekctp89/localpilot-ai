@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import type { Appointment } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
-import { loadLegacyMiniSiteData, updateLegacyMiniSiteData } from "./plan-legacy";
+import { loadLegacyMiniSiteData } from "./plan-legacy";
+import { commitTableWrite } from "./table-store";
 
 interface AppointmentRow {
   id: string;
@@ -84,6 +85,7 @@ export async function listAppointments(
       : [];
     if (legacyItems.length > 0) {
       await replaceAllInTable(businessId, legacyItems);
+      await commitTableWrite(businessId, true, "appointments");
       return legacyItems;
     }
     return [];
@@ -97,11 +99,9 @@ export async function saveAppointments(
   businessId: string,
   appointments: Appointment[],
 ): Promise<boolean> {
-  const savedToTable = await replaceAllInTable(businessId, appointments);
-  if (savedToTable) return true;
-
-  return updateLegacyMiniSiteData(businessId, (current) => ({
-    ...current,
-    appointments,
-  }));
+  return commitTableWrite(
+    businessId,
+    await replaceAllInTable(businessId, appointments),
+    "appointments",
+  );
 }
