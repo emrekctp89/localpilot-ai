@@ -1,28 +1,20 @@
 from typing import Any, Dict, Optional, Tuple
 
+from middleware.stripe_utils import (
+    checkout_session_is_paid,
+    checkout_session_user_id,
+    read_stripe_field,
+)
 from middleware.stripe_webhook import activate_pro_membership
-
-
-def _is_paid_checkout_session(session: Any) -> bool:
-    payment_status = getattr(session, "payment_status", None) or session.get(
-        "payment_status"
-    )
-    status = getattr(session, "status", None) or session.get("status")
-    return payment_status == "paid" or status == "complete"
-
-
-def _session_user_id(session: Any) -> Optional[str]:
-    metadata = getattr(session, "metadata", None) or session.get("metadata") or {}
-    return metadata.get("user_id")
 
 
 def find_recent_paid_session(stripe_client: Any, user_id: str) -> Optional[Any]:
     sessions = stripe_client.checkout.Session.list(limit=25)
-    data = getattr(sessions, "data", None) or sessions.get("data") or []
+    data = read_stripe_field(sessions, "data") or []
     for session in data:
-        if _session_user_id(session) != user_id:
+        if checkout_session_user_id(session) != user_id:
             continue
-        if _is_paid_checkout_session(session):
+        if checkout_session_is_paid(session):
             return session
     return None
 
@@ -67,7 +59,7 @@ def confirm_pro_checkout(
             "is_pro": False,
         }, 404
 
-    session_user_id = _session_user_id(session)
+    session_user_id = checkout_session_user_id(session)
     if not session_user_id:
         return {
             "status": "error",
@@ -84,7 +76,7 @@ def confirm_pro_checkout(
 
     effective_user_id = user_id or session_user_id
 
-    if not _is_paid_checkout_session(session):
+    if not checkout_session_is_paid(session):
         return {
             "status": "unpaid",
             "detail": "Ödeme henüz tamamlanmamış.",
