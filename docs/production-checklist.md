@@ -47,6 +47,7 @@ CLI'nin verdiği `whsec_...` değerini `ai-service/.env` içindeki `STRIPE_WEBHO
 - [ ] `004_crm_activities.sql` uygulandı
 - [ ] `005_ai_usage.sql` uygulandı
 - [ ] `006_platform.sql` uygulandı
+- [ ] `007_fix_rls_recursion.sql` uygulandı (006 sonrası RLS recursion fix)
 - [ ] Başka kullanıcının verisine erişim engelli (RLS)
 
 ## 6. Ana akışlar

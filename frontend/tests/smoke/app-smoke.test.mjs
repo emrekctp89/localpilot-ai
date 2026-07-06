@@ -620,6 +620,7 @@ test("production checklist and env template document live verification", async (
   assert.match(checklistSource, /CORS/);
   assert.match(prodEnv, /005_ai_usage\.sql/);
   assert.match(prodEnv, /006_platform\.sql/);
+  assert.match(prodEnv, /007_fix_rls_recursion\.sql/);
   assert.match(prodEnv, /NEXT_PUBLIC_ERROR_REPORT_URL/);
 });
 

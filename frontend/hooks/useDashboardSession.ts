@@ -49,6 +49,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
   const [loading, setLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const [businessRestorePending, setBusinessRestorePending] = useState(false);
+  const [restoreAfterPayment, setRestoreAfterPayment] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [proActivatedAt, setProActivatedAt] = useState<string | null>(null);
   const [profileRole, setProfileRole] = useState<ProfileRole>("owner");
@@ -154,6 +155,10 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
         if (paymentReturn && (establishedBusiness || preferredBusinessId)) {
           setBusinessRestorePending(true);
+          setRestoreAfterPayment(true);
+        } else if (establishedBusiness || preferredBusinessId) {
+          setBusinessRestorePending(true);
+          setRestoreAfterPayment(false);
         }
 
         const context = await loadDashboardContextWithRetry(
@@ -322,6 +327,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
     loading,
     dashboardError,
     businessRestorePending,
+    restoreAfterPayment,
     shouldShowOnboarding,
     isPro,
     proActivatedAt,

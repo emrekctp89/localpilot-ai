@@ -290,8 +290,9 @@ export default function Dashboard() {
         <div className="w-full max-w-md rounded-2xl border border-indigo-100 bg-white p-6 text-center shadow-sm">
           <h2 className="text-xl font-black mb-2">Paneliniz geri yükleniyor</h2>
           <p className="text-sm text-gray-600 mb-5">
-            Ödeme dönüşünden sonra işletme bilgileriniz yeniden alınıyor. Bu ekran
-            birkaç saniye sürebilir.
+            {session.restoreAfterPayment
+              ? "Ödeme dönüşünden sonra işletme bilgileriniz yeniden alınıyor. Bu ekran birkaç saniye sürebilir."
+              : "İşletme bilgileriniz yeniden alınıyor. Bu ekran birkaç saniye sürebilir."}
           </p>
           {session.dashboardError ? (
             <p className="text-sm text-red-600 mb-4">{session.dashboardError}</p>
