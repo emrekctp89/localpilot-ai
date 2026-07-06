@@ -28,10 +28,11 @@ test("dashboard protects unauthenticated access and exposes onboarding", async (
     readSource("hooks/useDashboardSession.ts"),
   ]);
 
-  assert.match(sessionSource, /supabase\.auth\.getUser\(\)/);
+  assert.match(sessionSource, /ensureSupabaseSession/);
+  assert.match(sessionSource, /waitForSupabaseSession/);
   assert.match(sessionSource, /shouldShowOnboarding/);
   assert.match(sessionSource, /readPaymentReturn/);
-  assert.match(sessionSource, /if\s*\(userError\s*\|\|\s*!user\)\s*\{/);
+  assert.match(sessionSource, /if\s*\(!session\?\.user\)\s*\{/);
   assert.match(sessionSource, /router\.push\(["']\/auth["']\)/);
   assert.match(pageSource, /session\.shouldShowOnboarding/);
   assert.match(pageSource, /<OnboardingWizard/);

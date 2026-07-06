@@ -17,6 +17,8 @@ describe("dashboard bootstrap", () => {
     assert.match(bootstrapSource, /fetchDashboardContext/);
     assert.match(bootstrapSource, /fetchProfileAndBusiness/);
     assert.match(bootstrapSource, /listAccessibleBusinesses/);
+    assert.match(bootstrapSource, /fetchBusinessById/);
+    assert.match(bootstrapSource, /readCachedBusiness/);
     assert.match(bootstrapSource, /loadDashboardBootstrap/);
     assert.match(bootstrapSource, /Promise\.all/);
     assert.match(sessionSource, /fetchDashboardContext/);

@@ -46,6 +46,7 @@ import { useAiUsage } from "@/hooks/useAiUsage";
 import { useProActivationChecklist } from "@/hooks/useProActivationChecklist";
 import ProActivationChecklist from "../components/dashboard/ProActivationChecklist";
 import {
+  cacheBusinessSnapshot,
   clearPaymentReturnFromUrl,
   markEstablishedBusiness,
   onboardingDraftKey,
@@ -242,6 +243,7 @@ export default function Dashboard() {
 
       if (session.business?.id) {
         markEstablishedBusiness(authSession.user.id, session.business.id);
+        cacheBusinessSnapshot(authSession.user.id, session.business);
         window.localStorage.removeItem(onboardingDraftKey(authSession.user.id));
       }
 

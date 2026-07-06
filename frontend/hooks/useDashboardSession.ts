@@ -9,6 +9,7 @@ import {
 } from "@/lib/dashboard-bootstrap";
 import {
   activeBusinessKey,
+  cacheBusinessSnapshot,
   clearPaymentReturnFromUrl,
   hasEstablishedBusiness,
   markEstablishedBusiness,
@@ -16,6 +17,10 @@ import {
   readPaymentReturn,
   sleep,
 } from "@/lib/dashboard-session-storage";
+import {
+  ensureSupabaseSession,
+  waitForSupabaseSession,
+} from "@/lib/supabase-auth";
 import { stripMigratedOperationalFields } from "@/lib/repositories/plan-legacy";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
 import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard";
@@ -32,8 +37,8 @@ export interface OnboardingDraftHandlers {
   clearOnboardingDraft: (key: string) => void;
 }
 
-const BUSINESS_FETCH_ATTEMPTS = 4;
-const BUSINESS_FETCH_RETRY_MS = 500;
+const BUSINESS_FETCH_ATTEMPTS = 5;
+const BUSINESS_FETCH_RETRY_MS = 400;
 
 export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
   const router = useRouter();
@@ -70,6 +75,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
       if (!bizData.id) return;
       markEstablishedBusiness(currentUserId, bizData.id);
+      cacheBusinessSnapshot(currentUserId, bizData);
       const bootstrap = await loadDashboardBootstrap(bizData.id);
       if (bootstrap.plan) setPlan(bootstrap.plan);
       setSeedCampaigns(bootstrap.campaigns);
@@ -94,7 +100,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
       for (let attempt = 1; attempt < BUSINESS_FETCH_ATTEMPTS; attempt += 1) {
         await sleep(BUSINESS_FETCH_RETRY_MS * attempt);
-        await supabase.auth.refreshSession().catch(() => undefined);
+        await ensureSupabaseSession();
         lastContext = await fetchDashboardContext(currentUserId, preferredBusinessId);
         if (lastContext.business?.id) {
           return lastContext;
@@ -119,22 +125,23 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         setLoading(false);
         setBusinessRestorePending(false);
       }
-    }, 12000);
+    }, 15000);
 
     const fetchDashboardData = async () => {
       const paymentReturn = readPaymentReturn();
 
       try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        const session = paymentReturn
+          ? await waitForSupabaseSession()
+          : await ensureSupabaseSession();
+
         if (shouldStop()) return;
-        if (userError || !user) {
+        if (!session?.user) {
           router.push("/auth");
           return;
         }
 
+        const user = session.user;
         setAccountEmail(user.email || "");
         setUserId(user.id);
         const draftStorageKey = onboardingDraftKey(user.id);
@@ -145,7 +152,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         const shouldSkipDraft =
           paymentReturn !== null || establishedBusiness;
 
-        if (paymentReturn && establishedBusiness) {
+        if (paymentReturn && (establishedBusiness || preferredBusinessId)) {
           setBusinessRestorePending(true);
         }
 
@@ -170,6 +177,11 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
           }
         } else if (shouldSkipDraft) {
           setBusinessRestorePending(true);
+          setDashboardError(
+            context.loadError
+              ? `İşletme bilgisi yüklenemedi: ${context.loadError}`
+              : "İşletme bilgisi yüklenemedi. Oturumunuz açık görünüyor; tekrar deneyin.",
+          );
         } else {
           try {
             const storedDraft = window.localStorage.getItem(draftStorageKey);
@@ -221,15 +233,13 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
   );
 
   const refreshProStatus = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
+    const session = await ensureSupabaseSession();
+    if (!session?.user) return false;
 
     const { data: profileData, error } = await supabase
       .from("profiles")
       .select("is_pro, pro_activated_at")
-      .eq("id", user.id)
+      .eq("id", session.user.id)
       .single();
 
     if (error) return false;
@@ -248,7 +258,12 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
     setLoading(true);
 
     try {
-      await supabase.auth.refreshSession().catch(() => undefined);
+      const session = await waitForSupabaseSession();
+      if (!session?.user) {
+        router.push("/auth");
+        return;
+      }
+
       const preferredBusinessId = window.localStorage.getItem(
         activeBusinessKey(userId),
       );
@@ -272,7 +287,9 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
       setBusinessRestorePending(true);
       setDashboardError(
-        "İşletme bilgisi yüklenemedi. Oturumunuz açık görünüyor; tekrar deneyin.",
+        context.loadError
+          ? `İşletme bilgisi yüklenemedi: ${context.loadError}`
+          : "İşletme bilgisi yüklenemedi. Oturumunuz açık görünüyor; tekrar deneyin.",
       );
     } catch (error) {
       setDashboardError(
@@ -284,7 +301,13 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
     } finally {
       setLoading(false);
     }
-  }, [draftHandlers, hydrateBusiness, loadDashboardContextWithRetry, userId]);
+  }, [
+    draftHandlers,
+    hydrateBusiness,
+    loadDashboardContextWithRetry,
+    router,
+    userId,
+  ]);
 
   const shouldShowOnboarding =
     !loading && !business && !businessRestorePending;

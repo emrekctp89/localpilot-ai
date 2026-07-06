@@ -22,10 +22,13 @@ describe("dashboard session payment return", () => {
     assert.match(sessionSource, /shouldSkipDraft/);
     assert.match(sessionSource, /loadDashboardContextWithRetry/);
     assert.match(sessionSource, /businessRestorePending/);
-    assert.match(sessionSource, /getUser\(\)/);
+    assert.match(sessionSource, /ensureSupabaseSession/);
     assert.match(pageSource, /shouldShowOnboarding/);
     assert.match(pageSource, /markEstablishedBusiness/);
     assert.match(storageSource, /hasEstablishedBusiness/);
+    assert.match(storageSource, /cacheBusinessSnapshot/);
     assert.match(storageSource, /clearPaymentReturnFromUrl/);
+    assert.match(sessionSource, /waitForSupabaseSession/);
+    assert.match(sessionSource, /ensureSupabaseSession/);
   });
 });

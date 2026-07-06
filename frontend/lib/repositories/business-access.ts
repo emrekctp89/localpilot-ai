@@ -8,6 +8,11 @@ export interface UserProfileSnapshot {
   profileRole: ProfileRole;
 }
 
+export interface BusinessListResult {
+  businesses: Business[];
+  error: string | null;
+}
+
 export async function fetchUserProfile(
   userId: string,
 ): Promise<UserProfileSnapshot> {
@@ -26,40 +31,84 @@ export async function fetchUserProfile(
   };
 }
 
+export async function fetchBusinessById(
+  businessId: string,
+): Promise<{ business: Business | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("id", businessId)
+    .maybeSingle();
+
+  return {
+    business: (data as Business | null) ?? null,
+    error: error?.message ?? null,
+  };
+}
+
 export async function listAccessibleBusinesses(
   userId: string,
-): Promise<Business[]> {
-  const [ownedResult, memberResult] = await Promise.all([
-    supabase
-      .from("businesses")
-      .select("*")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("business_members")
-      .select("business_id")
-      .eq("user_id", userId),
-  ]);
+): Promise<BusinessListResult> {
+  const ownedResult = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: false });
 
   const owned = (ownedResult.data as Business[] | null) ?? [];
-  const memberIds = (memberResult.data ?? [])
+  const errors: string[] = [];
+  if (ownedResult.error) {
+    errors.push(ownedResult.error.message);
+  }
+
+  let memberIds: string[] = [];
+  const memberResult = await supabase
+    .from("business_members")
+    .select("business_id")
+    .eq("user_id", userId);
+
+  if (memberResult.error) {
+    if (memberResult.error.code !== "42P01") {
+      errors.push(memberResult.error.message);
+    }
+    return {
+      businesses: owned,
+      error: errors.length > 0 ? errors.join(" | ") : null,
+    };
+  }
+
+  memberIds = (memberResult.data ?? [])
     .map((row) => row.business_id as string)
     .filter(Boolean);
 
   if (memberIds.length === 0) {
-    return owned;
+    return {
+      businesses: owned,
+      error: errors.length > 0 ? errors.join(" | ") : null,
+    };
   }
 
-  const { data: memberBusinesses } = await supabase
+  const memberBusinessesResult = await supabase
     .from("businesses")
     .select("*")
     .in("id", memberIds);
 
+  if (memberBusinessesResult.error) {
+    errors.push(memberBusinessesResult.error.message);
+  }
+
   const merged = new Map<string, Business>();
-  for (const business of [...owned, ...((memberBusinesses as Business[]) ?? [])]) {
+  for (const business of [
+    ...owned,
+    ...((memberBusinessesResult.data as Business[] | null) ?? []),
+  ]) {
     if (business.id) merged.set(business.id, business);
   }
-  return Array.from(merged.values());
+
+  return {
+    businesses: Array.from(merged.values()),
+    error: errors.length > 0 ? errors.join(" | ") : null,
+  };
 }
 
 export async function getBusinessMemberRecord(
