@@ -10,7 +10,11 @@ export interface DashboardBootstrapResult {
 
 export async function fetchProfileAndBusiness(userId: string) {
   const [profileResult, businessResult] = await Promise.all([
-    supabase.from("profiles").select("is_pro").eq("id", userId).single(),
+    supabase
+      .from("profiles")
+      .select("is_pro, pro_activated_at")
+      .eq("id", userId)
+      .single(),
     supabase
       .from("businesses")
       .select("*")
@@ -22,6 +26,7 @@ export async function fetchProfileAndBusiness(userId: string) {
 
   return {
     isPro: Boolean(profileResult.data?.is_pro),
+    proActivatedAt: (profileResult.data?.pro_activated_at as string | null) ?? null,
     business: (businessResult.data as Business | null) ?? null,
     profileError: profileResult.error,
     businessError: businessResult.error,

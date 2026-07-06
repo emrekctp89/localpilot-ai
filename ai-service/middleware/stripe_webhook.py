@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
 
@@ -21,9 +22,12 @@ def activate_pro_membership(
         return False, f"Profil okunamadı: {error}"
 
     try:
-        supabase_client.table("profiles").update({"is_pro": True}).eq(
-            "id", user_id
-        ).execute()
+        supabase_client.table("profiles").update(
+            {
+                "is_pro": True,
+                "pro_activated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ).eq("id", user_id).execute()
         return True, None
     except Exception as error:
         return False, f"Profil güncellenemedi: {error}"

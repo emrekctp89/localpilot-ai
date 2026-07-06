@@ -5,18 +5,19 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from supabase import Client
 
+from middleware.ai_usage import (
+    AI_LIMITED_PATHS,
+    consume_ai_usage,
+    evaluate_ai_access,
+    usage_guard_enabled,
+)
 from middleware.config import auth_is_required
 
-PRO_REQUIRED_PATHS: Set[str] = {
-    "/analyze-reviews",
-    "/generate-campaigns",
-    "/forecast-finance",
-    "/analyze-churn",
-}
+PRO_REQUIRED_PATHS: Set[str] = AI_LIMITED_PATHS
 
 
 def pro_guard_enabled() -> bool:
-    return os.getenv("ENVIRONMENT", "development").lower() == "production"
+    return usage_guard_enabled()
 
 
 def fetch_user_is_pro(supabase_client: Client, user_id: str) -> Optional[bool]:
@@ -36,7 +37,7 @@ def fetch_user_is_pro(supabase_client: Client, user_id: str) -> Optional[bool]:
 def create_pro_guard_middleware(supabase_client: Client):
     async def pro_guard_middleware(request: Request, call_next):
         path = request.url.path
-        if path not in PRO_REQUIRED_PATHS or not pro_guard_enabled():
+        if path not in AI_LIMITED_PATHS or not usage_guard_enabled():
             return await call_next(request)
 
         if not auth_is_required():
@@ -59,14 +60,26 @@ def create_pro_guard_middleware(supabase_client: Client):
                 status_code=503,
                 content={"detail": "Üyelik durumu doğrulanamadı. Tekrar deneyin."},
             )
-        if not is_pro:
+
+        allowed, usage_snapshot, detail = evaluate_ai_access(
+            supabase_client, user_id, bool(is_pro)
+        )
+        if not allowed:
             return JSONResponse(
                 status_code=403,
                 content={
-                    "detail": "Bu özellik Pro plan gerektirir. Ayarlar sekmesinden yükseltebilirsiniz.",
+                    "detail": detail,
+                    "usage": usage_snapshot,
+                    "upgrade_required": True,
                 },
             )
 
-        return await call_next(request)
+        response = await call_next(request)
+        if response.status_code < 400 and not is_pro:
+            try:
+                consume_ai_usage(supabase_client, user_id)
+            except Exception as error:
+                print(f"ai_usage_increment_failed user={user_id} error={error}")
+        return response
 
     return pro_guard_middleware

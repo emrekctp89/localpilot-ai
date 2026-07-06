@@ -171,6 +171,45 @@ export async function createCheckoutSession(input: {
   return postJson("/create-checkout-session", input);
 }
 
+export interface AiUsageResponse {
+  is_pro: boolean;
+  daily: {
+    used: number;
+    limit: number | null;
+    remaining: number | null;
+    period_key: string | null;
+  };
+  monthly: {
+    used: number;
+    limit: number | null;
+    remaining: number | null;
+    period_key: string | null;
+  };
+  can_use_ai: boolean;
+}
+
+async function getJson<T>(path: string): Promise<T> {
+  const baseUrl = requireAiServiceUrl();
+  const headers = await buildAuthHeaders();
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "GET",
+    headers,
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const detail =
+      typeof data.detail === "string"
+        ? data.detail
+        : "İstek başarısız oldu.";
+    throw new AiServiceError(detail);
+  }
+  return data as T;
+}
+
+export async function fetchAiUsage(): Promise<AiUsageResponse> {
+  return getJson("/ai-usage");
+}
+
 export async function checkAiServiceHealth(): Promise<boolean> {
   const url = getAiServiceUrl();
   if (!url) return false;

@@ -34,7 +34,9 @@ class StripeWebhookTests(unittest.TestCase):
         ok, error = activate_pro_membership(client, "user-123")
         self.assertTrue(ok)
         self.assertIsNone(error)
-        client.table.return_value.update.assert_called_once_with({"is_pro": True})
+        update_payload = client.table.return_value.update.call_args[0][0]
+        self.assertTrue(update_payload["is_pro"])
+        self.assertIn("pro_activated_at", update_payload)
 
     def test_handle_checkout_completed_success(self):
         client = MagicMock()

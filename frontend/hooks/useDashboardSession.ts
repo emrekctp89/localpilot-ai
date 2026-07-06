@@ -27,6 +27,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
   const [loading, setLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const [isPro, setIsPro] = useState(false);
+  const [proActivatedAt, setProActivatedAt] = useState<string | null>(null);
   const [accountEmail, setAccountEmail] = useState("");
 
   useEffect(() => {
@@ -56,11 +57,11 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         setAccountEmail(session.user.email || "");
         const draftStorageKey = `localpilot-onboarding-draft-${session.user.id}`;
 
-        const { isPro, business: bizData } = await fetchProfileAndBusiness(
-          session.user.id,
-        );
+        const { isPro, proActivatedAt, business: bizData } =
+          await fetchProfileAndBusiness(session.user.id);
         if (shouldStop()) return;
         if (isPro) setIsPro(true);
+        if (proActivatedAt) setProActivatedAt(proActivatedAt);
 
         if (bizData?.id) {
           draftHandlers.clearOnboardingDraft(draftStorageKey);
@@ -115,13 +116,16 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
     const { data: profileData, error } = await supabase
       .from("profiles")
-      .select("is_pro")
+      .select("is_pro, pro_activated_at")
       .eq("id", session.user.id)
       .single();
 
     if (error) return false;
     const nextIsPro = Boolean(profileData?.is_pro);
     setIsPro(nextIsPro);
+    if (profileData?.pro_activated_at) {
+      setProActivatedAt(profileData.pro_activated_at as string);
+    }
     return nextIsPro;
   };
 
@@ -134,6 +138,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
     loading,
     dashboardError,
     isPro,
+    proActivatedAt,
     accountEmail,
     refreshProStatus,
   };

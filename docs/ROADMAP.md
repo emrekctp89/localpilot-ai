@@ -187,9 +187,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Süre:** 2–3 hafta
 
 ### 5.1 Pro hunisi
-- [ ] Free kullanıcı için AI kullanım limiti (günlük / aylık)
-- [ ] Pro özelliklerini panelde net göster (upgrade CTA)
-- [ ] Checkout sonrası onboarding checklist (ilk 7 gün)
+- [x] Free kullanıcı için AI kullanım limiti (günlük / aylık)
+- [x] Pro özelliklerini panelde net göster (upgrade CTA)
+- [x] Checkout sonrası onboarding checklist (ilk 7 gün)
 
 ### 5.2 Aktivasyon metrikleri
 - [ ] Onboarding tamamlama oranı

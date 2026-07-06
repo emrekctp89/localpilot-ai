@@ -14,7 +14,11 @@ from sklearn.linear_model import LinearRegression
 from datetime import datetime
 from collections import defaultdict
 
-from middleware.billing import create_pro_guard_middleware
+from middleware.ai_usage import (
+    build_pro_usage_snapshot,
+    get_usage_snapshot,
+)
+from middleware.billing import create_pro_guard_middleware, fetch_user_is_pro
 from middleware.security import (
     auth_is_required,
     build_rate_limiter,
@@ -99,6 +103,27 @@ async def health():
         "checks": checks,
         "ai_cache": get_cache_stats(),
     }
+
+
+@app.get("/ai-usage")
+async def ai_usage(request: Request):
+    subject = getattr(request.state, "auth_subject", "")
+    if not subject.startswith("user:"):
+        raise HTTPException(
+            status_code=401,
+            detail="AI kullanım bilgisi için oturum açmanız gerekir.",
+        )
+
+    user_id = subject.split(":", 1)[1]
+    is_pro = fetch_user_is_pro(supabase, user_id)
+    if is_pro is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Üyelik durumu doğrulanamadı. Tekrar deneyin.",
+        )
+    if is_pro:
+        return build_pro_usage_snapshot()
+    return get_usage_snapshot(supabase, user_id)
 
 
 # ------------------------------------------------------------

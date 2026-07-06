@@ -3,6 +3,10 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Business, GeneratedPlan, MiniSitePublishStatus } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
+import { PRO_FEATURES, type AiUsageSnapshot } from "@/lib/pro-funnel";
+import ProActivationChecklist from "./ProActivationChecklist";
+import ProUpgradeBanner from "./ProUpgradeBanner";
+import type { ActivationChecklistItem } from "@/lib/pro-funnel";
 
 interface AyarlarTabProps {
   business: Business;
@@ -15,6 +19,12 @@ interface AyarlarTabProps {
   refreshProStatus?: () => Promise<boolean>;
   paymentReturn?: "success" | "cancel" | null;
   onPaymentReturnHandled?: () => void;
+  aiUsage?: AiUsageSnapshot | null;
+  activationItems?: ActivationChecklistItem[];
+  showActivationChecklist?: boolean;
+  proActivatedAt?: string | null;
+  onNavigateTab?: (tab: string) => void;
+  onDismissActivationChecklist?: () => void;
 }
 
 export default function AyarlarTab({
@@ -28,6 +38,12 @@ export default function AyarlarTab({
   refreshProStatus,
   paymentReturn = null,
   onPaymentReturnHandled,
+  aiUsage = null,
+  activationItems = [],
+  showActivationChecklist = false,
+  proActivatedAt = null,
+  onNavigateTab,
+  onDismissActivationChecklist,
 }: AyarlarTabProps) {
   const [siteData, setSiteData] = useState(
     plan?.mini_site_data || {
@@ -329,6 +345,25 @@ export default function AyarlarTab({
         </div>
       </div>
 
+      {showActivationChecklist && activationItems.length > 0 && (
+        <ProActivationChecklist
+          items={activationItems}
+          activatedAt={proActivatedAt}
+          onNavigate={onNavigateTab}
+          onDismiss={onDismissActivationChecklist}
+        />
+      )}
+
+      {!isPro && (
+        <div className="mb-6">
+          <ProUpgradeBanner
+            usage={aiUsage}
+            onUpgrade={startCheckout}
+            compact
+          />
+        </div>
+      )}
+
       <section className="mb-6 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50">
         <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
           <div>
@@ -389,6 +424,33 @@ export default function AyarlarTab({
             {billingMessage}
           </p>
         )}
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+          Plan Karşılaştırması
+        </p>
+        <h3 className="mt-1 text-lg font-black text-gray-900">
+          Pro ile açılan özellikler
+        </h3>
+        <ul className="mt-4 grid gap-3 md:grid-cols-2">
+          {PRO_FEATURES.map((feature) => (
+            <li
+              key={feature.id}
+              className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+            >
+              <p className="font-bold text-gray-900">{feature.title}</p>
+              <p className="mt-1 text-sm text-gray-600">{feature.description}</p>
+              <p className="mt-2 text-xs font-bold uppercase tracking-wide text-indigo-600">
+                {isPro
+                  ? "Pro: Sınırsız"
+                  : feature.freeAccess === "limited"
+                    ? "Ücretsiz: Günlük/aylık kota"
+                    : "Ücretsiz: Tam erişim"}
+              </p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 md:p-5">

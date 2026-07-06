@@ -38,6 +38,9 @@ import {
   useOnboardingSetup,
 } from "@/hooks/useOnboarding";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { useAiUsage } from "@/hooks/useAiUsage";
+import { useProActivationChecklist } from "@/hooks/useProActivationChecklist";
+import ProActivationChecklist from "../components/dashboard/ProActivationChecklist";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -77,11 +80,23 @@ export default function Dashboard() {
 
   const session = useDashboardSession(draftHandlers);
 
+  const aiUsageApi = useAiUsage(session.isPro, Boolean(session.business));
+
   const campaignsApi = useCampaigns({
     business: session.business,
     seedCampaigns: session.seedCampaigns,
     setPlan: session.setPlan,
     onError,
+    onAiSuccess: () => {
+      void aiUsageApi.refresh();
+    },
+  });
+  const activationChecklist = useProActivationChecklist({
+    isPro: session.isPro,
+    business: session.business,
+    plan: session.plan,
+    campaigns: campaignsApi.campaigns,
+    proActivatedAt: session.proActivatedAt,
   });
 
   const { isSettingUp, setupError, handleCompleteOnboarding } =
@@ -114,8 +129,7 @@ export default function Dashboard() {
     window.history.replaceState({}, "", "/dashboard");
   }, []);
 
-  const canUseProTools =
-    session.isPro || process.env.NODE_ENV === "development";
+  const canUseAi = aiUsageApi.canUseAi;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -143,6 +157,7 @@ export default function Dashboard() {
         city: session.business.city || "",
       });
       setAnalysisResult(data);
+      void aiUsageApi.refresh();
     } catch (error) {
       onError(
         error instanceof Error ? error.message : "Yorum analizi basarisiz oldu.",
@@ -317,6 +332,15 @@ export default function Dashboard() {
             />
 
             <main className="animate-fade-in-up relative">
+              {activationChecklist.visible && activeTab !== "ayarlar" && (
+                <ProActivationChecklist
+                  items={activationChecklist.items}
+                  activatedAt={activationChecklist.proActivatedAt}
+                  onNavigate={setActiveTab}
+                  onDismiss={activationChecklist.dismiss}
+                />
+              )}
+
               {activeTab === "ozet" && (
                 <OzetTab
                   business={session.business}
@@ -371,7 +395,9 @@ export default function Dashboard() {
                   onSendReviewToDecisionCenter={handleSendReviewToDecisionCenter}
                   isSendingReviewDecision={isSendingReviewDecision}
                   copyToClipboard={copyToClipboard}
-                  isPro={canUseProTools}
+                  canUseAi={canUseAi}
+                  isProMember={session.isPro}
+                  aiUsage={aiUsageApi.usage}
                   handleUpgradeToPro={handleUpgradeToPro}
                 />
               )}
@@ -388,6 +414,12 @@ export default function Dashboard() {
                   refreshProStatus={session.refreshProStatus}
                   paymentReturn={paymentReturn}
                   onPaymentReturnHandled={() => setPaymentReturn(null)}
+                  aiUsage={aiUsageApi.usage}
+                  activationItems={activationChecklist.items}
+                  showActivationChecklist={activationChecklist.visible}
+                  proActivatedAt={session.proActivatedAt}
+                  onNavigateTab={setActiveTab}
+                  onDismissActivationChecklist={activationChecklist.dismiss}
                 />
               )}
             </main>

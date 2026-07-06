@@ -12,6 +12,7 @@ interface UseCampaignsOptions {
   seedCampaigns: Campaign[];
   setPlan: React.Dispatch<React.SetStateAction<GeneratedPlan | null>>;
   onError: (message: string) => void;
+  onAiSuccess?: () => void;
 }
 
 function buildCampaignRequest(
@@ -59,6 +60,7 @@ export function useCampaigns({
   seedCampaigns,
   setPlan,
   onError,
+  onAiSuccess,
 }: UseCampaignsOptions) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
@@ -89,6 +91,7 @@ export function useCampaigns({
       setCampaigns(nextCampaigns);
       await persistCampaignState(business.id, nextCampaigns, setPlan);
       setCampaignSaveStatus("saved");
+      onAiSuccess?.();
     } catch (error) {
       setCampaignSaveStatus("error");
       onError(
@@ -121,6 +124,7 @@ export function useCampaigns({
       setCampaigns(nextCampaigns);
       await persistCampaignState(business.id, nextCampaigns, setPlan);
       setCampaignSaveStatus("saved");
+      onAiSuccess?.();
     } catch (error) {
       setCampaignSaveStatus("error");
       onError(

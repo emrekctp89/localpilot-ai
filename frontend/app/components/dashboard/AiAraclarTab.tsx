@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import type { ReviewAnalysisResult } from "@/lib/ai-client";
 import type { Campaign } from "@/lib/domain-types";
+import type { AiUsageSnapshot } from "@/lib/pro-funnel";
+import ProUpgradeBanner from "./ProUpgradeBanner";
 
 interface AiAraclarTabProps {
   campaigns: Campaign[];
@@ -18,7 +20,9 @@ interface AiAraclarTabProps {
   handleAnalyzeReviews: () => void;
   analysisResult: ReviewAnalysisResult | null;
   copyToClipboard: (text: string) => void;
-  isPro?: boolean;
+  canUseAi?: boolean;
+  isProMember?: boolean;
+  aiUsage?: AiUsageSnapshot | null;
   handleUpgradeToPro?: () => void;
 }
 
@@ -38,7 +42,9 @@ export default function AiAraclarTab({
   handleAnalyzeReviews,
   analysisResult,
   copyToClipboard,
-  isPro = true,
+  canUseAi = true,
+  isProMember = true,
+  aiUsage = null,
   handleUpgradeToPro,
 }: AiAraclarTabProps) {
   const sentiment = analysisResult?.overall_sentiment?.toLowerCase() || "";
@@ -69,6 +75,13 @@ export default function AiAraclarTab({
 
   return (
     <div className="space-y-6">
+      {!isProMember && (
+        <ProUpgradeBanner
+          usage={aiUsage}
+          onUpgrade={handleUpgradeToPro}
+        />
+      )}
+
       <div className="bg-white p-6 rounded-lg shadow border-t-4 border-indigo-500">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div>
@@ -84,7 +97,7 @@ export default function AiAraclarTab({
           </div>
           <button
             onClick={handleGenerateCampaigns}
-            disabled={isGeneratingCampaigns || !isPro}
+            disabled={isGeneratingCampaigns || !canUseAi}
             className="w-full md:w-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 disabled:bg-gray-400 transition shadow-sm whitespace-nowrap"
           >
             {isGeneratingCampaigns && variantIndex === null
@@ -107,21 +120,7 @@ export default function AiAraclarTab({
           </p>
         )}
 
-        {!isPro && handleUpgradeToPro && (
-          <div className="bg-gray-50 p-4 rounded-md border border-dashed border-gray-300 text-center mb-4">
-            <p className="text-sm text-gray-600 mb-2">
-              Bu ozelligi kullanmak icin Pro pakete gecmelisiniz.
-            </p>
-            <button
-              onClick={handleUpgradeToPro}
-              className="text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-bold"
-            >
-              Proya Yukselt
-            </button>
-          </div>
-        )}
-
-        {campaigns.length > 0 && isPro && (
+        {campaigns.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 animate-fade-in-up">
             {campaigns.map((camp, index) => (
               <div
@@ -246,27 +245,22 @@ export default function AiAraclarTab({
           placeholder="Yorum 1...&#10;Yorum 2...&#10;Yorum 3..."
           value={reviewsText}
           onChange={(e) => setReviewsText(e.target.value)}
-          disabled={!isPro}
+          disabled={!canUseAi}
         />
 
-        {!isPro && handleUpgradeToPro ? (
-          <button
-            onClick={handleUpgradeToPro}
-            className="w-full bg-gray-400 text-white font-bold py-2 px-4 rounded hover:bg-gray-500 transition flex justify-center items-center gap-2"
-          >
-            Kilidi Acmak Icin Proya Gecin
-          </button>
-        ) : (
-          <button
-            onClick={handleAnalyzeReviews}
-            disabled={isAnalyzing || !isPro}
-            className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 disabled:bg-gray-400 transition"
-          >
-            {isAnalyzing ? "Yorumlar Analiz Ediliyor..." : "Yorumlari Analiz Et"}
-          </button>
-        )}
+        <button
+          onClick={handleAnalyzeReviews}
+          disabled={isAnalyzing || !canUseAi}
+          className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 disabled:bg-gray-400 transition"
+        >
+          {isAnalyzing
+            ? "Yorumlar Analiz Ediliyor..."
+            : canUseAi
+              ? "Yorumlari Analiz Et"
+              : "AI Limiti Doldu — Pro'ya Geçin"}
+        </button>
 
-        {analysisResult && isPro && (
+        {analysisResult && (
           <div className="mt-6 space-y-4 animate-fade-in-up">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-bold text-gray-700">Genel Duygu:</span>

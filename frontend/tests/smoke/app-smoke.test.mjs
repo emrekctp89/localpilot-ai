@@ -536,3 +536,21 @@ test("shared domain models remain available to dashboard modules", async () => {
     assert.match(source, new RegExp(`export interface ${model}\\b`));
   }
 });
+
+test("pro funnel exposes usage limits, upgrade CTA and activation checklist", async () => {
+  const [dashboardSource, funnelSource, bannerSource, checklistSource] =
+    await Promise.all([
+      readSource("app/dashboard/page.tsx"),
+      readSource("lib/pro-funnel.ts"),
+      readSource("app/components/dashboard/ProUpgradeBanner.tsx"),
+      readSource("app/components/dashboard/ProActivationChecklist.tsx"),
+    ]);
+
+  assert.match(dashboardSource, /useAiUsage/);
+  assert.match(dashboardSource, /ProActivationChecklist/);
+  assert.match(funnelSource, /FREE_AI_DAILY_LIMIT/);
+  assert.match(funnelSource, /buildActivationChecklist/);
+  assert.match(bannerSource, /Ücretsiz AI Kotası/);
+  assert.match(bannerSource, /Pro&apos;ya Yükselt/);
+  assert.match(checklistSource, /Pro İlk 7 Gün/);
+});
