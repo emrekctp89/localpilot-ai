@@ -2,12 +2,14 @@ services:
   - type: web
     name: localpilot-ai-service
     runtime: docker
-    dockerfilePath: ai-service/Dockerfile
-    dockerContext: ai-service
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     buildFilter:
       paths:
         - ai-service/**
+        - Dockerfile
+        - .dockerignore
     envVars:
       - key: ENVIRONMENT
         value: production

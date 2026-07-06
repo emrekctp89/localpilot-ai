@@ -1,0 +1,14 @@
+frontend/
+node_modules/
+ai-service/venv/
+ai-service/__pycache__/
+ai-service/tests/
+ai-service/.env
+ai-service/.env.*
+.git/
+mcps/
+terminals/
+docs/
+supabase/
+deploy/
+*.md
