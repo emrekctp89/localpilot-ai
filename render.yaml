@@ -17,6 +17,10 @@ services:
         value: true
       - key: RATE_LIMIT_PER_MINUTE
         value: 60
+      - key: AI_CACHE_TTL_SECONDS
+        value: 300
+      - key: AI_CACHE_MAX_ENTRIES
+        value: 128
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: GEMINI_API_KEY

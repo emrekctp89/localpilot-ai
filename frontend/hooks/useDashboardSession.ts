@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getCampaignsFromPlan } from "@/lib/plan-utils";
-import { listCampaigns } from "@/lib/repositories/campaigns";
+import {
+  fetchProfileAndBusiness,
+  loadDashboardBootstrap,
+} from "@/lib/dashboard-bootstrap";
 import { stripMigratedOperationalFields } from "@/lib/repositories/plan-legacy";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
 import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard";
@@ -54,43 +56,21 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         setAccountEmail(session.user.email || "");
         const draftStorageKey = `localpilot-onboarding-draft-${session.user.id}`;
 
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("is_pro")
-          .eq("id", session.user.id)
-          .single();
+        const { isPro, business: bizData } = await fetchProfileAndBusiness(
+          session.user.id,
+        );
         if (shouldStop()) return;
-        if (profileData?.is_pro) setIsPro(true);
+        if (isPro) setIsPro(true);
 
-        const { data: bizData } = await supabase
-          .from("businesses")
-          .select("*")
-          .eq("owner_id", session.user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (shouldStop()) return;
-
-        if (bizData) {
+        if (bizData?.id) {
           draftHandlers.clearOnboardingDraft(draftStorageKey);
           setBusiness(bizData);
-          const { data: planData } = await supabase
-            .from("generated_plans")
-            .select("*")
-            .eq("business_id", bizData.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          const bootstrap = await loadDashboardBootstrap(bizData.id);
           if (shouldStop()) return;
-          if (planData) {
-            setPlan(planData);
+          if (bootstrap.plan) {
+            setPlan(bootstrap.plan);
           }
-          const storedCampaigns = await listCampaigns(bizData.id);
-          setSeedCampaigns(
-            storedCampaigns.length > 0
-              ? storedCampaigns
-              : getCampaignsFromPlan(planData ?? undefined),
-          );
+          setSeedCampaigns(bootstrap.campaigns);
           void stripMigratedOperationalFields(bizData.id);
         } else {
           try {

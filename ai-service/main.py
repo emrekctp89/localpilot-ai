@@ -24,6 +24,12 @@ from middleware.security import (
     parse_allowed_origins,
 )
 from middleware.stripe_webhook import handle_stripe_event
+from ai_cache import (
+    build_cache_key,
+    get_cache_stats,
+    get_cached_response,
+    set_cached_response,
+)
 from prompt_context import (
     build_business_profile_block,
     build_campaign_mode_instruction,
@@ -91,6 +97,7 @@ async def health():
         "service": "localpilot-ai",
         "auth_required": auth_is_required(),
         "checks": checks,
+        "ai_cache": get_cache_stats(),
     }
 
 
@@ -114,8 +121,19 @@ def clean_and_parse_json(raw_text: str) -> Dict[str, Any]:
 
 
 def generate_ai_json(
-    system_instruction: str, user_prompt: str, temperature: float = 0.5
+    system_instruction: str,
+    user_prompt: str,
+    temperature: float = 0.5,
+    *,
+    use_cache: bool = True,
 ) -> Dict[str, Any]:
+    cache_key = None
+    if use_cache:
+        cache_key = build_cache_key(system_instruction, user_prompt, temperature)
+        cached = get_cached_response(cache_key)
+        if cached is not None:
+            return cached
+
     response = gemini_client.models.generate_content(
         model=GEMINI_MODEL,
         contents=user_prompt,
@@ -125,7 +143,12 @@ def generate_ai_json(
             temperature=temperature,
         ),
     )
-    return clean_and_parse_json(response.text)
+    result = clean_and_parse_json(response.text)
+
+    if cache_key is not None:
+        set_cached_response(cache_key, result)
+
+    return result
 
 
 def normalize_color(color_preference: str) -> str:
@@ -717,7 +740,10 @@ async def setup_business(data: BusinessSetup):
     # 🚀 ADIM 1: AI BUSINESS OS KURULUMU
     try:
         ai_decision = generate_ai_json(
-            SETUP_SYSTEM_INSTRUCTION, user_prompt, temperature=0.5
+            SETUP_SYSTEM_INSTRUCTION,
+            user_prompt,
+            temperature=0.5,
+            use_cache=False,
         )
     except Exception as e:
         print(f"🚨 SETUP AI HATASI: {str(e)}")

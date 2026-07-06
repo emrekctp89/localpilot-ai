@@ -175,9 +175,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Takvim sync (Google Calendar) — randevu modülü
 
 ### 4.3 Performans
-- [ ] Render cold start azaltma (paid plan veya keep-warm cron)
-- [ ] AI yanıt cache (benzer istekler)
-- [ ] Frontend: dashboard veri yükleme paralelleştirme
+- [x] Render cold start azaltma (paid plan veya keep-warm cron)
+- [x] AI yanıt cache (benzer istekler)
+- [x] Frontend: dashboard veri yükleme paralelleştirme
 
 ---
 

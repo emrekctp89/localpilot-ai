@@ -272,6 +272,38 @@ test("sector packs adapt one workflow component to each business", async () => {
   assert.match(domainSource, /export interface SectorWorkflowItem/);
 });
 
+test("performance upgrades add keep-warm, ai cache, and parallel bootstrap", async () => {
+  const repoRoot = path.resolve(frontendRoot, "..");
+  const readRepoSource = (relativePath) =>
+    readFile(path.join(repoRoot, relativePath), "utf8");
+
+  const [
+    keepWarmWorkflow,
+    bootstrapSource,
+    sessionSource,
+    aiServiceSource,
+    aiCacheSource,
+    renderConfig,
+  ] = await Promise.all([
+    readFile(path.join(repoRoot, ".github/workflows/keep-warm.yml"), "utf8"),
+    readSource("lib/dashboard-bootstrap.ts"),
+    readSource("hooks/useDashboardSession.ts"),
+    readRepoSource("ai-service/main.py"),
+    readRepoSource("ai-service/ai_cache.py"),
+    readRepoSource("render.yaml"),
+  ]);
+
+  assert.match(keepWarmWorkflow, /Keep Warm/);
+  assert.match(keepWarmWorkflow, /\*\/10 \* \* \* \*/);
+  assert.match(aiCacheSource, /get_cached_response/);
+  assert.match(aiServiceSource, /ai_cache/);
+  assert.match(aiServiceSource, /use_cache=False/);
+  assert.match(aiServiceSource, /"ai_cache": get_cache_stats\(\)/);
+  assert.match(bootstrapSource, /loadDashboardBootstrap/);
+  assert.match(sessionSource, /fetchProfileAndBusiness/);
+  assert.match(renderConfig, /AI_CACHE_TTL_SECONDS/);
+});
+
 test("external integrations wire google, whatsapp, and calendar flows", async () => {
   const repoRoot = path.resolve(frontendRoot, "..");
   const readRepoSource = (relativePath) =>
