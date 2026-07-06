@@ -88,8 +88,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 ### 1.4 CI/CD genişletme
 - [x] CI: tüm `ai-service/tests/test_*.py` suite
-- [ ] E2E: `dashboard`, `appointment`, `decision-center` için CI secrets (`E2E_TEST_*`)
-- [ ] Deploy sonrası smoke: `/health` + ana sayfa
+- [x] E2E: authenticated + public site jobs (GitHub Secrets ile)
+- [x] Production smoke workflow (`smoke-production.yml`, 6 saatte bir)
+- [ ] GitHub Secrets ekle: `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`, `E2E_TEST_HAS_BUSINESS`
 
 **Başarı kriteri:** `main` push'ta yeşil pipeline; kırık deploy önlenir.
 
@@ -101,8 +102,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 **Süre:** 2–3 hafta
 
 ### 2.1 Yeni tablolar
-- [ ] `campaigns` — AI kampanya fikirleri (`useCampaigns.ts` refactor)
-- [ ] `content_items` — sosyal post ve WhatsApp şablon geçmişi (`IcerikTab.tsx`)
+- [x] `campaigns` tablosu + repository (`003_campaigns_content.sql`, `useCampaigns.ts`)
+- [x] `content_items` tablosu + repository (`IcerikTab.tsx`)
+- [ ] `003_campaigns_content.sql` migration'ını Supabase'de çalıştır
 - [ ] `crm_activities` — churn analizi, durum geçmişi (JSON'dan ayrıştır)
 
 ### 2.2 Legacy temizliği

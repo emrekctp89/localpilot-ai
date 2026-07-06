@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { generateCampaigns } from "@/lib/ai-client";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
+import { saveCampaigns } from "@/lib/repositories/campaigns";
 
 type CampaignSaveStatus = "idle" | "saved" | "error";
 
@@ -12,59 +12,6 @@ interface UseCampaignsOptions {
   seedCampaigns: Campaign[];
   setPlan: React.Dispatch<React.SetStateAction<GeneratedPlan | null>>;
   onError: (message: string) => void;
-}
-
-async function persistCampaigns(businessId: string, nextCampaigns: Campaign[]) {
-  const { data: existingPlan } = await supabase
-    .from("generated_plans")
-    .select("id, mini_site_data")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existingPlan?.id) {
-    const { error } = await supabase
-      .from("generated_plans")
-      .update({ campaigns: nextCampaigns })
-      .eq("id", existingPlan.id);
-
-    if (!error) return;
-
-    const miniSiteData = {
-      ...((existingPlan.mini_site_data as Record<string, unknown> | null) ||
-        {}),
-      campaigns: nextCampaigns,
-    };
-    const { error: fallbackError } = await supabase
-      .from("generated_plans")
-      .update({ mini_site_data: miniSiteData })
-      .eq("id", existingPlan.id);
-    if (fallbackError) throw fallbackError;
-    return;
-  }
-
-  const { error } = await supabase.from("generated_plans").insert([
-    {
-      business_id: businessId,
-      campaigns: nextCampaigns,
-      mini_site_data: {},
-      social_media_calendar: [],
-      whatsapp_templates: [],
-    },
-  ]);
-
-  if (!error) return;
-
-  const { error: fallbackError } = await supabase.from("generated_plans").insert([
-    {
-      business_id: businessId,
-      mini_site_data: { campaigns: nextCampaigns },
-      social_media_calendar: [],
-      whatsapp_templates: [],
-    },
-  ]);
-  if (fallbackError) throw fallbackError;
 }
 
 export function useCampaigns({
@@ -99,7 +46,8 @@ export function useCampaigns({
       });
       const nextCampaigns = Array.isArray(data.campaigns) ? data.campaigns : [];
       setCampaigns(nextCampaigns);
-      await persistCampaigns(business.id, nextCampaigns);
+      const saved = await saveCampaigns(business.id, nextCampaigns);
+      if (!saved) throw new Error("Kampanyalar kaydedilemedi.");
       setPlan((currentPlan) =>
         currentPlan
           ? {
@@ -140,7 +88,8 @@ export function useCampaigns({
     setCampaigns(nextCampaigns);
     setCampaignSaveStatus("idle");
     try {
-      await persistCampaigns(business.id, nextCampaigns);
+      const saved = await saveCampaigns(business.id, nextCampaigns);
+      if (!saved) throw new Error("Kampanyalar kaydedilemedi.");
       setPlan((currentPlan) =>
         currentPlan
           ? {

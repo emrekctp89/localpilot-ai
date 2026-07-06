@@ -3,6 +3,7 @@ export interface ThemeConfig {
 }
 
 export interface Campaign {
+  id?: string;
   campaign_name: string;
   strategy: string;
   sms_whatsapp_template: string;

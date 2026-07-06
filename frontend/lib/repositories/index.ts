@@ -8,3 +8,5 @@ export {
   saveSectorWorkflowItems,
 } from "./sector-workflow";
 export { loadOperationalSnapshot } from "./operations";
+export { listCampaigns, saveCampaigns } from "./campaigns";
+export { listContentItems, saveContentItems } from "./content-items";

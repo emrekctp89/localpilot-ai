@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
+import { listCampaigns } from "@/lib/repositories/campaigns";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
 import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard";
 export interface OnboardingDraftHandlers {
@@ -82,8 +83,13 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
           if (shouldStop()) return;
           if (planData) {
             setPlan(planData);
-            setSeedCampaigns(getCampaignsFromPlan(planData));
           }
+          const storedCampaigns = await listCampaigns(bizData.id);
+          setSeedCampaigns(
+            storedCampaigns.length > 0
+              ? storedCampaigns
+              : getCampaignsFromPlan(planData ?? undefined),
+          );
         } else {
           try {
             const storedDraft = window.localStorage.getItem(draftStorageKey);

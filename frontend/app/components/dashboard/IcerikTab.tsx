@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import type {
   Business,
   SocialPost,
   WhatsappTemplate,
 } from "@/lib/domain-types";
+import {
+  listContentItems,
+  saveContentItems,
+} from "@/lib/repositories/content-items";
 
 interface IcerikTabProps {
   business: Business;
@@ -76,22 +79,16 @@ export default function IcerikTab({ business }: IcerikTabProps) {
   useEffect(() => {
     const fetchContent = async () => {
       setLoading(true);
-      const targetId = business?.id || "preview";
 
-      const { data } = await supabase
-        .from("generated_plans")
-        .select("social_media_calendar, whatsapp_templates")
-        .eq("business_id", targetId)
-        .maybeSingle();
+      if (business?.id) {
+        const { socialPosts, waTemplates } = await listContentItems(business.id);
+        setSocialPosts(socialPosts);
+        setWaTemplates(waTemplates);
+        setLoading(false);
+        return;
+      }
 
-      if (data) {
-        setSocialPosts(
-          normalizeSocialPosts(data.social_media_calendar || []),
-        );
-        setWaTemplates(
-          normalizeWhatsappTemplates(data.whatsapp_templates || []),
-        );
-      } else if (!business?.id) {
+      if (!business?.id) {
         setSocialPosts([
           {
             id: 1,
@@ -134,36 +131,24 @@ export default function IcerikTab({ business }: IcerikTabProps) {
     if (!business?.id) return;
 
     setHistoryStatus("saving");
-    const { data: existingPlan, error: findError } = await supabase
-      .from("generated_plans")
-      .select("id")
-      .eq("business_id", business.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const nextSocialPosts =
+      updates.social_media_calendar !== undefined
+        ? updates.social_media_calendar
+        : socialPosts;
+    const nextWaTemplates =
+      updates.whatsapp_templates !== undefined
+        ? updates.whatsapp_templates
+        : waTemplates;
 
-    if (findError) {
+    const saved = await saveContentItems(
+      business.id,
+      nextSocialPosts,
+      nextWaTemplates,
+    );
+
+    if (!saved) {
       setHistoryStatus("error");
-      throw findError;
-    }
-
-    const { error } = existingPlan?.id
-      ? await supabase
-          .from("generated_plans")
-          .update(updates)
-          .eq("id", existingPlan.id)
-      : await supabase.from("generated_plans").insert([
-          {
-            business_id: business.id,
-            mini_site_data: {},
-            social_media_calendar: updates.social_media_calendar || [],
-            whatsapp_templates: updates.whatsapp_templates || [],
-          },
-        ]);
-
-    if (error) {
-      setHistoryStatus("error");
-      throw error;
+      throw new Error("İçerik kaydedilemedi.");
     }
 
     setHistoryStatus("saved");
