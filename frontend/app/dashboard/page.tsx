@@ -45,6 +45,12 @@ import { useCampaigns } from "@/hooks/useCampaigns";
 import { useAiUsage } from "@/hooks/useAiUsage";
 import { useProActivationChecklist } from "@/hooks/useProActivationChecklist";
 import ProActivationChecklist from "../components/dashboard/ProActivationChecklist";
+import {
+  clearPaymentReturnFromUrl,
+  markEstablishedBusiness,
+  onboardingDraftKey,
+  readPaymentReturn,
+} from "@/lib/dashboard-session-storage";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -113,6 +119,9 @@ export default function Dashboard() {
         session.setBusiness(business);
         session.setPlan(plan);
         campaignsApi.setCampaigns(campaigns);
+        if (business.id && session.userId) {
+          markEstablishedBusiness(session.userId, business.id);
+        }
         setActiveTab("ozet");
       },
     });
@@ -126,13 +135,17 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const payment = new URLSearchParams(window.location.search).get("payment");
-    if (payment !== "success" && payment !== "cancel") return;
+    const payment = readPaymentReturn();
+    if (!payment) return;
 
     setPaymentReturn(payment);
     setActiveTab("ayarlar");
-    window.history.replaceState({}, "", "/dashboard");
   }, []);
+
+  useEffect(() => {
+    if (!paymentReturn || session.loading || !session.business) return;
+    clearPaymentReturnFromUrl();
+  }, [paymentReturn, session.business, session.loading]);
 
   const canUseAi = aiUsageApi.canUseAi;
 
@@ -227,6 +240,11 @@ export default function Dashboard() {
         return;
       }
 
+      if (session.business?.id) {
+        markEstablishedBusiness(authSession.user.id, session.business.id);
+        window.localStorage.removeItem(onboardingDraftKey(authSession.user.id));
+      }
+
       const data = await createCheckoutSession({
         user_id: authSession.user.id,
       });
@@ -260,6 +278,28 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold text-gray-500">
             Çalışma Alanınız Hazırlanıyor...
           </h2>
+        </div>
+      </div>
+    );
+
+  if (session.businessRestorePending && !session.business)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-4 text-gray-900">
+        <div className="w-full max-w-md rounded-2xl border border-indigo-100 bg-white p-6 text-center shadow-sm">
+          <h2 className="text-xl font-black mb-2">Paneliniz geri yükleniyor</h2>
+          <p className="text-sm text-gray-600 mb-5">
+            Ödeme dönüşünden sonra işletme bilgileriniz yeniden alınıyor. Bu ekran
+            birkaç saniye sürebilir.
+          </p>
+          {session.dashboardError ? (
+            <p className="text-sm text-red-600 mb-4">{session.dashboardError}</p>
+          ) : null}
+          <button
+            onClick={() => void session.retryBusinessRestore()}
+            className="rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white hover:bg-gray-700 transition"
+          >
+            Tekrar Dene
+          </button>
         </div>
       </div>
     );
@@ -325,7 +365,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {!session.business && !session.loading && (
+        {session.shouldShowOnboarding && (
           <OnboardingWizard
             step={onboardingStep}
             setStep={setOnboardingStep}

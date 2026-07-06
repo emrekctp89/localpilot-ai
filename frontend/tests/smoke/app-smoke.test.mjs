@@ -28,13 +28,12 @@ test("dashboard protects unauthenticated access and exposes onboarding", async (
     readSource("hooks/useDashboardSession.ts"),
   ]);
 
-  assert.match(sessionSource, /supabase\.auth\.getSession\(\)/);
-  assert.match(sessionSource, /if\s*\(!session\)\s*\{/);
+  assert.match(sessionSource, /supabase\.auth\.getUser\(\)/);
+  assert.match(sessionSource, /shouldShowOnboarding/);
+  assert.match(sessionSource, /readPaymentReturn/);
+  assert.match(sessionSource, /if\s*\(userError\s*\|\|\s*!user\)\s*\{/);
   assert.match(sessionSource, /router\.push\(["']\/auth["']\)/);
-  assert.match(
-    pageSource,
-    /\{!session\.business\s*&&\s*!session\.loading\s*&&\s*\(/,
-  );
+  assert.match(pageSource, /session\.shouldShowOnboarding/);
   assert.match(pageSource, /<OnboardingWizard/);
   assert.match(pageSource, /onComplete=\{handleCompleteOnboarding\}/);
 });
@@ -46,10 +45,7 @@ test("onboarding progress is restored, saved, and cleared per user", async () =>
     readSource("app/dashboard/page.tsx"),
   ]);
 
-  assert.match(
-    sessionSource,
-    /localpilot-onboarding-draft-\$\{session\.user\.id\}/,
-  );
+  assert.match(sessionSource, /onboardingDraftKey\(user\.id\)/);
   assert.match(sessionSource, /window\.localStorage\.getItem\(draftStorageKey\)/);
   assert.match(draftSource, /window\.localStorage\.setItem\(/);
   assert.match(draftSource, /step:\s*onboardingStep/);
