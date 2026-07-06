@@ -27,6 +27,7 @@ export default function TabMenu({
     "menu",
     "araclar",
     "ayarlar",
+    "platform",
   ]);
 
   const ALL_TABS = [
@@ -95,6 +96,11 @@ export default function TabMenu({
       title: "⚙️ Ayarlar",
       activeClass: "bg-gray-800 text-white shadow-xl shadow-gray-800/20",
     },
+    {
+      id: "platform",
+      title: "🛡️ Platform",
+      activeClass: "bg-slate-800 text-white shadow-xl shadow-slate-800/20",
+    },
   ];
 
   // Görünür sekmeleri filtreleme
@@ -111,7 +117,8 @@ export default function TabMenu({
         tab.id === "personel" ||
         tab.id === "google_business" ||
         tab.id === "araclar" ||
-        tab.id === "ayarlar"),
+        tab.id === "ayarlar" ||
+        tab.id === "platform"),
   );
 
   return (

@@ -302,7 +302,7 @@ test("performance upgrades add keep-warm, ai cache, and parallel bootstrap", asy
   assert.match(aiServiceSource, /use_cache=False/);
   assert.match(aiServiceSource, /"ai_cache": get_cache_stats\(\)/);
   assert.match(bootstrapSource, /loadDashboardBootstrap/);
-  assert.match(sessionSource, /fetchProfileAndBusiness/);
+  assert.match(sessionSource, /fetchDashboardContext/);
   assert.match(renderConfig, /AI_CACHE_TTL_SECONDS/);
 });
 
@@ -416,6 +416,7 @@ test("every rendered dashboard tab has a matching view", async () => {
     "menu",
     "araclar",
     "ayarlar",
+    "platform",
   ];
 
   for (const tab of expectedTabs) {
@@ -537,6 +538,27 @@ test("shared domain models remain available to dashboard modules", async () => {
   ]) {
     assert.match(source, new RegExp(`export interface ${model}\\b`));
   }
+});
+
+test("platform tab exposes team roles, audit log, api and i18n", async () => {
+  const [platformSource, dashboardSource, migrationSource] = await Promise.all([
+    readSource("app/components/dashboard/PlatformTab.tsx"),
+    readSource("app/dashboard/page.tsx"),
+    readFile(
+      path.join(
+        path.resolve(testDirectory, "../.."),
+        "../supabase/migrations/006_platform.sql",
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(platformSource, /listBusinessMembers/);
+  assert.match(platformSource, /listAuditLogs/);
+  assert.match(platformSource, /listBusinessApiKeys/);
+  assert.match(platformSource, /useLocale/);
+  assert.match(dashboardSource, /switchBusiness/);
+  assert.match(migrationSource, /CREATE TABLE IF NOT EXISTS audit_logs/);
 });
 
 test("marketing site exposes landing, sector demos and pricing page", async () => {

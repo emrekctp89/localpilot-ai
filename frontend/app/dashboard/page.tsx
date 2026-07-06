@@ -29,7 +29,11 @@ import SektorIsAkisiTab from "../components/dashboard/SektorIsAkisiTab";
 import IcerikTab from "../components/dashboard/IcerikTab";
 import AiAraclarTab from "../components/dashboard/AiAraclarTab";
 import AyarlarTab from "../components/dashboard/AyarlarTab";
+import PlatformTab from "../components/dashboard/PlatformTab";
+import BusinessSwitcher from "../components/dashboard/BusinessSwitcher";
+import ReadOnlyBanner from "../components/dashboard/ReadOnlyBanner";
 import { useToast } from "../components/Toast";
+import { useLocale } from "@/hooks/useLocale";
 import { useDashboardSession } from "@/hooks/useDashboardSession";
 import {
   DEFAULT_ONBOARDING_DATA,
@@ -79,6 +83,7 @@ export default function Dashboard() {
   );
 
   const session = useDashboardSession(draftHandlers);
+  const { t } = useLocale();
 
   const aiUsageApi = useAiUsage(session.isPro, Boolean(session.business));
 
@@ -288,7 +293,7 @@ export default function Dashboard() {
       ></div>
 
       <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="glass-panel flex justify-between items-center p-5 md:px-8 rounded-[2rem] mb-8 shadow-sm border border-white/60 backdrop-blur-xl animate-fade-in-up">
+        <header className="glass-panel flex flex-col gap-4 p-5 md:px-8 rounded-[2rem] mb-8 shadow-sm border border-white/60 backdrop-blur-xl animate-fade-in-up lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <span className="text-3xl">🚀</span>
             <div>
@@ -296,19 +301,28 @@ export default function Dashboard() {
                 LocalPilot
               </h1>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                Yönetim Paneli
+                {t("dashboard.title", "Yönetim Paneli")}
               </p>
             </div>
           </div>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push("/auth");
-            }}
-            className="text-sm font-bold text-gray-500 hover:text-red-600 bg-white/50 px-4 py-2 rounded-full transition hover:bg-red-50"
-          >
-            Çıkış Yap ➔
-          </button>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <BusinessSwitcher
+              businesses={session.businesses}
+              activeBusinessId={session.business?.id}
+              onSwitch={session.switchBusiness}
+              label={t("platform.businessSwitcher")}
+            />
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/auth");
+              }}
+              className="text-sm font-bold text-gray-500 hover:text-red-600 bg-white/50 px-4 py-2 rounded-full transition hover:bg-red-50"
+            >
+              {t("dashboard.signOut", "Çıkış Yap")} ➔
+            </button>
+          </div>
         </header>
 
         {!session.business && !session.loading && (
@@ -332,6 +346,10 @@ export default function Dashboard() {
             />
 
             <main className="animate-fade-in-up relative">
+              {!session.platformAccess.canWrite && (
+                <ReadOnlyBanner message={t("platform.readOnly")} />
+              )}
+
               {activationChecklist.visible && activeTab !== "ayarlar" && (
                 <ProActivationChecklist
                   items={activationChecklist.items}
@@ -420,6 +438,15 @@ export default function Dashboard() {
                   proActivatedAt={session.proActivatedAt}
                   onNavigateTab={setActiveTab}
                   onDismissActivationChecklist={activationChecklist.dismiss}
+                />
+              )}
+
+              {activeTab === "platform" && (
+                <PlatformTab
+                  business={session.business}
+                  access={session.platformAccess}
+                  businesses={session.businesses}
+                  accountEmail={session.accountEmail}
                 />
               )}
             </main>

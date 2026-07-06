@@ -12,7 +12,7 @@ PUBLIC_PATHS = {
     "/redoc",
 }
 
-PUBLIC_PREFIXES = ("/docs/",)
+PUBLIC_PREFIXES = ("/docs/", "/platform/")
 
 
 def _wildcard_origin_to_regex(origin: str) -> str:

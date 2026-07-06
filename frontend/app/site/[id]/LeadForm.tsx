@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { buildLeadEmailDraft, recordLeadCapture } from "@/lib/mini-site";
+import { logAuditEvent } from "@/lib/platform/audit";
+import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 
 interface LeadFormProps {
   businessId: string;
@@ -60,6 +62,17 @@ export default function LeadForm({
     };
 
     recordLeadCapture(payload);
+    void logAuditEvent({
+      businessId,
+      action: "lead.created",
+      entityType: "customer",
+      metadata: payload,
+    });
+    void triggerBusinessWebhooks({
+      businessId,
+      event: "lead.created",
+      data: payload,
+    });
     setEmailDraft(buildLeadEmailDraft(payload, businessName));
     setStatus("success");
     setFormData({ full_name: "", phone: "", notes: "" });

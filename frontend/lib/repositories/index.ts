@@ -10,6 +10,25 @@ export {
 export { loadDecisionContext, loadOperationalSnapshot } from "./operations";
 export { listCampaigns, saveCampaigns } from "./campaigns";
 export { loadActivationMetricSignals } from "./activation-metrics";
+export {
+  fetchUserProfile,
+  getBusinessMemberRecord,
+  listAccessibleBusinesses,
+} from "./business-access";
+export {
+  inviteBusinessMember,
+  listBusinessMembers,
+  removeBusinessMember,
+} from "./business-members";
+export { listAuditLogs } from "./audit-logs";
+export {
+  createBusinessApiKey,
+  createBusinessWebhook,
+  listBusinessApiKeys,
+  listBusinessWebhooks,
+  revokeBusinessApiKey,
+  deleteBusinessWebhook,
+} from "./platform-integrations";
 export { listContentItems, saveContentItems } from "./content-items";
 export {
   listCustomerFollowUps,

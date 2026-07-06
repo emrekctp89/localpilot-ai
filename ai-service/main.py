@@ -19,6 +19,10 @@ from middleware.ai_usage import (
     get_usage_snapshot,
 )
 from middleware.billing import create_pro_guard_middleware, fetch_user_is_pro
+from middleware.platform_api import (
+    fetch_business_summary,
+    verify_business_api_key,
+)
 from middleware.security import (
     auth_is_required,
     build_rate_limiter,
@@ -124,6 +128,27 @@ async def ai_usage(request: Request):
     if is_pro:
         return build_pro_usage_snapshot()
     return get_usage_snapshot(supabase, user_id)
+
+
+@app.get("/platform/business-summary")
+async def platform_business_summary(request: Request, business_id: str):
+    api_key = request.headers.get("X-Business-API-Key", "").strip()
+    if not api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="X-Business-API-Key başlığı gerekli.",
+        )
+    if not verify_business_api_key(supabase, api_key, business_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Geçersiz veya iptal edilmiş API anahtarı.",
+        )
+
+    summary = fetch_business_summary(supabase, business_id)
+    if summary is None:
+        raise HTTPException(status_code=404, detail="İşletme bulunamadı.")
+
+    return {"status": "success", **summary}
 
 
 # ------------------------------------------------------------

@@ -207,11 +207,11 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 **Hedef:** Ajans ve çoklu işletme desteği.
 
-- [ ] Ekip rolleri (owner, staff, read-only)
-- [ ] Ajans modu: çoklu işletme yönetimi (`profiles.role = agency`)
-- [ ] Audit log (kim neyi değiştirdi)
-- [ ] Public API / webhook'lar (üçüncü parti entegrasyon)
-- [ ] Çoklu dil (TR → EN)
+- [x] Ekip rolleri (owner, staff, read-only)
+- [x] Ajans modu: çoklu işletme yönetimi (`profiles.role = agency`)
+- [x] Audit log (kim neyi değiştirdi)
+- [x] Public API / webhook'lar (üçüncü parti entegrasyon)
+- [x] Çoklu dil (TR → EN)
 
 ---
 

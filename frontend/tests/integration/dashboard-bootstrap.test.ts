@@ -14,11 +14,13 @@ describe("dashboard bootstrap", () => {
       readFile(path.join(frontendRoot, "hooks/useDashboardSession.ts"), "utf8"),
     ]);
 
+    assert.match(bootstrapSource, /fetchDashboardContext/);
     assert.match(bootstrapSource, /fetchProfileAndBusiness/);
-    assert.match(bootstrapSource, /pro_activated_at/);
+    assert.match(bootstrapSource, /listAccessibleBusinesses/);
     assert.match(bootstrapSource, /loadDashboardBootstrap/);
     assert.match(bootstrapSource, /Promise\.all/);
-    assert.match(sessionSource, /fetchProfileAndBusiness/);
+    assert.match(sessionSource, /fetchDashboardContext/);
+    assert.match(sessionSource, /switchBusiness/);
     assert.match(sessionSource, /loadDashboardBootstrap/);
   });
 });
