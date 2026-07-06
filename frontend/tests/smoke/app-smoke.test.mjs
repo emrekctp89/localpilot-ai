@@ -93,8 +93,8 @@ test("content history normalizes, timestamps, persists, and deletes items", asyn
   assert.match(source, /normalizeWhatsappTemplates/);
   assert.match(source, /record\.message/);
   assert.match(source, /created_at:\s*createdAt/);
-  assert.match(source, /\.from\(["']generated_plans["']\)/);
-  assert.match(source, /\.update\(updates\)/);
+  assert.match(source, /listContentItems/);
+  assert.match(source, /saveContentItems/);
   assert.match(source, /handleDeleteSocialPost/);
   assert.match(source, /handleDeleteWhatsappTemplate/);
   assert.match(source, /İçerik Geçmişi/);
@@ -107,9 +107,8 @@ test("CRM follow-ups migrate locally and persist to Supabase", async () => {
   ]);
 
   assert.match(crmSource, /localpilot-crm-reminders-/);
-  assert.match(crmSource, /miniSiteData\.crm_follow_ups/);
-  assert.match(crmSource, /crm_follow_ups:\s*nextReminders/);
-  assert.match(crmSource, /\.from\(["']generated_plans["']\)/);
+  assert.match(crmSource, /listCustomerFollowUps/);
+  assert.match(crmSource, /saveCustomerFollowUps/);
   assert.match(crmSource, /window\.localStorage\.removeItem\(reminderStorageKey\)/);
   assert.match(crmSource, /Buluta kaydedildi/);
   assert.match(domainSource, /crm_follow_ups\?:\s*Record<string,\s*CustomerFollowUp>/);
@@ -199,8 +198,9 @@ test("settings exposes account and Pro membership controls", async () => {
   assert.match(settingsSource, /Hesap ve Üyelik/);
   assert.match(settingsSource, /Pro'ya Yükselt/);
   assert.match(settingsSource, /Üyelik Durumunu Yenile/);
-  assert.match(settingsSource, /paymentStatus === "success"/);
-  assert.match(settingsSource, /paymentStatus === "cancel"/);
+  assert.match(settingsSource, /paymentReturn\?:\s*"success"/);
+  assert.match(settingsSource, /paymentReturn === "cancel"/);
+  assert.match(settingsSource, /Ödeme tamamlandı/);
   assert.match(dashboardSource, /refreshProStatus/);
   assert.match(dashboardSource, /accountEmail=\{session\.accountEmail\}/);
   assert.match(dashboardSource, /isPro=\{session\.isPro\}/);
@@ -216,11 +216,15 @@ test("decision center closes the data-to-measurement loop", async () => {
   assert.match(decisionSource, /Karar Merkezi/);
   assert.match(decisionSource, /Verileri Analiz Et/);
   assert.match(decisionSource, /handleApprove/);
-  assert.match(decisionSource, /createApprovedTaskAutomation/);
+  assert.match(decisionSource, /applyApprovedAutomation/);
   assert.match(decisionSource, /measureDecisionOutcome/);
   assert.match(decisionSource, /saveDecisionCycles/);
-  assert.match(decisionSource, /loadOperationalSnapshot/);
+  assert.match(decisionSource, /loadDecisionContext/);
+  assert.match(decisionSource, /getLearningHistory/);
+  assert.match(decisionSource, /buildDecisionDashboardSummary/);
   assert.match(engineSource, /export const APPROVAL_POLICY/);
+  assert.match(engineSource, /export const AUTOMATION_ACTION_UX/);
+  assert.match(engineSource, /getAutomationActionForKey/);
   assert.match(engineSource, /send_message:\s*true/);
   assert.match(engineSource, /publish_campaign:\s*true/);
   assert.match(engineSource, /financial_transaction:\s*true/);
@@ -373,6 +377,7 @@ test("operational repositories support table storage with legacy fallback", asyn
   assert.match(indexSource, /saveStaffTasks/);
   assert.match(indexSource, /saveDecisionCycles/);
   assert.match(indexSource, /loadOperationalSnapshot/);
+  assert.match(indexSource, /loadDecisionContext/);
   assert.match(migrationSource, /CREATE TABLE IF NOT EXISTS appointments/);
   assert.match(migrationSource, /CREATE TABLE IF NOT EXISTS orders/);
   assert.match(migrationSource, /CREATE TABLE IF NOT EXISTS staff_tasks/);
