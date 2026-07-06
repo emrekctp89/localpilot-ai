@@ -31,7 +31,9 @@ Stripe **Test mode** açıkken gerçek kart gerekmez. `sk_test_` anahtarı kulla
 - [ ] Checkout → Pro plan aktif
 - [ ] Webhook sonrası panelde `is_pro` güncelleniyor (yenile veya polling)
 
-**Yerel geliştirme webhook:**
+**Yerel geliştirme:** Webhook olmadan da çalışır — ödeme sonrası panel `confirm-pro-checkout` ile Stripe oturumunu doğrular.
+
+Opsiyonel webhook (arka plan senkronu):
 
 ```bash
 stripe listen --forward-to localhost:8000/stripe-webhook

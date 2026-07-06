@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 
+import { confirmProCheckout } from "@/lib/ai-client";
 import { supabase } from "@/lib/supabase";
 import type { Business, GeneratedPlan, MiniSitePublishStatus } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
@@ -18,6 +19,7 @@ interface AyarlarTabProps {
   handleUpgradeToPro?: () => Promise<void>;
   refreshProStatus?: () => Promise<boolean>;
   paymentReturn?: "success" | "cancel" | null;
+  checkoutSessionId?: string | null;
   onPaymentReturnHandled?: () => void;
   aiUsage?: AiUsageSnapshot | null;
   activationItems?: ActivationChecklistItem[];
@@ -37,6 +39,7 @@ export default function AyarlarTab({
   handleUpgradeToPro,
   refreshProStatus,
   paymentReturn = null,
+  checkoutSessionId = null,
   onPaymentReturnHandled,
   aiUsage = null,
   activationItems = [],
@@ -107,14 +110,22 @@ export default function AyarlarTab({
     setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
 
     const activatePro = async () => {
-      if (!refreshProStatus) {
-        onPaymentReturnHandled?.();
-        return;
-      }
+      const tryActivate = async () => {
+        try {
+          const confirmed = await confirmProCheckout({
+            session_id: checkoutSessionId,
+          });
+          if (confirmed.is_pro) return true;
+        } catch {
+          // Webhook veya Stripe gecikmesi — profil yenilemeye düş.
+        }
+        if (!refreshProStatus) return false;
+        return refreshProStatus();
+      };
 
-      for (let attempt = 0; attempt < 8; attempt += 1) {
+      for (let attempt = 0; attempt < 6; attempt += 1) {
         if (cancelled) return;
-        const active = await refreshProStatus();
+        const active = await tryActivate();
         if (active) {
           setBillingMessage("Pro üyeliğiniz aktif!");
           onPaymentReturnHandled?.();
@@ -135,7 +146,12 @@ export default function AyarlarTab({
     return () => {
       cancelled = true;
     };
-  }, [paymentReturn, refreshProStatus, onPaymentReturnHandled]);
+  }, [
+    checkoutSessionId,
+    paymentReturn,
+    refreshProStatus,
+    onPaymentReturnHandled,
+  ]);
 
   const inputClass =
     "w-full border border-gray-300 rounded-md p-3 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-800 outline-none transition";
@@ -316,14 +332,24 @@ export default function AyarlarTab({
   };
 
   const checkPlanStatus = async () => {
-    if (!refreshProStatus) return;
     setIsRefreshingPlan(true);
     try {
-      const active = await refreshProStatus();
+      let active = false;
+      try {
+        const confirmed = await confirmProCheckout({
+          session_id: checkoutSessionId,
+        });
+        active = Boolean(confirmed.is_pro);
+      } catch {
+        // Son ödeme bulunamadıysa profilden oku.
+      }
+      if (!active && refreshProStatus) {
+        active = await refreshProStatus();
+      }
       setBillingMessage(
         active
           ? "Pro üyeliğiniz aktif."
-          : "Pro üyelik henüz aktif görünmüyor. Birkaç saniye sonra tekrar deneyin.",
+          : "Pro üyelik henüz aktif görünmüyor. Ödeme tamamlandıysa birkaç saniye sonra tekrar deneyin.",
       );
     } finally {
       setIsRefreshingPlan(false);

@@ -93,5 +93,6 @@ describe("pro funnel integration", () => {
     assert.match(dashboardSource, /canUseAi=\{canUseAi\}/);
     assert.match(usageSource, /FREE_AI_DAILY_LIMIT/);
     assert.match(aiClientSource, /fetchAiUsage/);
+    assert.match(aiClientSource, /confirmProCheckout/);
   });
 });

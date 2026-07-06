@@ -32,6 +32,7 @@ from middleware.security import (
     parse_allow_origin_regex,
     parse_allowed_origins,
 )
+from middleware.stripe_checkout import confirm_pro_checkout
 from middleware.stripe_webhook import handle_stripe_event
 from ai_cache import (
     build_cache_key,
@@ -244,6 +245,10 @@ class CampaignInput(BaseModel):
 
 class CheckoutInput(BaseModel):
     user_id: str
+
+
+class ConfirmCheckoutInput(BaseModel):
+    session_id: Optional[str] = None
 
 
 class BusinessSetup(BaseModel):
@@ -533,7 +538,10 @@ async def create_checkout_session(data: CheckoutInput):
                 }
             ],
             mode="payment",
-            success_url=f"{FRONTEND_URL}/dashboard?payment=success",
+            success_url=(
+                f"{FRONTEND_URL}/dashboard"
+                "?payment=success&session_id={CHECKOUT_SESSION_ID}"
+            ),
             cancel_url=f"{FRONTEND_URL}/dashboard?payment=cancel",
             metadata={"user_id": data.user_id},
         )
@@ -564,6 +572,30 @@ async def stripe_webhook(request: Request):
     result, status_code = handle_stripe_event(event, supabase)
     if status_code >= 500:
         print(f"stripe_webhook_handler_failed detail={result.get('detail')}")
+        raise HTTPException(status_code=status_code, detail=result.get("detail"))
+
+    return result
+
+
+@app.post("/confirm-pro-checkout")
+async def confirm_pro_checkout_endpoint(
+    request: Request, data: ConfirmCheckoutInput
+):
+    subject = getattr(request.state, "auth_subject", "")
+    if not subject.startswith("user:"):
+        raise HTTPException(
+            status_code=401,
+            detail="Pro onayı için oturum açmanız gerekir.",
+        )
+
+    user_id = subject.split(":", 1)[1]
+    result, status_code = confirm_pro_checkout(
+        stripe,
+        supabase,
+        user_id,
+        data.session_id,
+    )
+    if status_code >= 400:
         raise HTTPException(status_code=status_code, detail=result.get("detail"))
 
     return result

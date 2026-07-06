@@ -171,6 +171,14 @@ export async function createCheckoutSession(input: {
   return postJson("/create-checkout-session", input);
 }
 
+export async function confirmProCheckout(input?: {
+  session_id?: string | null;
+}): Promise<{ status: string; is_pro?: boolean }> {
+  return postJson("/confirm-pro-checkout", {
+    session_id: input?.session_id ?? null,
+  });
+}
+
 export interface AiUsageResponse {
   is_pro: boolean;
   daily: {

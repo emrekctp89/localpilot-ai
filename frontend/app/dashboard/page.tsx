@@ -50,6 +50,7 @@ import {
   clearPaymentReturnFromUrl,
   markEstablishedBusiness,
   onboardingDraftKey,
+  readCheckoutSessionId,
   readPaymentReturn,
 } from "@/lib/dashboard-session-storage";
 
@@ -66,6 +67,7 @@ export default function Dashboard() {
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancel" | null>(
     null,
   );
+  const [checkoutSessionId, setCheckoutSessionId] = useState<string | null>(null);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingData, setOnboardingData] =
     useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
@@ -140,6 +142,7 @@ export default function Dashboard() {
     if (!payment) return;
 
     setPaymentReturn(payment);
+    setCheckoutSessionId(readCheckoutSessionId());
     setActiveTab("ayarlar");
   }, []);
 
@@ -474,7 +477,11 @@ export default function Dashboard() {
                   handleUpgradeToPro={handleUpgradeToPro}
                   refreshProStatus={session.refreshProStatus}
                   paymentReturn={paymentReturn}
-                  onPaymentReturnHandled={() => setPaymentReturn(null)}
+                  checkoutSessionId={checkoutSessionId}
+                  onPaymentReturnHandled={() => {
+                    setPaymentReturn(null);
+                    setCheckoutSessionId(null);
+                  }}
                   aiUsage={aiUsageApi.usage}
                   activationItems={activationChecklist.items}
                   showActivationChecklist={activationChecklist.visible}

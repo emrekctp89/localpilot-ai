@@ -50,11 +50,19 @@ export function readPaymentReturn(): PaymentReturnStatus | null {
   return null;
 }
 
+export function readCheckoutSessionId(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("session_id");
+}
+
 export function clearPaymentReturnFromUrl() {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
-  if (!url.searchParams.has("payment")) return;
+  if (!url.searchParams.has("payment") && !url.searchParams.has("session_id")) {
+    return;
+  }
   url.searchParams.delete("payment");
+  url.searchParams.delete("session_id");
   const nextUrl = `${url.pathname}${url.search}${url.hash}`;
   window.history.replaceState({}, "", nextUrl);
 }
