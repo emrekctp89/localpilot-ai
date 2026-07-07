@@ -112,6 +112,16 @@ if ALLOW_ORIGIN_REGEX:
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 
+@app.get("/")
+async def root():
+    return {
+        "service": "localpilot-ai",
+        "status": "running",
+        "health": "/health",
+        "docs": "/docs",
+    }
+
+
 @app.get("/health")
 async def health():
     checks = {
