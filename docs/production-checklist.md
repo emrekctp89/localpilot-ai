@@ -42,8 +42,10 @@ WHERE id = '<kullanici-uuid>';
 
 Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
 
-- [ ] `001` → `007` tamamlandı
+- [ ] `001` → `008` tamamlandı (`008_schema_migrations.sql` dahil)
 - [ ] `supabase/scripts/verify_schema.sql` çalıştırıldı — tüm satırlar `ok = true`
+- [ ] `supabase/scripts/rls_audit.sql` çalıştırıldı — RLS fonksiyonları ve policy'ler OK
+- [ ] Yerel doğrulama: `cd ai-service && python ../supabase/scripts/verify_schema_remote.py`
 
 **Manuel RLS audit (iki test hesabı):**
 

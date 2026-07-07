@@ -77,14 +77,20 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 ### B.1 Migration ve RLS
 - [x] `007_fix_rls_recursion.sql`
 - [x] `supabase/scripts/verify_schema.sql` — tek sorguda migration doğrulama
+- [x] `supabase/scripts/verify_schema_remote.py` — CLI uzaktan tablo doğrulama
+- [x] `008_schema_migrations.sql` — migration versiyon takibi
+- [x] `supabase/scripts/rls_audit.sql` — manuel RLS audit sorguları
 - [x] Migration dosya bütünlüğü testi (`rls-migrations.test.ts`)
-- [ ] Production Supabase'de `verify_schema.sql` çalıştır → tüm satırlar `ok = true`
+- [x] Uzaktan tablo doğrulama (service role ile — tüm tablolar OK)
+- [ ] `008_schema_migrations.sql` Supabase'de uygula
+- [ ] `verify_schema.sql` SQL Editor'de çalıştır (RLS fonksiyonları dahil)
 - [ ] Manuel RLS audit: iki test kullanıcısı ile çapraz erişim (checklist §5)
 
 ### B.2 CI/CD ve E2E
 - [x] AI service unit test suite CI'da
 - [x] Production smoke workflow (6 saatte bir)
 - [x] E2E job'ları secrets yoksa graceful skip
+- [x] `verify-schema.yml` workflow (SUPABASE secrets ile opt-in)
 - [ ] GitHub Secrets: `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`, `E2E_TEST_HAS_BUSINESS`
 - [ ] `E2E_PUBLIC_BUSINESS_ID` (mini site lead testi)
 - [ ] ~~Stripe E2E~~ (Faz A ertelendi)
@@ -158,11 +164,12 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 ## Bu Sprint — Faz B görevleri
 
-1. [ ] Supabase SQL Editor → `supabase/scripts/verify_schema.sql` çalıştır
-2. [ ] `007_fix_rls_recursion.sql` production'da uygulandığını doğrula
-3. [ ] İki test hesabı ile RLS çapraz erişim testi (checklist §5)
-4. [ ] GitHub repo Secrets → E2E kimlik bilgileri (opsiyonel ama önerilir)
-5. [ ] Production Smoke workflow yeşil mi kontrol et
+1. [x] Uzaktan tablo doğrulama (`verify_schema_remote.py`) — geçti
+2. [ ] Supabase SQL Editor → `008_schema_migrations.sql` uygula
+3. [ ] `verify_schema.sql` + `rls_audit.sql` çalıştır
+4. [ ] İki test hesabı ile RLS çapraz erişim testi (checklist §5)
+5. [ ] GitHub Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (opsiyonel CI verify)
+6. [ ] GitHub Secrets → E2E kimlik bilgileri (opsiyonel)
 
 ---
 

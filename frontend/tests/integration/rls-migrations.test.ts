@@ -24,6 +24,7 @@ describe("RLS and migration integrity (Faz B)", () => {
       "005_ai_usage.sql",
       "006_platform.sql",
       "007_fix_rls_recursion.sql",
+      "008_schema_migrations.sql",
     ]);
   });
 

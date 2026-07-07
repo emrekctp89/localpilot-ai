@@ -100,3 +100,10 @@ SELECT 'policy_businesses_member_select',
            AND tablename = 'businesses'
            AND policyname = 'businesses_member_select'
        );
+
+-- 008 migration tracking
+SELECT 'schema_migrations',
+       EXISTS (
+         SELECT 1 FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'schema_migrations'
+       );

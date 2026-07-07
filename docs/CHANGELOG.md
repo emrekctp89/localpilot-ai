@@ -2,6 +2,10 @@
 
 ## 2.1.1 - Unreleased
 
+### Added
+- Added `008_schema_migrations.sql` for migration version tracking.
+- Added `verify_schema_remote.py`, `rls_audit.sql`, and optional `verify-schema.yml` CI workflow.
+
 ### Changed
 - Deferred automatic Pro billing; manual `profiles.is_pro` documented as current process.
 - Active roadmap sprint moved to Faz B (production hardening: migrations, RLS, CI/E2E).
