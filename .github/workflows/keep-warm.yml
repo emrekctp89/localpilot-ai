@@ -29,8 +29,13 @@ jobs:
         env:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
+          BASE_URL="${AI_SERVICE_URL//[[:space:]]/}"
+          BASE_URL="${BASE_URL%/}"
+          BASE_URL="${BASE_URL%/health}"
+          HEALTH_URL="${BASE_URL}/health"
+          echo "Pinging: ${HEALTH_URL}"
           curl --fail --silent --show-error --retry 5 --retry-delay 8 \
             --retry-all-errors \
             --max-time 90 \
-            "${AI_SERVICE_URL%/}/health"
+            "${HEALTH_URL}"
           echo "AI service keep-warm ping succeeded."
