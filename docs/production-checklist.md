@@ -63,8 +63,8 @@ Tablolar doluysa JSON fallback kapatılır:
 
 - [x] `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true` — `.env.local`
 - [x] Aynı değişken Vercel Environment Variables (Production)
-- [ ] Vercel **Redeploy** yapıldı (`NEXT_PUBLIC_*` build zamanında gömülür)
-- [ ] Panelde randevu, sipariş, kampanya, içerik sekmeleri veri gösteriyor (tablolardan)
+- [x] Vercel **Redeploy** yapıldı (`NEXT_PUBLIC_*` build zamanında gömülür)
+- [x] Panelde randevu, sipariş, kampanya, içerik sekmeleri veri gösteriyor (tablolardan)
 
 ## 6. Ana akışlar
 
