@@ -84,7 +84,8 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 - [x] Uzaktan tablo doğrulama (service role ile — tüm tablolar OK)
 - [x] `008_schema_migrations.sql` Supabase'de uygulandı (8 migration kaydı)
 - [x] `verify_schema_remote.py` — tablolar + `profiles` kolonları OK
-- [ ] `verify_schema.sql` SQL Editor'de çalıştır (RLS fonksiyonları dahil)
+- [x] `verify_schema.sql` SQL Editor'de çalıştırıldı
+- [x] `rls_audit.sql` SQL Editor'de çalıştırıldı
 - [ ] Manuel RLS audit: iki test kullanıcısı ile çapraz erişim (checklist §5)
 
 ### B.2 CI/CD ve E2E
@@ -116,7 +117,7 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 - [x] Tüm repository'lerde dual-read gate (plan-legacy, campaigns, content-items, operasyonel)
 - [x] `legacy-dual-read.test.ts` integration testi
 - [x] `seed_dev.sql` şablonu
-- [ ] Production'da flag aç: `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true`
+- [x] Production'da flag aç: `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true` (`.env.local` + Vercel)
 - [ ] Rollback script'leri
 - [x] Migration versiyon takibi (`008_schema_migrations.sql`)
 
@@ -171,7 +172,7 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 1. [x] `isLegacyDualReadEnabled()` + tüm repository gate'leri
 2. [x] `legacy-dual-read.test.ts` + `production.env.template` dokümantasyonu
-3. [ ] Tablolar doluysa Vercel + `.env.local` → `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true`
+3. [x] Vercel + `.env.local` → `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true`
 4. [ ] `seed_dev.sql` ile geliştirme ortamı doldurma (opsiyonel)
 5. [ ] Rollback script'leri
 
@@ -179,7 +180,7 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 1. [x] `008_schema_migrations.sql` uygulandı
 2. [x] `verify_schema_remote.py` — geçti
-3. [ ] SQL Editor → `verify_schema.sql` + `rls_audit.sql`
+3. [x] SQL Editor → `verify_schema.sql` + `rls_audit.sql`
 4. [ ] İki test hesabı ile RLS çapraz erişim testi (checklist §5)
 
 ---

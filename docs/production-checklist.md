@@ -42,10 +42,10 @@ WHERE id = '<kullanici-uuid>';
 
 Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
 
-- [ ] `001` → `008` tamamlandı (`008_schema_migrations.sql` dahil)
-- [ ] `supabase/scripts/verify_schema.sql` çalıştırıldı — tüm satırlar `ok = true`
-- [ ] `supabase/scripts/rls_audit.sql` çalıştırıldı — RLS fonksiyonları ve policy'ler OK
-- [ ] Yerel doğrulama: `cd ai-service && python ../supabase/scripts/verify_schema_remote.py`
+- [x] `001` → `008` tamamlandı (`008_schema_migrations.sql` dahil)
+- [x] `supabase/scripts/verify_schema.sql` çalıştırıldı — tüm satırlar `ok = true`
+- [x] `supabase/scripts/rls_audit.sql` çalıştırıldı — RLS fonksiyonları ve policy'ler OK
+- [x] Yerel doğrulama: `cd ai-service && python ../supabase/scripts/verify_schema_remote.py`
 
 **Manuel RLS audit (iki test hesabı):**
 
@@ -56,6 +56,15 @@ Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
 
 - [ ] Çapraz kullanıcı erişimi engelli
 - [ ] İşletme sahibi kendi verisine erişebiliyor
+
+## 5b. Legacy dual-read kapatma (Faz C)
+
+Tablolar doluysa JSON fallback kapatılır:
+
+- [x] `NEXT_PUBLIC_DISABLE_LEGACY_DUAL_READ=true` — `.env.local`
+- [x] Aynı değişken Vercel Environment Variables (Production)
+- [ ] Vercel **Redeploy** yapıldı (`NEXT_PUBLIC_*` build zamanında gömülür)
+- [ ] Panelde randevu, sipariş, kampanya, içerik sekmeleri veri gösteriyor (tablolardan)
 
 ## 6. Ana akışlar
 
