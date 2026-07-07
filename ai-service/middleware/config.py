@@ -23,16 +23,20 @@ def _wildcard_origin_to_regex(origin: str) -> str:
 
 def parse_allowed_origins(frontend_url: str) -> list[str]:
     raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+    origins: set[str] = set()
+    frontend = (frontend_url or "").strip()
+    if frontend:
+        origins.add(frontend)
     if raw:
-        origins = []
         for item in raw.split(","):
             origin = item.strip()
             if origin and "*" not in origin:
-                origins.append(origin)
-        return origins
+                origins.add(origin)
+    if origins:
+        return sorted(origins)
 
-    defaults = {frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"}
-    return sorted(defaults)
+    defaults = {frontend, "http://localhost:3000", "http://127.0.0.1:3000"}
+    return sorted(origin for origin in defaults if origin)
 
 
 def parse_allow_origin_regex(frontend_url: str) -> Optional[str]:

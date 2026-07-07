@@ -18,10 +18,14 @@ class SecurityConfigTests(unittest.TestCase):
             {"ALLOWED_ORIGINS": "https://app.example.com, https://staging.example.com"},
             clear=False,
         ):
-            origins = parse_allowed_origins("http://localhost:3000")
+            origins = parse_allowed_origins("https://panel.example.com")
             self.assertEqual(
                 origins,
-                ["https://app.example.com", "https://staging.example.com"],
+                [
+                    "https://app.example.com",
+                    "https://panel.example.com",
+                    "https://staging.example.com",
+                ],
             )
 
     def test_parse_allowed_origins_strips_wildcard_entries(self):

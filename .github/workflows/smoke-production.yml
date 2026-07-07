@@ -62,7 +62,10 @@ jobs:
             -H "Access-Control-Request-Method: GET" \
             "${HEALTH_URL}")
           echo "CORS preflight status: $status"
-          test "$status" = "200" -o "$status" = "204"
+          if [ "$status" != "200" ] && [ "$status" != "204" ]; then
+            echo "::error::CORS preflight başarısız (${status}). Render → FRONTEND_URL ve ALLOWED_ORIGINS, GitHub → FRONTEND_URL aynı Vercel domain olmalı."
+            exit 1
+          fi
 
       - name: Check frontend home
         if: steps.gate.outputs.enabled == 'true'
