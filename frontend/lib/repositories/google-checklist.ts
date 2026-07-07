@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { GoogleBusinessChecklist } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -61,6 +62,10 @@ export async function loadGoogleChecklist(
       await commitTableWrite(businessId, true, "google_business_checklist");
       return legacyChecklist;
     }
+    return EMPTY_CHECKLIST;
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return EMPTY_CHECKLIST;
   }
 

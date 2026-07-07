@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { StaffTask } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -86,6 +87,10 @@ export async function listStaffTasks(
       await commitTableWrite(businessId, true, "tasks");
       return legacyItems;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 

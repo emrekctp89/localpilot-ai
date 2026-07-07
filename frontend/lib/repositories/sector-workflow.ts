@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { SectorWorkflowItem } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -115,6 +116,10 @@ export async function listSectorWorkflowItems(
       await commitTableWrite(businessId, true, "sector_workflow_items");
       return legacyPackItems;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 

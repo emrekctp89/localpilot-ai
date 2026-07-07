@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { DecisionCycle } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -115,6 +116,10 @@ export async function listDecisionCycles(
       await commitTableWrite(businessId, true, "decision_cycles");
       return legacyItems;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 

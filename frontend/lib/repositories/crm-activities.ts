@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { CrmStatusHistoryItem, CustomerFollowUp } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -47,6 +48,10 @@ function rowsToRecord(rows: CrmActivityRow[]): Record<string, CustomerFollowUp> 
 async function loadLegacyFollowUps(
   businessId: string,
 ): Promise<Record<string, CustomerFollowUp>> {
+  if (!isLegacyDualReadEnabled()) {
+    return {};
+  }
+
   const legacy = await loadLegacyMiniSiteData(businessId);
   return legacy.crm_follow_ups || {};
 }
@@ -91,6 +96,10 @@ export async function listCustomerFollowUps(
       await commitTableWrite(businessId, true, "crm_follow_ups");
       return legacy;
     }
+    return {};
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return {};
   }
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { SocialPost, WhatsappTemplate } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 
 type ContentType = "social_post" | "whatsapp_template";
 
@@ -107,7 +108,16 @@ const normalizeWhatsappTemplates = (items: unknown[]): WhatsappTemplate[] =>
     return templates;
   }, []);
 
+const EMPTY_LEGACY_CONTENT: LegacyContent = {
+  socialPosts: [],
+  waTemplates: [],
+};
+
 async function loadLegacyContent(businessId: string): Promise<LegacyContent> {
+  if (!isLegacyDualReadEnabled()) {
+    return EMPTY_LEGACY_CONTENT;
+  }
+
   const { data } = await supabase
     .from("generated_plans")
     .select("social_media_calendar, whatsapp_templates")
@@ -198,6 +208,10 @@ export async function listContentItems(
       return legacy;
     }
     return { socialPosts: [], waTemplates: [] };
+  }
+
+  if (!isLegacyDualReadEnabled()) {
+    return EMPTY_LEGACY_CONTENT;
   }
 
   return loadLegacyContent(businessId);

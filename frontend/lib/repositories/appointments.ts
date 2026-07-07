@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Appointment } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -88,6 +89,10 @@ export async function listAppointments(
       await commitTableWrite(businessId, true, "appointments");
       return legacyItems;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Campaign } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
 import { commitTableWrite } from "./table-store";
 
@@ -44,6 +45,10 @@ function campaignToRow(
 }
 
 async function loadLegacyCampaigns(businessId: string): Promise<Campaign[]> {
+  if (!isLegacyDualReadEnabled()) {
+    return [];
+  }
+
   const { data } = await supabase
     .from("generated_plans")
     .select("campaigns, mini_site_data")
@@ -92,6 +97,10 @@ export async function listCampaigns(businessId: string): Promise<Campaign[]> {
       await commitTableWrite(businessId, true, "campaigns");
       return legacy;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 

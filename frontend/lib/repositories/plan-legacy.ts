@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { MiniSiteData } from "@/lib/domain-types";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 
 const MIGRATED_MINI_SITE_FIELDS: (keyof MiniSiteData)[] = [
   "appointments",
@@ -15,6 +16,10 @@ const MIGRATED_MINI_SITE_FIELDS: (keyof MiniSiteData)[] = [
 export async function loadLegacyMiniSiteData(
   businessId: string,
 ): Promise<MiniSiteData> {
+  if (!isLegacyDualReadEnabled()) {
+    return {};
+  }
+
   const { data } = await supabase
     .from("generated_plans")
     .select("mini_site_data")

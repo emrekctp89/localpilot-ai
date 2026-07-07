@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Order } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { isLegacyDualReadEnabled } from "./legacy-config";
 import { loadLegacyMiniSiteData } from "./plan-legacy";
 import { commitTableWrite } from "./table-store";
 
@@ -84,6 +85,10 @@ export async function listOrders(businessId: string): Promise<Order[]> {
       await commitTableWrite(businessId, true, "orders");
       return legacyItems;
     }
+    return [];
+  }
+
+  if (!isLegacyDualReadEnabled()) {
     return [];
   }
 
