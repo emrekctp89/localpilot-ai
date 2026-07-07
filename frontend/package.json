@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "npm run test:smoke && npm run test:integration",
     "test:smoke": "node --test tests/smoke/app-smoke.test.mjs",
-    "test:integration": "tsx --test tests/integration/business-os.test.ts tests/integration/repositories.test.ts tests/integration/campaign-mapping.test.ts tests/integration/crm-activities.test.ts tests/integration/integrations.test.ts tests/integration/dashboard-bootstrap.test.ts tests/integration/dashboard-session.test.ts tests/integration/pro-funnel.test.ts tests/integration/activation-metrics.test.ts tests/integration/marketing-site.test.ts tests/integration/platform.test.ts",
+    "test:integration": "tsx --test tests/integration/business-os.test.ts tests/integration/repositories.test.ts tests/integration/campaign-mapping.test.ts tests/integration/crm-activities.test.ts tests/integration/integrations.test.ts tests/integration/dashboard-bootstrap.test.ts tests/integration/dashboard-session.test.ts tests/integration/pro-funnel.test.ts tests/integration/activation-metrics.test.ts tests/integration/marketing-site.test.ts tests/integration/platform.test.ts tests/integration/rls-migrations.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed"

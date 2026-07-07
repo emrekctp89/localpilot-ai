@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.1 - Unreleased
+
+### Changed
+- Deferred automatic Pro billing; manual `profiles.is_pro` documented as current process.
+- Active roadmap sprint moved to Faz B (production hardening: migrations, RLS, CI/E2E).
+
+### Added
+- `supabase/scripts/verify_schema.sql` for one-shot migration verification in Supabase.
+- `rls-migrations.test.ts` integration guard for migration set and RLS fix helpers.
+
 ## 2.1.0 - Unreleased
 
 ### Fixed
