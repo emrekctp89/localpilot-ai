@@ -20,11 +20,16 @@ import type {
   StaffTask,
 } from "@/lib/domain-types";
 import {
+  getDecisionQuickActions,
+  type DecisionQuickAction,
+} from "@/lib/decision-quick-actions";
+import {
   listDecisionCycles,
   loadDecisionContext,
   saveDecisionCycles,
   saveStaffTasks,
 } from "@/lib/repositories";
+import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 
 interface KararMerkeziTabProps {
   business: Business;
@@ -153,11 +158,25 @@ export default function KararMerkeziTab({
       ),
     );
 
-  const handleApprove = (cycleId: string) =>
-    updateCycle(cycleId, {
+  const handleApprove = (cycleId: string) => {
+    const cycle = cycles.find((item) => item.id === cycleId);
+    if (cycle && business.id) {
+      void triggerBusinessWebhooks({
+        businessId: business.id,
+        event: "decision.approved",
+        data: {
+          cycle_id: cycle.id,
+          recommendation_key: cycle.recommendationKey,
+          recommendation: cycle.recommendation,
+        },
+      });
+    }
+
+    return updateCycle(cycleId, {
       status: "onaylandi",
       approvedAt: new Date().toISOString(),
     });
+  };
 
   const handleAutomate = (cycle: DecisionCycle) => {
     const existingTasks = Array.isArray(decisionContext.tasks)
@@ -173,8 +192,39 @@ export default function KararMerkeziTab({
     );
 
     persistCycles(nextCycles, automation.tasks ? { tasks: automation.tasks } : {});
+
+    if (business.id) {
+      void triggerBusinessWebhooks({
+        businessId: business.id,
+        event: "decision.automated",
+        data: {
+          cycle_id: cycle.id,
+          recommendation_key: cycle.recommendationKey,
+          action: getAutomationActionForKey(cycle.recommendationKey),
+        },
+      });
+    }
+
     if (automation.redirectTab) {
       setActiveTab(automation.redirectTab);
+    }
+  };
+
+  const handleQuickAction = async (action: DecisionQuickAction) => {
+    if (action.kind === "whatsapp" || action.kind === "google_open") {
+      if (action.url) window.open(action.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (action.kind === "copy_text" && action.copyText) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(action.copyText);
+      }
+      return;
+    }
+
+    if (action.kind === "navigate" && action.tab) {
+      setActiveTab(action.tab);
     }
   };
 
@@ -309,6 +359,13 @@ export default function KararMerkeziTab({
           {cycles.map((cycle) => {
             const action = getAutomationActionForKey(cycle.recommendationKey);
             const actionUx = AUTOMATION_ACTION_UX[action];
+            const quickActions = getDecisionQuickActions(
+              cycle,
+              business,
+              decisionContext.google_business_checklist || {
+                completedItemIds: [],
+              },
+            );
 
             return (
               <article
@@ -423,6 +480,37 @@ export default function KararMerkeziTab({
                     </button>
                   )}
                 </div>
+
+                {quickActions.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-indigo-700">
+                      Tek Tık Aksiyon
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {quickActions.map((quickAction) => (
+                        <button
+                          key={quickAction.id}
+                          type="button"
+                          onClick={() => handleQuickAction(quickAction)}
+                          className={`rounded-xl px-4 py-2 text-sm font-bold ${
+                            quickAction.kind === "whatsapp"
+                              ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                              : quickAction.kind === "google_open"
+                                ? "bg-blue-600 text-white hover:bg-blue-500"
+                                : "border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50"
+                          }`}
+                        >
+                          {quickAction.label}
+                        </button>
+                      ))}
+                    </div>
+                    {quickActions[0]?.hint && (
+                      <p className="mt-2 text-xs text-indigo-700">
+                        {quickActions[0].hint}
+                      </p>
+                    )}
+                  </div>
+                )}
               </article>
             );
           })}

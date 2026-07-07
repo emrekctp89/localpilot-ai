@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   listSectorWorkflowItems,
+  listStaffTasks,
   saveSectorWorkflowItems,
+  saveStaffTasks,
 } from "@/lib/repositories";
+import { buildSectorAutomationExecutable } from "@/lib/sector-automation-triggers";
+import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 import {
   computePackMetricCards,
   getActiveSectorAutomations,
@@ -25,6 +29,9 @@ export default function SektorIsAkisiTab({
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [applyingAutomationId, setApplyingAutomationId] = useState<string | null>(
+    null,
+  );
   const [form, setForm] = useState({
     title: "",
     customer: "",
@@ -114,6 +121,45 @@ export default function SektorIsAkisiTab({
     [items, pack],
   );
 
+  const handleApplyAutomation = async (
+    automation: (typeof automationSuggestions)[number],
+  ) => {
+    if (!business.id) return;
+
+    const executable = buildSectorAutomationExecutable(
+      pack,
+      automation,
+      business,
+      items,
+    );
+    if (!executable) return;
+
+    setApplyingAutomationId(automation.id);
+
+    try {
+      if (executable.channel === "task" && executable.task) {
+        const existingTasks = await listStaffTasks(business.id);
+        await saveStaffTasks(business.id, [executable.task, ...existingTasks]);
+      } else if (executable.whatsappUrl) {
+        window.open(executable.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+
+      await triggerBusinessWebhooks({
+        businessId: business.id,
+        event: "sector.automation.triggered",
+        data: {
+          automation_id: executable.automationId,
+          title: executable.title,
+          channel: executable.channel,
+          affected_customers: executable.affectedCustomers,
+          message: executable.message,
+        },
+      });
+    } finally {
+      setApplyingAutomationId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-2xl bg-white p-12 text-center font-medium text-gray-500">
@@ -183,7 +229,15 @@ export default function SektorIsAkisiTab({
             </span>
           </div>
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {automationSuggestions.map((automation) => (
+            {automationSuggestions.map((automation) => {
+              const executable = buildSectorAutomationExecutable(
+                pack,
+                automation,
+                business,
+                items,
+              );
+
+              return (
               <article
                 key={automation.id}
                 className="rounded-2xl border border-amber-100 bg-white p-4"
@@ -204,8 +258,19 @@ export default function SektorIsAkisiTab({
                 <p className="mt-3 text-sm font-medium text-amber-900">
                   {automation.suggestedAction}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => handleApplyAutomation(automation)}
+                  disabled={applyingAutomationId === automation.id}
+                  className="mt-4 rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-60"
+                >
+                  {applyingAutomationId === automation.id
+                    ? "Uygulanıyor..."
+                    : executable?.label || "Uygula"}
+                </button>
               </article>
-            ))}
+            );
+            })}
           </div>
         </section>
       )}

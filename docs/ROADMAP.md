@@ -123,11 +123,12 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 ---
 
-## Faz D — Ürün Derinliği (P1) → v2.2.x
+## Faz D — Ürün Derinliği (P1) → v2.2.x 🔄 AKTİF
 
 - [x] Karar Merkezi v2, sektör pack v2, mini site SEO
-- [ ] Sektör otomasyon tetikleyicileri (cron / webhook)
-- [ ] Karar Merkezi → WhatsApp / Google tek tık aksiyon
+- [x] Sektör otomasyon tetikleyicileri — panel "Uygula" + webhook + günlük cron
+- [x] Karar Merkezi → WhatsApp / Google tek tık aksiyon
+- [ ] Ana akış smoke testi (checklist §6)
 
 ---
 
@@ -170,9 +171,10 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 ## Bu Sprint — Faz D görevleri
 
-1. [ ] Sektör otomasyon tetikleyicileri (cron / webhook)
-2. [ ] Karar Merkezi → WhatsApp / Google tek tık aksiyon
-3. [ ] Ana akış smoke testi (checklist §6)
+1. [x] Sektör otomasyon: `SektorIsAkisiTab` Uygula + `sector.automation.triggered` webhook
+2. [x] Günlük cron: `sector-automation-cron.yml` (opt-in: `SECTOR_AUTOMATION_CRON_ENABLED=true`)
+3. [x] Karar Merkezi tek tık: WhatsApp / Google / kopyala (`decision-quick-actions.ts`)
+4. [ ] Ana akış smoke testi (checklist §6)
 
 ### Arka planda (opsiyonel)
 
