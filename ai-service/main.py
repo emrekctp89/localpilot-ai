@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
@@ -19,7 +20,11 @@ from middleware.ai_usage import (
     get_usage_snapshot,
 )
 from middleware.billing import create_pro_guard_middleware, fetch_user_is_pro
-from middleware.config import is_development, resolve_stripe_mode
+from middleware.config import (
+    is_development,
+    is_origin_allowed,
+    resolve_stripe_mode,
+)
 from middleware.platform_api import (
     fetch_business_summary,
     verify_business_api_key,
@@ -104,12 +109,25 @@ cors_kwargs = {
     "allow_origins": ALLOWED_ORIGINS,
     "allow_credentials": True,
     "allow_methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Authorization", "Content-Type", "X-API-Key", "stripe-signature"],
+    "allow_headers": ["*"],
 }
 if ALLOW_ORIGIN_REGEX:
     cors_kwargs["allow_origin_regex"] = ALLOW_ORIGIN_REGEX
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
+
+
+def _cors_preflight_response(origin: str) -> Response:
+    return Response(
+        status_code=204,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key, stripe-signature",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "600",
+        },
+    )
 
 
 @app.get("/")
@@ -120,6 +138,14 @@ async def root():
         "health": "/health",
         "docs": "/docs",
     }
+
+
+@app.options("/health")
+async def health_preflight(request: Request):
+    origin = request.headers.get("origin", "")
+    if is_origin_allowed(origin, ALLOWED_ORIGINS, ALLOW_ORIGIN_REGEX):
+        return _cors_preflight_response(origin)
+    return Response(status_code=400)
 
 
 @app.get("/health")
@@ -139,6 +165,11 @@ async def health():
         "checks": checks,
         "stripe_mode": resolve_stripe_mode(STRIPE_SECRET_KEY),
         "ai_cache": get_cache_stats(),
+        "cors": {
+            "frontend_url": FRONTEND_URL,
+            "allowed_origins": ALLOWED_ORIGINS,
+            "allow_origin_regex": ALLOW_ORIGIN_REGEX,
+        },
     }
 
 

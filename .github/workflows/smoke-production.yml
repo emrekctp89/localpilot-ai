@@ -13,6 +13,8 @@ jobs:
 
       - name: Check monitoring gate
         id: gate
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
           if [ "${{ vars.PRODUCTION_MONITORING_ENABLED }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
@@ -28,6 +30,10 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::warning::FRONTEND_URL tanımlı değil. Settings → Secrets and variables → Actions → Variables"
             exit 0
+          fi
+          TRIMMED="$(printf '%s' "$FRONTEND_URL" | tr -d '[:space:]')"
+          if [ "$FRONTEND_URL" != "$TRIMMED" ]; then
+            echo "::warning::FRONTEND_URL başında/sonunda boşluk var. Variable değerini düzeltin."
           fi
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 

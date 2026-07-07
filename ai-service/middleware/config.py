@@ -39,6 +39,21 @@ def parse_allowed_origins(frontend_url: str) -> list[str]:
     return sorted(origin for origin in defaults if origin)
 
 
+def is_origin_allowed(
+    origin: str,
+    allowed_origins: list[str],
+    allow_origin_regex: Optional[str] = None,
+) -> bool:
+    candidate = (origin or "").strip()
+    if not candidate:
+        return False
+    if candidate in allowed_origins:
+        return True
+    if allow_origin_regex:
+        return bool(re.fullmatch(allow_origin_regex, candidate))
+    return False
+
+
 def parse_allow_origin_regex(frontend_url: str) -> Optional[str]:
     explicit = os.getenv("ALLOW_ORIGIN_REGEX", "").strip()
     if explicit:

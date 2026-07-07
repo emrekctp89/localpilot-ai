@@ -5,6 +5,7 @@ from unittest.mock import patch
 from middleware.config import (
     RateLimiter,
     auth_is_required,
+    is_origin_allowed,
     parse_allow_origin_regex,
     parse_allowed_origins,
     resolve_stripe_mode,
@@ -63,6 +64,19 @@ class SecurityConfigTests(unittest.TestCase):
         ):
             regex = parse_allow_origin_regex("http://localhost:3000")
             self.assertEqual(regex, r"https://.*\.vercel\.app")
+
+    def test_is_origin_allowed_matches_exact_and_regex(self):
+        origins = ["https://localpilot-ai-1b2h-phi.vercel.app"]
+        regex = r"https://localpilot\-ai\-.*\.vercel\.app"
+        self.assertTrue(
+            is_origin_allowed("https://localpilot-ai-1b2h-phi.vercel.app", origins, regex)
+        )
+        self.assertTrue(
+            is_origin_allowed("https://localpilot-ai-preview.vercel.app", origins, regex)
+        )
+        self.assertFalse(
+            is_origin_allowed("https://evil.example.com", origins, regex)
+        )
 
     def test_parse_allow_origin_regex_vercel_preview_flag(self):
         with patch.dict(
