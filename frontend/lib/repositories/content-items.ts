@@ -1,7 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import type { SocialPost, WhatsappTemplate } from "@/lib/domain-types";
 import { isMissingTableError } from "./errors";
+import { ensureContentItemId } from "./content-item-ids";
 import { isLegacyDualReadEnabled } from "./legacy-config";
+
+export { ensureContentItemId } from "./content-item-ids";
 
 type ContentType = "social_post" | "whatsapp_template";
 
@@ -43,7 +46,7 @@ function rowToWhatsappTemplate(row: ContentItemRow): WhatsappTemplate {
 
 function socialPostToRow(businessId: string, post: SocialPost): ContentItemRow {
   return {
-    id: String(post.id || crypto.randomUUID()),
+    id: ensureContentItemId(post.id),
     business_id: businessId,
     content_type: "social_post",
     platform: post.platform,
@@ -59,7 +62,7 @@ function whatsappTemplateToRow(
   template: WhatsappTemplate,
 ): ContentItemRow {
   return {
-    id: String(template.id || crypto.randomUUID()),
+    id: ensureContentItemId(template.id),
     business_id: businessId,
     content_type: "whatsapp_template",
     platform: null,
@@ -113,11 +116,7 @@ const EMPTY_LEGACY_CONTENT: LegacyContent = {
   waTemplates: [],
 };
 
-async function loadLegacyContent(businessId: string): Promise<LegacyContent> {
-  if (!isLegacyDualReadEnabled()) {
-    return EMPTY_LEGACY_CONTENT;
-  }
-
+async function loadPlanContent(businessId: string): Promise<LegacyContent> {
   const { data } = await supabase
     .from("generated_plans")
     .select("social_media_calendar, whatsapp_templates")
@@ -130,6 +129,36 @@ async function loadLegacyContent(businessId: string): Promise<LegacyContent> {
     socialPosts: normalizeSocialPosts(data?.social_media_calendar || []),
     waTemplates: normalizeWhatsappTemplates(data?.whatsapp_templates || []),
   };
+}
+
+async function loadLegacyContent(businessId: string): Promise<LegacyContent> {
+  if (!isLegacyDualReadEnabled()) {
+    return EMPTY_LEGACY_CONTENT;
+  }
+
+  return loadPlanContent(businessId);
+}
+
+async function migratePlanContentToTable(businessId: string): Promise<LegacyContent> {
+  const planContent = await loadPlanContent(businessId);
+  if (
+    planContent.socialPosts.length === 0 &&
+    planContent.waTemplates.length === 0
+  ) {
+    return EMPTY_LEGACY_CONTENT;
+  }
+
+  const saved = await replaceAllInTable(
+    businessId,
+    planContent.socialPosts,
+    planContent.waTemplates,
+  );
+  if (!saved) {
+    return EMPTY_LEGACY_CONTENT;
+  }
+
+  await clearLegacyPlanContent(businessId);
+  return planContent;
 }
 
 async function replaceAllInTable(
@@ -197,16 +226,11 @@ export async function listContentItems(
       };
     }
 
-    const legacy = await loadLegacyContent(businessId);
-    if (legacy.socialPosts.length > 0 || legacy.waTemplates.length > 0) {
-      await replaceAllInTable(
-        businessId,
-        legacy.socialPosts,
-        legacy.waTemplates,
-      );
-      await clearLegacyPlanContent(businessId);
-      return legacy;
+    const migrated = await migratePlanContentToTable(businessId);
+    if (migrated.socialPosts.length > 0 || migrated.waTemplates.length > 0) {
+      return migrated;
     }
+
     return { socialPosts: [], waTemplates: [] };
   }
 

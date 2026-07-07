@@ -94,6 +94,7 @@ test("content history normalizes, timestamps, persists, and deletes items", asyn
   assert.match(source, /created_at:\s*createdAt/);
   assert.match(source, /listContentItems/);
   assert.match(source, /saveContentItems/);
+  assert.match(source, /crypto\.randomUUID\(\)/);
   assert.match(source, /handleDeleteSocialPost/);
   assert.match(source, /handleDeleteWhatsappTemplate/);
   assert.match(source, /İçerik Geçmişi/);

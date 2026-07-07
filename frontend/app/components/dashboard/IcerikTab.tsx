@@ -178,7 +178,7 @@ export default function IcerikTab({ business }: IcerikTabProps) {
 
       if (activeSubTab === "sosyal") {
         const newPost: SocialPost = {
-          id: Date.now(),
+          id: crypto.randomUUID(),
           platform: "Instagram",
           type: "Trend Gönderi",
           text: `Sadece en iyiyi arayanlar için. İşletmemizde yeni bir döneme başlıyoruz. Siz de bu kalitenin bir parçası olmak için sitemizi ziyaret edin veya DM atın.\n\n#Yenilik #${business?.city || "Şehir"} #${business?.industry?.replace(/\s+/g, "") || "Hizmet"}`,
@@ -195,7 +195,7 @@ export default function IcerikTab({ business }: IcerikTabProps) {
         }
       } else {
         const newTemplate: WhatsappTemplate = {
-          id: Date.now(),
+          id: crypto.randomUUID(),
           name: "Yeni Kampanya Fikri",
           text: "Merhaba. Size özel yeni bir kampanya hazırladık. Bu hafta sonuna kadar geçerli fırsattan yararlanmak için sitemizi inceleyin: [LINK]",
           created_at: createdAt,
