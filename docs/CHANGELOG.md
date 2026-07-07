@@ -8,7 +8,8 @@
 
 ### Changed
 - Deferred automatic Pro billing; manual `profiles.is_pro` documented as current process.
-- Active roadmap sprint moved to Faz B (production hardening: migrations, RLS, CI/E2E).
+- Deferred Faz E live integrations (Meta/Google credentials); `wa.me` + manual Google checklist remain active.
+- Applied `009_business_integrations.sql` in Supabase; active sprint moved to Faz B closure (RLS, CI/E2E).
 
 ### Added
 - `supabase/scripts/verify_schema.sql` for one-shot migration verification in Supabase.

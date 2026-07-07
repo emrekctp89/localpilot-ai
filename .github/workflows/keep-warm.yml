@@ -14,20 +14,21 @@ jobs:
         run: |
           if [ "${{ vars.PRODUCTION_MONITORING_ENABLED }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Production monitoring kapalı. Repo Variables: PRODUCTION_MONITORING_ENABLED=true, AI_SERVICE_URL"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Keep-warm atlandı (PRODUCTION_MONITORING_ENABLED != true)."
+            exit 0
           fi
+          if [ -z "${{ vars.AI_SERVICE_URL }}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AI_SERVICE_URL tanımlı değil. Settings → Secrets and variables → Actions → Variables"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Ping AI service health
         if: steps.gate.outputs.enabled == 'true'
         env:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
-          if [ -z "$AI_SERVICE_URL" ]; then
-            echo "::error::AI_SERVICE_URL repository variable tanımlı değil."
-            exit 1
-          fi
           curl --fail --silent --show-error --retry 5 --retry-delay 8 \
             --retry-all-errors \
             --max-time 90 \

@@ -13,7 +13,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
+COPY ai_cache.py .
+COPY prompt_context.py .
 COPY middleware ./middleware
+COPY integrations ./integrations
 
 EXPOSE 8000
 

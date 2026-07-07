@@ -490,9 +490,10 @@ test("deploy artifacts exist for production rollout", async () => {
   const projectRoot = path.resolve(testDirectory, "../..");
   const repoRoot = path.resolve(projectRoot, "..");
 
-  const [dockerfile, dockerignore, vercelJson, renderYaml, prodEnv] =
+  const [dockerfile, renderDockerfile, dockerignore, vercelJson, renderYaml, prodEnv] =
     await Promise.all([
       readFile(path.join(repoRoot, "ai-service/Dockerfile"), "utf8"),
+      readFile(path.join(repoRoot, "Dockerfile"), "utf8"),
       readFile(path.join(repoRoot, "ai-service/.dockerignore"), "utf8"),
       readFile(path.join(projectRoot, "vercel.json"), "utf8"),
       readFile(path.join(repoRoot, "render.yaml"), "utf8"),
@@ -500,6 +501,10 @@ test("deploy artifacts exist for production rollout", async () => {
     ]);
 
   assert.match(dockerfile, /uvicorn main:app/);
+  assert.match(dockerfile, /integrations/);
+  assert.match(renderDockerfile, /uvicorn main:app/);
+  assert.match(renderDockerfile, /ai_cache\.py/);
+  assert.match(renderDockerfile, /integrations/);
   assert.match(dockerignore, /__pycache__/);
   assert.match(vercelJson, /fra1/);
   assert.match(renderYaml, /healthCheckPath:\s*\/health/);

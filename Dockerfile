@@ -13,7 +13,10 @@ COPY ai-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ai-service/main.py .
+COPY ai-service/ai_cache.py .
+COPY ai-service/prompt_context.py .
 COPY ai-service/middleware ./middleware
+COPY ai-service/integrations ./integrations
 
 EXPOSE 8000
 

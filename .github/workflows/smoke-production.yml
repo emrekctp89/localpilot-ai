@@ -14,20 +14,26 @@ jobs:
         run: |
           if [ "${{ vars.PRODUCTION_MONITORING_ENABLED }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Production smoke atlandı. Repo Variables: PRODUCTION_MONITORING_ENABLED=true, AI_SERVICE_URL, FRONTEND_URL"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Production smoke atlandı (PRODUCTION_MONITORING_ENABLED != true)."
+            exit 0
           fi
+          if [ -z "${{ vars.AI_SERVICE_URL }}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::AI_SERVICE_URL tanımlı değil. Settings → Secrets and variables → Actions → Variables"
+            exit 0
+          fi
+          if [ -z "${{ vars.FRONTEND_URL }}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::FRONTEND_URL tanımlı değil. Settings → Secrets and variables → Actions → Variables"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Check AI service health
         if: steps.gate.outputs.enabled == 'true'
         env:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
-          if [ -z "$AI_SERVICE_URL" ]; then
-            echo "::error::AI_SERVICE_URL repository variable tanımlı değil."
-            exit 1
-          fi
           response=$(curl --fail --retry 5 --retry-delay 8 --retry-all-errors -s --max-time 90 \
             "${AI_SERVICE_URL%/}/health")
           echo "$response"
@@ -41,10 +47,6 @@ jobs:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
-          if [ -z "$FRONTEND_URL" ]; then
-            echo "::error::FRONTEND_URL repository variable tanımlı değil."
-            exit 1
-          fi
           status=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS \
             -H "Origin: $FRONTEND_URL" \
             -H "Access-Control-Request-Method: GET" \

@@ -92,9 +92,9 @@ GitHub repo → Settings → **Variables** → Actions (production smoke / keep-
 
 | Variable | Örnek | Açıklama |
 |----------|-------|----------|
-| `PRODUCTION_MONITORING_ENABLED` | `true` | Kapalıyken smoke + keep-warm yeşil skip eder |
-| `AI_SERVICE_URL` | `https://...onrender.com` | Render AI service kök URL |
-| `FRONTEND_URL` | `https://....vercel.app` | Vercel production URL |
+| `PRODUCTION_MONITORING_ENABLED` | `true` | `true` değilse veya URL'ler eksikse smoke + keep-warm yeşil skip eder |
+| `AI_SERVICE_URL` | `https://localpilot-ai-service.onrender.com` | Render AI service kök URL (keep-warm + smoke için zorunlu) |
+| `FRONTEND_URL` | `https://localpilot-ai-1b2h.vercel.app` | Vercel production URL (yalnızca smoke için zorunlu) |
 
 GitHub repo → Settings → **Secrets** → Actions (E2E için):
 
