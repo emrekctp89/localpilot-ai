@@ -63,6 +63,30 @@ describe("sector automation triggers (Faz D)", () => {
     assert.match(workflow, /SECTOR_AUTOMATION_CRON_ENABLED/);
   });
 
+  it("activates generic pack automation for new-stage items", () => {
+    const genericBusiness: Business = {
+      id: "biz-2",
+      name: "Genel Servis",
+      industry: "Bilinmeyen Sektör XYZ",
+      whatsapp_number: "0555 999 88 77",
+    };
+    const pack = resolveSectorPack(genericBusiness);
+    assert.equal(pack.id, "generic_service");
+
+    const automations = getActiveSectorAutomations(pack, [
+      {
+        id: "sw-2",
+        packId: "generic_service",
+        title: "İş 1",
+        customer: "Mehmet",
+        stage: "yeni",
+        createdAt: "2026-07-07T10:00:00.000Z",
+      },
+    ]);
+
+    assert.ok(automations.some((item) => item.id === "generic_new_items"));
+  });
+
   it("wires sector tab apply button", () => {
     const source = readFileSync(
       join(root, "app/components/dashboard/SektorIsAkisiTab.tsx"),

@@ -340,6 +340,14 @@ const DEFAULT_PACK: SectorPack = {
   ],
   automations: [
     {
+      id: "generic_new_items",
+      title: "Yeni kayıt takibi",
+      description: "Yeni eklenen işler için ilk temas veya bilgilendirme planla.",
+      trigger: "items_in_stage",
+      triggerStageId: "yeni",
+      suggestedAction: "Yeni kayıtlar için karşılama mesajı veya görev oluştur.",
+    },
+    {
       id: "generic_stalled_work",
       title: "Durgun iş uyarısı",
       description: "Uzun süredir bekleyen kayıtlar için takip başlat.",
@@ -349,6 +357,27 @@ const DEFAULT_PACK: SectorPack = {
     },
   ],
 };
+
+export function getSectorAutomationEmptyHint(
+  pack: SectorPack,
+  items: SectorWorkflowItem[],
+): string | null {
+  if (items.length === 0) {
+    return "İlk kaydı eklediğinizde uygun otomasyon önerileri burada görünür.";
+  }
+
+  const firstStageId = pack.stages[0]?.id;
+  const inFirstStage = items.filter((item) => item.stage === firstStageId).length;
+  if (inFirstStage === 0) {
+    return `Aktif otomasyon için en az bir kayıt "${pack.stages[0]?.label}" aşamasında olmalı.`;
+  }
+
+  if (pack.id === "generic_service") {
+    return `${inFirstStage} kayıt "Yeni" aşamasında — otomasyon kartı birazdan görünmeli. Görünmüyorsa sayfayı yenileyin.`;
+  }
+
+  return `${inFirstStage} kayıt "${pack.stages[0]?.label}" aşamasında. Otomasyon kuralları eşleştiğinde kartlar burada listelenir.`;
+}
 
 function normalizeSectorText(value: string) {
   return value.toLocaleLowerCase("tr-TR").trim();

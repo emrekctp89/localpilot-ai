@@ -12,6 +12,7 @@ import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 import {
   computePackMetricCards,
   getActiveSectorAutomations,
+  getSectorAutomationEmptyHint,
   resolveSectorPack,
 } from "@/lib/sector-packs";
 import type { Business, SectorWorkflowItem } from "@/lib/domain-types";
@@ -120,6 +121,10 @@ export default function SektorIsAkisiTab({
     () => getActiveSectorAutomations(pack, items),
     [items, pack],
   );
+  const automationEmptyHint = useMemo(
+    () => getSectorAutomationEmptyHint(pack, items),
+    [items, pack],
+  );
 
   const handleApplyAutomation = async (
     automation: (typeof automationSuggestions)[number],
@@ -213,7 +218,7 @@ export default function SektorIsAkisiTab({
         ))}
       </section>
 
-      {automationSuggestions.length > 0 && (
+      {automationSuggestions.length > 0 ? (
         <section className="rounded-2xl border border-amber-100 bg-amber-50 p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -272,6 +277,23 @@ export default function SektorIsAkisiTab({
             );
             })}
           </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/40 p-6">
+          <p className="text-xs font-black uppercase tracking-widest text-amber-700">
+            Sektör Otomasyonları
+          </p>
+          <h3 className="mt-1 text-lg font-black text-gray-900">
+            Şu an aktif öneri yok
+          </h3>
+          <p className="mt-2 text-sm text-gray-600">
+            {automationEmptyHint ||
+              "Kayıt ekleyip ilk aşamada bıraktığınızda otomasyon önerileri burada görünür."}
+          </p>
+          <p className="mt-3 text-xs font-semibold text-gray-500">
+            Paket: {pack.name} · {items.length} kayıt · İlk aşama:{" "}
+            {pack.stages[0]?.label}
+          </p>
         </section>
       )}
 
