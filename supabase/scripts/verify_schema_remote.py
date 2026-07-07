@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Remote Supabase schema verification (Faz B).
 
-Usage (from repo root):
-  cd ai-service && python ../supabase/scripts/verify_schema_remote.py
+Usage:
+  cd ai-service
+  .\\venv\\Scripts\\python.exe ..\\supabase\\scripts\\verify_schema_remote.py
 
 Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in ai-service/.env
+Uses ai-service venv (supabase paketi orada yüklü).
 """
 
 from __future__ import annotations
@@ -13,8 +15,13 @@ import os
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
-from supabase import create_client
+try:
+    from supabase import create_client
+except ModuleNotFoundError:
+    print("ERROR: supabase paketi bulunamadı.")
+    print("ai-service venv kullanın:")
+    print("  .\\venv\\Scripts\\python.exe ..\\supabase\\scripts\\verify_schema_remote.py")
+    sys.exit(1)
 
 REQUIRED_TABLES = [
     "appointments",
@@ -33,13 +40,23 @@ REQUIRED_TABLES = [
 PROFILE_COLUMNS = ["is_pro", "pro_activated_at", "role"]
 
 
+def load_env_file(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def load_env() -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    env_path = repo_root / "ai-service" / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-    else:
-        load_dotenv()
+    load_env_file(repo_root / "ai-service" / ".env")
 
 
 def main() -> int:
