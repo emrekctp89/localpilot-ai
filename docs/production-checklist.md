@@ -68,6 +68,9 @@ Tablolar doluysa JSON fallback kapatılır:
 
 ## 6. Ana akışlar
 
+> CI: `npm run test:integration` → `main-flows.test.ts` kod bağlantılarını doğrular.  
+> Aşağıdaki maddeler **canlı panelde** manuel test içindir.
+
 - [ ] Randevu oluştur / güncelle / sil
 - [ ] Sipariş oluştur ve ödeme durumu güncelle
 - [ ] CRM müşteri ekle ve takip tarihi kaydet

@@ -223,6 +223,9 @@ test("decision center closes the data-to-measurement loop", async () => {
   assert.match(decisionSource, /loadDecisionContext/);
   assert.match(decisionSource, /getLearningHistory/);
   assert.match(decisionSource, /buildDecisionDashboardSummary/);
+  assert.match(decisionSource, /Tek Tık Aksiyon/);
+  assert.match(decisionSource, /getDecisionQuickActions/);
+  assert.match(decisionSource, /triggerBusinessWebhooks/);
   assert.match(engineSource, /export const APPROVAL_POLICY/);
   assert.match(engineSource, /export const AUTOMATION_ACTION_UX/);
   assert.match(engineSource, /getAutomationActionForKey/);
@@ -265,6 +268,8 @@ test("sector packs adapt one workflow component to each business", async () => {
   assert.match(workflowSource, /handleStageChange/);
   assert.match(workflowSource, /computePackMetricCards/);
   assert.match(workflowSource, /getActiveSectorAutomations/);
+  assert.match(workflowSource, /handleApplyAutomation/);
+  assert.match(workflowSource, /Sektör Otomasyonları/);
   assert.match(onboardingSource, /resolveSectorPackFromIndustry/);
   assert.match(onboardingSource, /Atanan sektör paketi/);
   assert.match(domainSource, /export interface SectorPack/);
@@ -618,7 +623,8 @@ test("production checklist and env template document live verification", async (
   ]);
 
   assert.match(checklistSource, /verify_schema\.sql/);
-  assert.match(checklistSource, /001.*007/);
+  assert.match(checklistSource, /001.*008/);
+  assert.match(checklistSource, /main-flows\.test\.ts/);
   assert.match(checklistSource, /PRODUCTION_MONITORING_ENABLED/);
   assert.match(checklistSource, /CORS/);
   assert.match(prodEnv, /005_ai_usage\.sql/);
