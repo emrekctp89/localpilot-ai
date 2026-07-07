@@ -99,6 +99,7 @@ export default function IcerikTab({ business }: IcerikTabProps) {
         const { socialPosts, waTemplates } = await listContentItems(business.id);
         setSocialPosts(socialPosts);
         setWaTemplates(waTemplates);
+        setHistoryStatus("idle");
         setLoading(false);
         return;
       }

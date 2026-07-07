@@ -74,7 +74,7 @@ function whatsappTemplateToRow(
 }
 
 const normalizeSocialPosts = (items: unknown[]): SocialPost[] =>
-  items.reduce<SocialPost[]>((posts, item, index) => {
+  items.reduce<SocialPost[]>((posts, item) => {
     const record = item as Record<string, unknown>;
     const text = String(
       record.text || record.caption || record.content || "",
@@ -82,7 +82,7 @@ const normalizeSocialPosts = (items: unknown[]): SocialPost[] =>
     if (!text) return posts;
 
     posts.push({
-      id: (record.id as string | number | undefined) || `post-${index}`,
+      id: ensureContentItemId(record.id as string | number | undefined),
       platform: String(record.platform || "Instagram"),
       type: String(
         record.type || (record.day ? `${record.day}. Gün` : "") || "Gönderi",
@@ -97,19 +97,63 @@ const normalizeSocialPosts = (items: unknown[]): SocialPost[] =>
   }, []);
 
 const normalizeWhatsappTemplates = (items: unknown[]): WhatsappTemplate[] =>
-  items.reduce<WhatsappTemplate[]>((templates, item, index) => {
+  items.reduce<WhatsappTemplate[]>((templates, item) => {
     const record = item as Record<string, unknown>;
     const text = String(record.text || record.message || "").trim();
     if (!text) return templates;
 
     templates.push({
-      id: (record.id as string | number | undefined) || `wa-${index}`,
+      id: ensureContentItemId(record.id as string | number | undefined),
       name: String(record.name || record.scenario || "WhatsApp Şablonu"),
       text,
       created_at: record.created_at ? String(record.created_at) : undefined,
     });
     return templates;
   }, []);
+
+function rowsFromContent(
+  businessId: string,
+  socialPosts: SocialPost[],
+  waTemplates: WhatsappTemplate[],
+): ContentItemRow[] {
+  const seen = new Set<string>();
+  const rows = [
+    ...socialPosts
+      .filter((post) => post.text.trim().length > 0)
+      .map((post) => socialPostToRow(businessId, post)),
+    ...waTemplates
+      .filter((template) => template.text.trim().length > 0)
+      .map((template) => whatsappTemplateToRow(businessId, template)),
+  ];
+
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
+async function loadTableContent(businessId: string): Promise<LegacyContent> {
+  const { data, error } = await supabase
+    .from("content_items")
+    .select("*")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: true });
+
+  if (error || !data?.length) {
+    return EMPTY_LEGACY_CONTENT;
+  }
+
+  const rows = data as ContentItemRow[];
+  return {
+    socialPosts: rows
+      .filter((row) => row.content_type === "social_post")
+      .map(rowToSocialPost),
+    waTemplates: rows
+      .filter((row) => row.content_type === "whatsapp_template")
+      .map(rowToWhatsappTemplate),
+  };
+}
 
 const EMPTY_LEGACY_CONTENT: LegacyContent = {
   socialPosts: [],
@@ -154,10 +198,18 @@ async function migratePlanContentToTable(businessId: string): Promise<LegacyCont
     planContent.waTemplates,
   );
   if (!saved) {
-    return EMPTY_LEGACY_CONTENT;
+    return planContent;
   }
 
   await clearLegacyPlanContent(businessId);
+  const tableContent = await loadTableContent(businessId);
+  if (
+    tableContent.socialPosts.length > 0 ||
+    tableContent.waTemplates.length > 0
+  ) {
+    return tableContent;
+  }
+
   return planContent;
 }
 
@@ -171,17 +223,79 @@ async function replaceAllInTable(
     .delete()
     .eq("business_id", businessId);
 
-  if (deleteError) return false;
+  if (deleteError) {
+    console.error("[content_items] delete failed", deleteError);
+    return false;
+  }
 
-  const rows = [
-    ...socialPosts.map((post) => socialPostToRow(businessId, post)),
-    ...waTemplates.map((template) => whatsappTemplateToRow(businessId, template)),
-  ];
-
+  const rows = rowsFromContent(businessId, socialPosts, waTemplates);
   if (rows.length === 0) return true;
 
   const { error: insertError } = await supabase.from("content_items").insert(rows);
-  return !insertError;
+  if (insertError) {
+    console.error("[content_items] insert failed", insertError);
+    return false;
+  }
+
+  return true;
+}
+
+async function savePlanContent(
+  businessId: string,
+  socialPosts: SocialPost[],
+  waTemplates: WhatsappTemplate[],
+): Promise<boolean> {
+  const { data: planData, error: findError } = await supabase
+    .from("generated_plans")
+    .select("id")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) {
+    console.error("[content_items] plan lookup failed", findError);
+    return false;
+  }
+
+  const payload = {
+    social_media_calendar: socialPosts
+      .filter((post) => post.text.trim().length > 0)
+      .map((post) => ({
+        id: ensureContentItemId(post.id),
+        platform: post.platform,
+        type: post.type,
+        text: post.text,
+        image_prompt: post.image_prompt,
+        created_at: post.created_at || new Date().toISOString(),
+      })),
+    whatsapp_templates: waTemplates
+      .filter((template) => template.text.trim().length > 0)
+      .map((template) => ({
+        id: ensureContentItemId(template.id),
+        name: template.name,
+        text: template.text,
+        created_at: template.created_at || new Date().toISOString(),
+      })),
+  };
+
+  const { error } = planData?.id
+    ? await supabase
+        .from("generated_plans")
+        .update(payload)
+        .eq("id", planData.id)
+    : await supabase.from("generated_plans").insert({
+        business_id: businessId,
+        mini_site_data: {},
+        ...payload,
+      });
+
+  if (error) {
+    console.error("[content_items] plan save failed", error);
+    return false;
+  }
+
+  return true;
 }
 
 async function clearLegacyPlanContent(businessId: string): Promise<void> {
@@ -215,15 +329,7 @@ export async function listContentItems(
 
   if (!isMissingTableError(error) && !error) {
     if (data && data.length > 0) {
-      const rows = data as ContentItemRow[];
-      return {
-        socialPosts: rows
-          .filter((row) => row.content_type === "social_post")
-          .map(rowToSocialPost),
-        waTemplates: rows
-          .filter((row) => row.content_type === "whatsapp_template")
-          .map(rowToWhatsappTemplate),
-      };
+      return loadTableContent(businessId);
     }
 
     const migrated = await migratePlanContentToTable(businessId);
@@ -251,7 +357,10 @@ export async function saveContentItems(
     socialPosts,
     waTemplates,
   );
-  if (!savedToTable) return false;
-  await clearLegacyPlanContent(businessId);
-  return true;
+  if (savedToTable) {
+    await clearLegacyPlanContent(businessId);
+    return true;
+  }
+
+  return savePlanContent(businessId, socialPosts, waTemplates);
 }

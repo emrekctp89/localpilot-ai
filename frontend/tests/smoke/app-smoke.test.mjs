@@ -98,6 +98,7 @@ test("content history normalizes, timestamps, persists, and deletes items", asyn
   assert.match(source, /handleDeleteSocialPost/);
   assert.match(source, /handleDeleteWhatsappTemplate/);
   assert.match(source, /İçerik Geçmişi/);
+  assert.match(source, /setHistoryStatus\("idle"\)/);
 });
 
 test("CRM follow-ups migrate locally and persist to Supabase", async () => {
