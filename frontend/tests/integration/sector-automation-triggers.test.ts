@@ -63,6 +63,30 @@ describe("sector automation triggers (Faz D)", () => {
     assert.match(workflow, /SECTOR_AUTOMATION_CRON_ENABLED/);
   });
 
+  it("activates auto gallery automation for stokta-stage items", () => {
+    const galleryBusiness: Business = {
+      id: "biz-3",
+      name: "Yıldız Oto",
+      industry: "Otomotiv & Galeri",
+      whatsapp_number: "0555 444 33 22",
+    };
+    const pack = resolveSectorPack(galleryBusiness);
+    assert.equal(pack.id, "auto_gallery");
+
+    const automations = getActiveSectorAutomations(pack, [
+      {
+        id: "sw-3",
+        packId: "auto_gallery",
+        title: "2020 BMW 320i",
+        customer: "Ali",
+        stage: "stokta",
+        createdAt: "2026-07-07T10:00:00.000Z",
+      },
+    ]);
+
+    assert.ok(automations.some((item) => item.id === "auto_gallery_new_stock"));
+  });
+
   it("activates generic pack automation for new-stage items", () => {
     const genericBusiness: Business = {
       id: "biz-2",

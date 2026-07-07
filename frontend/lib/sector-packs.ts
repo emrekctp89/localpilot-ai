@@ -164,6 +164,14 @@ const SECTOR_PACKS: SectorPack[] = [
     ],
     automations: [
       {
+        id: "real_estate_new_listing",
+        title: "Yeni ilan yayını",
+        description: "Yeni eklenen portföy ilanları için tanıtım başlat.",
+        trigger: "items_in_stage",
+        triggerStageId: "yeni_ilan",
+        suggestedAction: "Yeni ilanlar için potansiyel alıcılara bilgi mesajı planla.",
+      },
+      {
         id: "real_estate_showing_followup",
         title: "Gösterim sonrası takip",
         description: "Gösterim yapılan müşterilere geri dönüş mesajı gönder.",
@@ -250,6 +258,14 @@ const SECTOR_PACKS: SectorPack[] = [
     ],
     automations: [
       {
+        id: "auto_gallery_new_stock",
+        title: "Stoktaki araç tanıtımı",
+        description: "Stoktaki araçlar için ilgi toplama ve bilgilendirme başlat.",
+        trigger: "items_in_stage",
+        triggerStageId: "stokta",
+        suggestedAction: "Stoktaki araçlar için potansiyel müşterilere bilgi mesajı hazırla.",
+      },
+      {
         id: "auto_gallery_test_drive_followup",
         title: "Test sürüşü takibi",
         description: "Test sürüşü yapan müşterilere geri dönüş planla.",
@@ -296,6 +312,14 @@ const SECTOR_PACKS: SectorPack[] = [
       { id: "completed", label: "Tamamlanan", kind: "completed_count" },
     ],
     automations: [
+      {
+        id: "retail_new_order",
+        title: "Yeni sipariş onayı",
+        description: "Yeni gelen siparişler için müşteri bilgilendirmesi gönder.",
+        trigger: "items_in_stage",
+        triggerStageId: "yeni",
+        suggestedAction: "Yeni siparişler için hazırlık süresi bilgilendirmesi gönder.",
+      },
       {
         id: "retail_ready_notification",
         title: "Hazır bildirimi",
@@ -372,11 +396,17 @@ export function getSectorAutomationEmptyHint(
     return `Aktif otomasyon için en az bir kayıt "${pack.stages[0]?.label}" aşamasında olmalı.`;
   }
 
-  if (pack.id === "generic_service") {
-    return `${inFirstStage} kayıt "Yeni" aşamasında — otomasyon kartı birazdan görünmeli. Görünmüyorsa sayfayı yenileyin.`;
+  const hasFirstStageRule = pack.automations.some(
+    (automation) =>
+      automation.trigger === "items_in_stage" &&
+      automation.triggerStageId === firstStageId,
+  );
+
+  if (hasFirstStageRule) {
+    return `${inFirstStage} kayıt "${pack.stages[0]?.label}" aşamasında — sayfayı yenileyin, otomasyon kartı görünmeli.`;
   }
 
-  return `${inFirstStage} kayıt "${pack.stages[0]?.label}" aşamasında. Otomasyon kuralları eşleştiğinde kartlar burada listelenir.`;
+  return `${inFirstStage} kayıt "${pack.stages[0]?.label}" aşamasında. Bazı kurallar (ör. uzun süreli stok) 24 saat sonra devreye girer.`;
 }
 
 function normalizeSectorText(value: string) {
