@@ -162,6 +162,27 @@ export default function Dashboard() {
     setActiveTab("ayarlar");
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const googleOAuth = params.get("google_oauth");
+    if (!googleOAuth) return;
+
+    if (googleOAuth === "connected") {
+      showToast("Google İşletme Profili bağlandı.", "success");
+      setActiveTab("google_business");
+    } else {
+      showToast("Google bağlantısı tamamlanamadı.", "error");
+    }
+
+    params.delete("google_oauth");
+    params.delete("business_id");
+    params.delete("reason");
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+    window.history.replaceState({}, "", nextUrl);
+  }, [showToast]);
+
   const canUseAi = aiUsageApi.canUseAi;
 
   const copyToClipboard = (text: string) => {

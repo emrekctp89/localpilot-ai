@@ -133,12 +133,15 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 ---
 
-## Faz E — AI ve Entegrasyonlar (P1–P2) → v2.3.0
+## Faz E — AI ve Entegrasyonlar (P1–P2) → v2.3.0 ✅ KOD TAMAM
 
 - [x] Bağlamlı prompt'lar, AI cache, keep-warm
-- [ ] WhatsApp Business API canlı gönderim
-- [ ] Google Business Profile API yazma
-- [ ] AI kalite geri bildirimi
+- [x] WhatsApp Business Cloud API gönderim endpoint'i + İçerik sekmesi UI
+- [x] Google Business Profile OAuth + açıklama alanına yazma
+- [x] AI kalite geri bildirimi (`ai_quality_feedback` + panel 👍/👎)
+- [ ] `009_business_integrations.sql` Supabase'de uygula
+- [ ] Render/Vercel env: WhatsApp + Google OAuth değişkenleri
+- [ ] Canlı panelde Cloud API ve Google OAuth manuel doğrulama
 
 ---
 
@@ -170,11 +173,14 @@ Panelde görmek için sayfayı yenileyin veya Ayarlar → *Üyelik Durumunu Yeni
 
 ---
 
-## Bu Sprint — Faz E görevleri
+## Bu Sprint — Faz E kapanış (sizin tarafınızda)
 
-1. [ ] WhatsApp Business Cloud API canlı gönderim
-2. [ ] Google Business Profile API yazma (OAuth)
-3. [ ] AI kalite geri bildirimi döngüsü
+1. [x] WhatsApp Cloud API endpoint + İçerik sekmesi (kod)
+2. [x] Google OAuth + profil açıklaması yazma (kod)
+3. [x] AI kalite geri bildirimi (kod)
+4. [ ] `009_business_integrations.sql` → Supabase SQL Editor
+5. [ ] Render env: `WHATSAPP_*`, `GOOGLE_OAUTH_*`
+6. [ ] Canlı test: İçerik → API Gönder, Google → Bağlan → Uygula
 
 ### Faz D kapanış (sizin tarafınızda)
 

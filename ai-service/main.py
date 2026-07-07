@@ -44,6 +44,24 @@ from prompt_context import (
     build_business_profile_block,
     build_campaign_mode_instruction,
 )
+from integrations.ai_feedback import save_ai_feedback
+from integrations.business_access import require_business_write_access
+from integrations.google_business_oauth import (
+    apply_profile_field_with_refresh,
+    build_google_oauth_url,
+    build_google_status,
+    build_oauth_state,
+    discover_primary_location,
+    exchange_code_for_tokens,
+    google_env_configured,
+    parse_oauth_state,
+)
+from integrations.store import get_integration, upsert_integration
+from integrations.whatsapp_cloud import (
+    build_whatsapp_status,
+    send_whatsapp_text_message,
+    whatsapp_env_configured,
+)
 
 # ------------------------------------------------------------
 # ENV / CLIENT SETUP
@@ -100,6 +118,8 @@ async def health():
         "gemini": bool(GEMINI_API_KEY),
         "supabase": bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY),
         "stripe": bool(STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET),
+        "whatsapp_cloud": whatsapp_env_configured(),
+        "google_oauth": google_env_configured(),
     }
     degraded = not all(checks.values())
     return {
@@ -397,6 +417,30 @@ class GoogleProfileSuggestionsRequest(BaseModel):
     working_hours: str = ""
     about_us: str = ""
     pending_checklist_ids: List[str] = Field(default_factory=list)
+
+
+class IntegrationBusinessRequest(BaseModel):
+    business_id: str
+
+
+class WhatsAppSendRequest(BaseModel):
+    business_id: str
+    recipient_phone: str
+    message: str
+
+
+class GoogleApplySuggestionRequest(BaseModel):
+    business_id: str
+    checklist_item_id: str
+    suggested_text: str
+
+
+class AiFeedbackRequest(BaseModel):
+    business_id: str
+    feature: str
+    rating: int
+    context: Dict[str, Any] = Field(default_factory=dict)
+
 
 # ------------------------------------------------------------
 # ENDPOINTS
@@ -704,6 +748,179 @@ async def forecast_finance(data: FinanceForecastRequest):
     
     
     
+def _integration_subject(request: Request) -> str:
+    subject = getattr(request.state, "auth_subject", "")
+    if not subject.startswith("user:"):
+        raise HTTPException(
+            status_code=401,
+            detail="Entegrasyon işlemleri için oturum açmanız gerekir.",
+        )
+    return subject
+
+
+@app.get("/integration/status")
+async def integration_status(request: Request, business_id: str):
+    _integration_subject(request)
+    google_row = get_integration(supabase, business_id, "google_business")
+    return {
+        "whatsapp": build_whatsapp_status(),
+        "google": build_google_status(google_row),
+    }
+
+
+@app.post("/integration/whatsapp/send")
+async def integration_whatsapp_send(request: Request, data: WhatsAppSendRequest):
+    subject = _integration_subject(request)
+    try:
+        require_business_write_access(supabase, subject, data.business_id)
+        result = send_whatsapp_text_message(
+            data.recipient_phone,
+            data.message,
+        )
+        return result
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception as error:
+        print(f"🚨 WHATSAPP SEND HATASI: {str(error)}")
+        raise HTTPException(
+            status_code=500,
+            detail="WhatsApp mesajı gönderilemedi.",
+        ) from error
+
+
+@app.get("/integration/google/oauth/start")
+async def integration_google_oauth_start(
+    request: Request, business_id: str
+):
+    subject = _integration_subject(request)
+    try:
+        user_id = require_business_write_access(supabase, subject, business_id)
+        state = build_oauth_state(business_id, user_id)
+        return {"auth_url": build_google_oauth_url(state)}
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/integration/google/oauth/callback")
+async def integration_google_oauth_callback(
+    code: str = "",
+    state: str = "",
+    error: str = "",
+):
+    from fastapi.responses import RedirectResponse
+
+    frontend_base = FRONTEND_URL.rstrip("/")
+    if error:
+        return RedirectResponse(
+            f"{frontend_base}/dashboard?google_oauth=error&reason={error}"
+        )
+    if not code or not state:
+        return RedirectResponse(
+            f"{frontend_base}/dashboard?google_oauth=error&reason=missing_code"
+        )
+
+    try:
+        business_id, user_id = parse_oauth_state(state)
+        tokens = exchange_code_for_tokens(code)
+        access_token = tokens.get("access_token", "")
+        refresh_token = tokens.get("refresh_token", "")
+        if not access_token:
+            raise ValueError("Google access token alınamadı.")
+
+        location = discover_primary_location(access_token)
+        config = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": tokens.get("expires_in"),
+            "location_id": location["location_id"],
+            "account_name": location["account_name"],
+            "location_title": location.get("location_title", ""),
+        }
+        upsert_integration(
+            supabase,
+            business_id,
+            "google_business",
+            "connected",
+            config,
+        )
+        return RedirectResponse(
+            f"{frontend_base}/dashboard?google_oauth=connected&business_id={business_id}"
+        )
+    except Exception as callback_error:
+        print(f"🚨 GOOGLE OAUTH CALLBACK HATASI: {str(callback_error)}")
+        return RedirectResponse(
+            f"{frontend_base}/dashboard?google_oauth=error&reason=callback_failed"
+        )
+
+
+@app.post("/integration/google/apply-suggestion")
+async def integration_google_apply_suggestion(
+    request: Request, data: GoogleApplySuggestionRequest
+):
+    subject = _integration_subject(request)
+    try:
+        require_business_write_access(supabase, subject, data.business_id)
+        integration = get_integration(supabase, data.business_id, "google_business")
+        if not integration or integration.get("status") != "connected":
+            raise ValueError("Önce Google İşletme Profilinizi bağlayın.")
+
+        config = integration.get("config") or {}
+        if not config.get("access_token"):
+            raise ValueError("Google erişim anahtarı eksik.")
+
+        result, next_config = apply_profile_field_with_refresh(
+            config,
+            data.checklist_item_id,
+            data.suggested_text,
+        )
+        if next_config != config:
+            upsert_integration(
+                supabase,
+                data.business_id,
+                "google_business",
+                "connected",
+                next_config,
+            )
+
+        return result
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception as error:
+        print(f"🚨 GOOGLE APPLY HATASI: {str(error)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Google profil güncellemesi uygulanamadı.",
+        ) from error
+
+
+@app.post("/integration/ai-feedback")
+async def integration_ai_feedback(request: Request, data: AiFeedbackRequest):
+    subject = _integration_subject(request)
+    try:
+        user_id = require_business_write_access(supabase, subject, data.business_id)
+        saved = save_ai_feedback(
+            supabase,
+            business_id=data.business_id,
+            user_id=user_id,
+            feature=data.feature,
+            rating=data.rating,
+            context=data.context,
+        )
+        if not saved:
+            raise ValueError("Geri bildirim kaydedilemedi.")
+        return {"status": "saved"}
+    except PermissionError as error:
+        raise HTTPException(status_code=403, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @app.post("/integration/google-profile-suggestions")
 async def google_profile_suggestions(data: GoogleProfileSuggestionsRequest):
     try:

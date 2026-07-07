@@ -107,3 +107,15 @@ SELECT 'schema_migrations',
          SELECT 1 FROM information_schema.tables
          WHERE table_schema = 'public' AND table_name = 'schema_migrations'
        );
+
+-- 009 integrations (Faz E)
+SELECT 'business_integrations',
+       EXISTS (
+         SELECT 1 FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'business_integrations'
+       );
+SELECT 'ai_quality_feedback',
+       EXISTS (
+         SELECT 1 FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'ai_quality_feedback'
+       );

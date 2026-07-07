@@ -11,6 +11,12 @@ import {
   getWhatsAppBusinessIntegrationStatus,
 } from "@/lib/integrations";
 import {
+  fetchIntegrationStatus,
+  sendWhatsAppCloudMessage,
+  submitAiQualityFeedback,
+  type IntegrationProviderStatus,
+} from "@/lib/integration-client";
+import {
   listContentItems,
   saveContentItems,
 } from "@/lib/repositories/content-items";
@@ -81,10 +87,29 @@ export default function IcerikTab({ business }: IcerikTabProps) {
   const [historyStatus, setHistoryStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
-  const whatsappIntegration = getWhatsAppBusinessIntegrationStatus();
+  const [whatsappRemoteStatus, setWhatsappRemoteStatus] =
+    useState<IntegrationProviderStatus | null>(null);
+  const [cloudSendTarget, setCloudSendTarget] = useState<{
+    templateId: string;
+    message: string;
+  } | null>(null);
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [cloudSendStatus, setCloudSendStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+  const [cloudSendError, setCloudSendError] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<string | null>(null);
+  const whatsappIntegration = getWhatsAppBusinessIntegrationStatus(
+    whatsappRemoteStatus,
+  );
   const whatsappSendPlan = useMemo(
-    () => buildWhatsAppTemplateSendPlan(business, waTemplates),
-    [business, waTemplates],
+    () =>
+      buildWhatsAppTemplateSendPlan(
+        business,
+        waTemplates,
+        whatsappRemoteStatus,
+      ),
+    [business, waTemplates, whatsappRemoteStatus],
   );
   const whatsappPlanById = useMemo(
     () => new Map(whatsappSendPlan.map((item) => [item.templateId, item])),
@@ -96,9 +121,14 @@ export default function IcerikTab({ business }: IcerikTabProps) {
       setLoading(true);
 
       if (business?.id) {
-        const { socialPosts, waTemplates } = await listContentItems(business.id);
+        const [{ socialPosts, waTemplates }, integrationStatus] =
+          await Promise.all([
+            listContentItems(business.id),
+            fetchIntegrationStatus(business.id).catch(() => null),
+          ]);
         setSocialPosts(socialPosts);
         setWaTemplates(waTemplates);
+        setWhatsappRemoteStatus(integrationStatus?.whatsapp ?? null);
         setHistoryStatus("idle");
         setLoading(false);
         return;
@@ -227,6 +257,50 @@ export default function IcerikTab({ business }: IcerikTabProps) {
     }
   };
 
+  const handleCloudSend = async () => {
+    if (!business?.id || !cloudSendTarget || !recipientPhone.trim()) return;
+
+    setCloudSendStatus("sending");
+    setCloudSendError("");
+    try {
+      await sendWhatsAppCloudMessage({
+        business_id: business.id,
+        recipient_phone: recipientPhone.trim(),
+        message: cloudSendTarget.message,
+      });
+      setCloudSendStatus("sent");
+      window.setTimeout(() => {
+        setCloudSendTarget(null);
+        setRecipientPhone("");
+        setCloudSendStatus("idle");
+      }, 1500);
+    } catch (error) {
+      setCloudSendStatus("error");
+      setCloudSendError(
+        error instanceof Error ? error.message : "Mesaj gönderilemedi.",
+      );
+    }
+  };
+
+  const handleContentFeedback = async (rating: -1 | 1) => {
+    if (!business?.id) return;
+    try {
+      await submitAiQualityFeedback({
+        business_id: business.id,
+        feature: "content",
+        rating,
+        context: {
+          social_count: socialPosts.length,
+          whatsapp_count: waTemplates.length,
+        },
+      });
+      setFeedbackStatus(rating === 1 ? "Teşekkürler!" : "Geri bildirim alındı.");
+      window.setTimeout(() => setFeedbackStatus(null), 2000);
+    } catch {
+      setFeedbackStatus("Geri bildirim kaydedilemedi.");
+    }
+  };
+
   const handleDeleteWhatsappTemplate = async (
     templateId: WhatsappTemplate["id"],
   ) => {
@@ -293,20 +367,44 @@ export default function IcerikTab({ business }: IcerikTabProps) {
             şablonu kayıtlı.
           </p>
         </div>
-        <p
-          className={`text-sm font-bold ${
-            historyStatus === "error"
-              ? "text-red-600"
-              : historyStatus === "saved"
-                ? "text-emerald-600"
-                : "text-gray-400"
-          }`}
-        >
-          {historyStatus === "saving" && "Geçmiş kaydediliyor..."}
-          {historyStatus === "saved" && "Geçmiş kaydedildi."}
-          {historyStatus === "error" &&
-            "Geçmiş kaydedilemedi. Değişiklik geri alındı."}
-        </p>
+        <div className="flex flex-col items-end gap-2">
+          <p
+            className={`text-sm font-bold ${
+              historyStatus === "error"
+                ? "text-red-600"
+                : historyStatus === "saved"
+                  ? "text-emerald-600"
+                  : "text-gray-400"
+            }`}
+          >
+            {historyStatus === "saving" && "Geçmiş kaydediliyor..."}
+            {historyStatus === "saved" && "Geçmiş kaydedildi."}
+            {historyStatus === "error" &&
+              "Geçmiş kaydedilemedi. Değişiklik geri alındı."}
+          </p>
+          {(socialPosts.length > 0 || waTemplates.length > 0) && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>İçerik kalitesi:</span>
+              <button
+                type="button"
+                onClick={() => handleContentFeedback(1)}
+                className="rounded-lg border border-gray-200 px-2 py-1 font-bold hover:bg-emerald-50"
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                onClick={() => handleContentFeedback(-1)}
+                className="rounded-lg border border-gray-200 px-2 py-1 font-bold hover:bg-red-50"
+              >
+                👎
+              </button>
+              {feedbackStatus && (
+                <span className="font-medium text-gray-600">{feedbackStatus}</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex bg-white rounded-xl shadow-sm border border-gray-100 p-1">
@@ -467,13 +565,33 @@ export default function IcerikTab({ business }: IcerikTabProps) {
                     {template.text}
                   </div>
                 </div>
-                <div className="bg-white border-t border-gray-100 p-3 grid grid-cols-3 gap-2">
+                <div
+                  className={`bg-white border-t border-gray-100 p-3 grid gap-2 ${
+                    readiness?.channel === "cloud_api"
+                      ? "grid-cols-4"
+                      : "grid-cols-3"
+                  }`}
+                >
                   <button
                     onClick={() => handleCopy(template.text, `wa-${idx}`)}
                     className="bg-gray-50 border border-gray-200 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100 transition"
                   >
                     {copyStatus === `wa-${idx}` ? "Kopyalandı" : "Kopyala"}
                   </button>
+                  {readiness?.channel === "cloud_api" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCloudSendTarget({
+                          templateId: String(template.id ?? template.name),
+                          message: template.text,
+                        })
+                      }
+                      className="rounded-lg border border-green-200 bg-green-50 py-2 text-sm font-bold text-green-800 transition hover:bg-green-100"
+                    >
+                      API Gönder
+                    </button>
+                  )}
                   <a
                     href={fallbackUrl || "#"}
                     target="_blank"
@@ -484,7 +602,7 @@ export default function IcerikTab({ business }: IcerikTabProps) {
                       if (!fallbackUrl) event.preventDefault();
                     }}
                   >
-                    Gönder
+                    {readiness?.channel === "cloud_api" ? "wa.me" : "Gönder"}
                   </a>
                   <button
                     onClick={() =>
@@ -505,6 +623,58 @@ export default function IcerikTab({ business }: IcerikTabProps) {
             );
             })
           )}
+          </div>
+        </div>
+      )}
+
+      {cloudSendTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-black text-gray-900">
+              Cloud API ile Gönder
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Müşteri telefon numarasını girin. Mesaj işletme WhatsApp hesabınızdan
+              gider.
+            </p>
+            <input
+              type="tel"
+              value={recipientPhone}
+              onChange={(event) => setRecipientPhone(event.target.value)}
+              placeholder="05xx xxx xx xx"
+              className="mt-4 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none focus:border-green-400"
+            />
+            {cloudSendError && (
+              <p className="mt-2 text-sm font-medium text-red-600" role="alert">
+                {cloudSendError}
+              </p>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCloudSendTarget(null);
+                  setRecipientPhone("");
+                  setCloudSendError("");
+                  setCloudSendStatus("idle");
+                }}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleCloudSend}
+                disabled={cloudSendStatus === "sending" || !recipientPhone.trim()}
+                className="rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {cloudSendStatus === "sending"
+                  ? "Gönderiliyor..."
+                  : cloudSendStatus === "sent"
+                    ? "Gönderildi"
+                    : "Gönder"}
+              </button>
+            </div>
           </div>
         </div>
       )}

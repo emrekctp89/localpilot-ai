@@ -66,6 +66,8 @@ describe("integrations layer", () => {
     assert.equal(plan.length, 1);
     assert.equal(plan[0].ready, true);
     assert.equal(plan[0].suggestedCategory, "utility");
-    assert.ok(plan[0].blockers.some((item) => item.includes("Meta Business")));
+    assert.ok(
+      plan[0].blockers.some((item) => item.includes("Cloud API")),
+    );
   });
 });

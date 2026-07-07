@@ -7,6 +7,7 @@ from typing import Deque, Dict, Optional
 PUBLIC_PATHS = {
     "/health",
     "/stripe-webhook",
+    "/integration/google/oauth/callback",
     "/docs",
     "/openapi.json",
     "/redoc",

@@ -1,4 +1,5 @@
 import type { Business, GoogleBusinessChecklist } from "../domain-types";
+import type { IntegrationProviderStatus } from "../integration-client";
 import type { GoogleProfileSuggestion, IntegrationStatus } from "./types";
 
 export const GOOGLE_CHECKLIST_ITEM_META: Record<
@@ -72,14 +73,34 @@ function buildReviewRequestSuggestion(business: Business) {
   return `Merhaba, ${business.name} deneyiminizden memnun kaldıysanız Google yorumunuz bize çok yardımcı olur. Kısa bir değerlendirme bırakır mısınız?`;
 }
 
-export function getGoogleBusinessIntegrationStatus(): IntegrationStatus {
+export function getGoogleBusinessIntegrationStatus(
+  remote?: IntegrationProviderStatus | null,
+): IntegrationStatus {
+  if (remote) {
+    return {
+      provider: "google_business",
+      status: remote.status,
+      label: remote.label,
+      detail: remote.detail,
+    };
+  }
+
   return {
     provider: "google_business",
     status: "ready",
-    label: "Manuel + API hazırlık",
+    label: "Manuel + OAuth hazırlık",
     detail:
-      "Canlı profil önerileri işletme verinizden üretilir. OAuth bağlantısı sonraki fazda eklenecek.",
+      "Canlı profil önerileri işletme verinizden üretilir. OAuth ile yazma için Bağlan düğmesini kullanın.",
   };
+}
+
+export function canApplyGoogleSuggestionRemotely(
+  remote: IntegrationProviderStatus | null | undefined,
+  checklistItemId: string,
+): boolean {
+  return (
+    remote?.status === "connected" && checklistItemId === "description-written"
+  );
 }
 
 export function buildGoogleMapsSearchUrl(business: Business) {

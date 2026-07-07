@@ -4,8 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchGoogleProfileSuggestions } from "@/lib/ai-client";
 import type { Business, GoogleBusinessChecklist } from "@/lib/domain-types";
 import {
+  applyGoogleSuggestion,
+  fetchIntegrationStatus,
+  startGoogleOAuth,
+  submitAiQualityFeedback,
+  type IntegrationProviderStatus,
+} from "@/lib/integration-client";
+import {
   buildGoogleMapsSearchUrl,
   buildGoogleProfileSuggestions,
+  canApplyGoogleSuggestionRemotely,
   getGoogleBusinessIntegrationStatus,
   getGoogleBusinessManagerUrl,
   mergeGoogleProfileSuggestions,
@@ -41,7 +49,11 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
   const [enhancedSuggestions, setEnhancedSuggestions] = useState<
     ReturnType<typeof buildGoogleProfileSuggestions>
   >([]);
-  const integrationStatus = getGoogleBusinessIntegrationStatus();
+  const [googleRemoteStatus, setGoogleRemoteStatus] =
+    useState<IntegrationProviderStatus | null>(null);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [applyStatus, setApplyStatus] = useState<Record<string, string>>({});
+  const integrationStatus = getGoogleBusinessIntegrationStatus(googleRemoteStatus);
 
   useEffect(() => {
     const loadChecklist = async () => {
@@ -50,8 +62,12 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
         return;
       }
 
-      const storedChecklist = await loadGoogleChecklist(business.id);
+      const [storedChecklist, integrationStatus] = await Promise.all([
+        loadGoogleChecklist(business.id),
+        fetchIntegrationStatus(business.id).catch(() => null),
+      ]);
       setChecklist(storedChecklist);
+      setGoogleRemoteStatus(integrationStatus?.google ?? null);
       setLoading(false);
     };
 
@@ -142,6 +158,51 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
     }
   };
 
+  const handleConnectGoogle = async () => {
+    if (!business.id) return;
+    setConnectingGoogle(true);
+    try {
+      const { auth_url: authUrl } = await startGoogleOAuth(business.id);
+      window.location.href = authUrl;
+    } catch (error) {
+      setSuggestionError(
+        error instanceof Error
+          ? error.message
+          : "Google bağlantısı başlatılamadı.",
+      );
+      setConnectingGoogle(false);
+    }
+  };
+
+  const handleApplySuggestion = async (
+    checklistItemId: string,
+    suggestedText: string,
+  ) => {
+    if (!business.id) return;
+    setApplyStatus((current) => ({ ...current, [checklistItemId]: "saving" }));
+    try {
+      await applyGoogleSuggestion({
+        business_id: business.id,
+        checklist_item_id: checklistItemId,
+        suggested_text: suggestedText,
+      });
+      setApplyStatus((current) => ({ ...current, [checklistItemId]: "saved" }));
+      await submitAiQualityFeedback({
+        business_id: business.id,
+        feature: "google_suggestion",
+        rating: 1,
+        context: { checklist_item_id: checklistItemId },
+      }).catch(() => undefined);
+    } catch (error) {
+      setApplyStatus((current) => ({ ...current, [checklistItemId]: "error" }));
+      setSuggestionError(
+        error instanceof Error
+          ? error.message
+          : "Google profiline uygulanamadı.",
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-2xl bg-white p-12 text-center font-medium text-gray-500">
@@ -208,6 +269,16 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {googleRemoteStatus?.status !== "connected" && (
+              <button
+                type="button"
+                onClick={handleConnectGoogle}
+                disabled={connectingGoogle}
+                className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50"
+              >
+                {connectingGoogle ? "Yönlendiriliyor..." : "Google'a Bağlan"}
+              </button>
+            )}
             <a
               href={getGoogleBusinessManagerUrl()}
               target="_blank"
@@ -268,13 +339,36 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
                 <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-gray-700">
                   {suggestion.suggestedText}
                 </pre>
-                <button
-                  type="button"
-                  onClick={() => handleCopySuggestion(suggestion.suggestedText)}
-                  className="mt-3 rounded-lg border border-orange-200 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50"
-                >
-                  {suggestion.actionLabel}
-                </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopySuggestion(suggestion.suggestedText)}
+                    className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50"
+                  >
+                    {suggestion.actionLabel}
+                  </button>
+                  {canApplyGoogleSuggestionRemotely(
+                    googleRemoteStatus,
+                    suggestion.checklistItemId,
+                  ) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleApplySuggestion(
+                          suggestion.checklistItemId,
+                          suggestion.suggestedText,
+                        )
+                      }
+                      className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                    >
+                      {applyStatus[suggestion.checklistItemId] === "saving"
+                        ? "Uygulanıyor..."
+                        : applyStatus[suggestion.checklistItemId] === "saved"
+                          ? "Google'a uygulandı"
+                          : "Google'a Uygula"}
+                    </button>
+                  )}
+                </div>
               </article>
             ))}
           </div>
