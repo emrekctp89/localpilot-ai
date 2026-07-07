@@ -37,7 +37,10 @@ class SecurityConfigTests(unittest.TestCase):
             clear=False,
         ):
             origins = parse_allowed_origins("http://localhost:3000")
-            self.assertEqual(origins, ["https://app.vercel.app"])
+            self.assertEqual(
+                origins,
+                ["http://localhost:3000", "https://app.vercel.app"],
+            )
 
     def test_parse_allow_origin_regex_from_wildcard_origins(self):
         with patch.dict(
