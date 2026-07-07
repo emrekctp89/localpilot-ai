@@ -13,16 +13,22 @@ jobs:
 
       - name: Check monitoring gate
         id: gate
+        env:
+          AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
           if [ "${{ vars.PRODUCTION_MONITORING_ENABLED }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Keep-warm atlandı (PRODUCTION_MONITORING_ENABLED != true)."
             exit 0
           fi
-          if [ -z "${{ vars.AI_SERVICE_URL }}" ]; then
+          if [ -z "$AI_SERVICE_URL" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             echo "::warning::AI_SERVICE_URL tanımlı değil. Settings → Secrets and variables → Actions → Variables"
             exit 0
+          fi
+          TRIMMED="$(printf '%s' "$AI_SERVICE_URL" | tr -d '[:space:]')"
+          if [ "$AI_SERVICE_URL" != "$TRIMMED" ]; then
+            echo "::warning::AI_SERVICE_URL başında/sonunda boşluk var. Variable değerini düzeltin."
           fi
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 

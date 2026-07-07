@@ -3,9 +3,7 @@ set -euo pipefail
 
 normalize_url() {
   local raw="${1:-}"
-  raw="${raw//$'\r'/}"
-  raw="${raw//$'\n'/}"
-  raw="${raw//[[:space:]]/}"
+  raw="$(printf '%s' "$raw" | tr -d '[:space:]')"
   while [[ "$raw" == \"*\" ]]; do
     raw="${raw#\"}"
     raw="${raw%\"}"
@@ -28,7 +26,7 @@ validate_http_url() {
     echo "::error::${label} boş. GitHub → Settings → Variables → Actions"
     return 1
   fi
-  if [[ ! "$url" =~ ^https?://[A-Za-z0-9.-]+(/[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?$ ]]; then
+  if [[ ! "$url" =~ ^https?://[^[:space:]]+$ ]]; then
     echo "::error::${label} geçersiz format."
     echo "::error::Girilen değer: '${url}'"
     echo "::error::Doğru örnek: https://localpilot-ai-1eea.onrender.com (tırnak ve /health olmadan)"
