@@ -9,6 +9,8 @@ jobs:
   warm-ai-service:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Check monitoring gate
         id: gate
         run: |
@@ -29,10 +31,8 @@ jobs:
         env:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
-          BASE_URL="${AI_SERVICE_URL//[[:space:]]/}"
-          BASE_URL="${BASE_URL%/}"
-          BASE_URL="${BASE_URL%/health}"
-          HEALTH_URL="${BASE_URL}/health"
+          source .github/scripts/normalize-url.sh
+          HEALTH_URL="$(build_health_url "$AI_SERVICE_URL")"
           echo "Pinging: ${HEALTH_URL}"
           curl --fail --silent --show-error --retry 5 --retry-delay 8 \
             --retry-all-errors \

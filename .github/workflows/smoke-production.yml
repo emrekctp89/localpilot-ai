@@ -9,6 +9,8 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Check monitoring gate
         id: gate
         run: |
@@ -34,10 +36,8 @@ jobs:
         env:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
         run: |
-          BASE_URL="${AI_SERVICE_URL//[[:space:]]/}"
-          BASE_URL="${BASE_URL%/}"
-          BASE_URL="${BASE_URL%/health}"
-          HEALTH_URL="${BASE_URL}/health"
+          source .github/scripts/normalize-url.sh
+          HEALTH_URL="$(build_health_url "$AI_SERVICE_URL")"
           echo "Pinging: ${HEALTH_URL}"
           response=$(curl --fail --retry 5 --retry-delay 8 --retry-all-errors -s --max-time 90 \
             "${HEALTH_URL}")
@@ -52,12 +52,10 @@ jobs:
           AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
-          BASE_URL="${AI_SERVICE_URL//[[:space:]]/}"
-          BASE_URL="${BASE_URL%/}"
-          BASE_URL="${BASE_URL%/health}"
-          HEALTH_URL="${BASE_URL}/health"
-          FRONTEND_BASE="${FRONTEND_URL//[[:space:]]/}"
-          FRONTEND_BASE="${FRONTEND_BASE%/}"
+          source .github/scripts/normalize-url.sh
+          HEALTH_URL="$(build_health_url "$AI_SERVICE_URL")"
+          FRONTEND_BASE="$(normalize_url "$FRONTEND_URL")"
+          validate_http_url "$FRONTEND_BASE" "FRONTEND_URL"
           echo "CORS origin: ${FRONTEND_BASE}"
           status=$(curl -s -o /dev/null -w "%{http_code}" -X OPTIONS \
             -H "Origin: ${FRONTEND_BASE}" \
@@ -71,8 +69,9 @@ jobs:
         env:
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
-          FRONTEND_BASE="${FRONTEND_URL//[[:space:]]/}"
-          FRONTEND_BASE="${FRONTEND_BASE%/}"
+          source .github/scripts/normalize-url.sh
+          FRONTEND_BASE="$(normalize_url "$FRONTEND_URL")"
+          validate_http_url "$FRONTEND_BASE" "FRONTEND_URL"
           echo "Frontend home: ${FRONTEND_BASE}"
           curl --fail --retry 3 --retry-delay 5 --max-time 60 "${FRONTEND_BASE}"
 
@@ -81,7 +80,8 @@ jobs:
         env:
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
         run: |
-          FRONTEND_BASE="${FRONTEND_URL//[[:space:]]/}"
-          FRONTEND_BASE="${FRONTEND_BASE%/}"
+          source .github/scripts/normalize-url.sh
+          FRONTEND_BASE="$(normalize_url "$FRONTEND_URL")"
+          validate_http_url "$FRONTEND_BASE" "FRONTEND_URL"
           echo "Frontend pricing: ${FRONTEND_BASE}/fiyatlandirma"
           curl --fail --retry 3 --retry-delay 5 --max-time 60 "${FRONTEND_BASE}/fiyatlandirma"
