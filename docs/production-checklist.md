@@ -72,9 +72,17 @@ Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
 - [ ] Dil seçici TR/EN geçişi
 - [ ] Ajans modu: `profiles.role = agency` ile işletme switcher
 
-## 8. CI / E2E (Faz B)
+## 8. CI / E2E ve production monitoring (Faz B)
 
-GitHub repo → Settings → Secrets → Actions:
+GitHub repo → Settings → **Variables** → Actions (production smoke / keep-warm için):
+
+| Variable | Örnek | Açıklama |
+|----------|-------|----------|
+| `PRODUCTION_MONITORING_ENABLED` | `true` | Kapalıyken smoke + keep-warm yeşil skip eder |
+| `AI_SERVICE_URL` | `https://...onrender.com` | Render AI service kök URL |
+| `FRONTEND_URL` | `https://....vercel.app` | Vercel production URL |
+
+GitHub repo → Settings → **Secrets** → Actions (E2E için):
 
 | Secret | Açıklama |
 |--------|----------|

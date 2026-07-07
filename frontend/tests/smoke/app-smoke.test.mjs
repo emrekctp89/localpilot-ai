@@ -617,8 +617,9 @@ test("production checklist and env template document live verification", async (
     ),
   ]);
 
-  assert.match(checklistSource, /005_ai_usage\.sql/);
-  assert.match(checklistSource, /006_platform\.sql/);
+  assert.match(checklistSource, /verify_schema\.sql/);
+  assert.match(checklistSource, /001.*007/);
+  assert.match(checklistSource, /PRODUCTION_MONITORING_ENABLED/);
   assert.match(checklistSource, /CORS/);
   assert.match(prodEnv, /005_ai_usage\.sql/);
   assert.match(prodEnv, /006_platform\.sql/);
