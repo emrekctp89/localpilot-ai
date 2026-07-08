@@ -1,19 +1,20 @@
 # Changelog
 
-## 2.1.1 - Unreleased
+## 2.1.1 - 2026-07-07
 
 ### Added
-- Added `008_schema_migrations.sql` for migration version tracking.
-- Added `verify_schema_remote.py`, `rls_audit.sql`, and optional `verify-schema.yml` CI workflow.
+- `008_schema_migrations.sql`, `verify_schema_remote.py`, `rls_audit.sql`, `verify-schema.yml` workflow.
+- `supabase/scripts/verify_schema.sql` and `rls-migrations.test.ts` integration guard.
+- Production monitoring: keep-warm, smoke workflows, URL normalization, CORS fixes.
+- Explicit `/health` OPTIONS handler; CRM follow-up date save on blur.
+- Dockerfile fix for Faz E modules (`integrations/`, `ai_cache.py`).
 
 ### Changed
 - Deferred automatic Pro billing; manual `profiles.is_pro` documented as current process.
-- Deferred Faz E live integrations (Meta/Google credentials); `wa.me` + manual Google checklist remain active.
-- Applied `009_business_integrations.sql` in Supabase; active sprint moved to Faz B closure (RLS, CI/E2E).
-
-### Added
-- `supabase/scripts/verify_schema.sql` for one-shot migration verification in Supabase.
-- `rls-migrations.test.ts` integration guard for migration set and RLS fix helpers.
+- Deferred Faz E live integrations and two-account RLS panel test.
+- Applied `009_business_integrations.sql` in Supabase.
+- Checklist §6 live flows completed; active sprint moved to Faz F (growth).
+- Production URLs: Render `localpilot-ai-1eea`, Vercel `localpilot-ai-1b2h-phi`.
 
 ## 2.1.0 - Unreleased
 
