@@ -47,6 +47,7 @@ export default function CrmTab({ business }: CrmTabProps) {
   const [reminderSaveStatus, setReminderSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [followUpDraft, setFollowUpDraft] = useState("");
 
   // Modal State'leri
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -334,6 +335,27 @@ export default function CrmTab({ business }: CrmTabProps) {
     } finally {
       setIsAnalyzingChurn(false);
     }
+  };
+
+  const savedFollowUpDate = selectedCustomer
+    ? reminders[selectedCustomer.id]?.followUpDate || ""
+    : "";
+
+  useEffect(() => {
+    setFollowUpDraft(savedFollowUpDate);
+    setReminderSaveStatus("idle");
+  }, [selectedCustomer?.id, savedFollowUpDate]);
+
+  const commitFollowUpDate = async (
+    customerId: string,
+    followUpDate: string,
+  ) => {
+    const savedValue = reminders[customerId]?.followUpDate || "";
+    if (followUpDate === savedValue) {
+      setReminderSaveStatus("idle");
+      return true;
+    }
+    return updateFollowUpDate(customerId, followUpDate);
   };
 
   if (loading)
@@ -694,19 +716,28 @@ export default function CrmTab({ business }: CrmTabProps) {
               <div className="mt-2 flex flex-col sm:flex-row gap-3 sm:items-center">
                 <input
                   type="date"
-                  value={selectedReminder.followUpDate || ""}
-                  onChange={(event) =>
-                    updateFollowUpDate(
+                  value={followUpDraft}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setFollowUpDraft(nextValue);
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(nextValue)) {
+                      void commitFollowUpDate(
+                        selectedCustomer.id,
+                        nextValue,
+                      );
+                    }
+                  }}
+                  onBlur={() => {
+                    void commitFollowUpDate(
                       selectedCustomer.id,
-                      event.target.value,
-                    )
-                  }
-                  disabled={reminderSaveStatus === "saving"}
+                      followUpDraft,
+                    );
+                  }}
                   className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-200"
                 />
                 <p className="text-sm text-blue-700">
-                  {selectedReminder.followUpDate
-                    ? `${formatDate(selectedReminder.followUpDate)} tarihinde takip et.`
+                  {followUpDraft
+                    ? `${formatDate(followUpDraft)} tarihinde takip et. Alan dışına tıklayınca kaydedilir.`
                     : "Bu müşteri için takip tarihi seçilmedi."}
                 </p>
               </div>
