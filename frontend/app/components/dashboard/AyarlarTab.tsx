@@ -5,6 +5,13 @@ import { supabase } from "@/lib/supabase";
 import type { Business, GeneratedPlan, MiniSitePublishStatus } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
 import { PRO_FEATURES, type AiUsageSnapshot } from "@/lib/pro-funnel";
+import {
+  getProPricing,
+  readBillingInterval,
+  writeBillingInterval,
+  type BillingInterval,
+} from "@/lib/pro-pricing";
+import BillingIntervalToggle from "../marketing/BillingIntervalToggle";
 import ProActivationChecklist from "./ProActivationChecklist";
 import ProUpgradeBanner from "./ProUpgradeBanner";
 import type { ActivationChecklistItem } from "@/lib/pro-funnel";
@@ -73,6 +80,19 @@ export default function AyarlarTab({
   const billingMessage = billingMessageProp || localBillingMessage;
   const setBillingMessage = onBillingMessageChange ?? setLocalBillingMessage;
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>("monthly");
+
+  useEffect(() => {
+    setBillingInterval(readBillingInterval());
+  }, []);
+
+  const handleBillingIntervalChange = (interval: BillingInterval) => {
+    setBillingInterval(interval);
+    writeBillingInterval(interval);
+  };
+
+  const selectedProPricing = getProPricing(billingInterval);
   const [isRefreshingPlan, setIsRefreshingPlan] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(
     business.theme_config?.primaryColor || "blue",
@@ -369,6 +389,26 @@ export default function AyarlarTab({
                 ? "Premium AI modelleri ve gelişmiş işletme araçları hesabınızda açık."
                 : "Pro plan ile premium AI modelleri ve gelişmiş analiz araçlarını açın."}
             </p>
+            {!isPro && (
+              <div className="mt-4 space-y-2">
+                <BillingIntervalToggle
+                  value={billingInterval}
+                  onChange={handleBillingIntervalChange}
+                />
+                <p className="text-sm font-bold text-gray-700">
+                  {selectedProPricing.priceLabel}
+                  <span className="font-medium text-gray-500">
+                    {" "}
+                    {selectedProPricing.priceNote}
+                  </span>
+                  {selectedProPricing.monthlyEquivalentLabel ? (
+                    <span className="ml-2 text-xs font-bold text-emerald-600">
+                      ({selectedProPricing.monthlyEquivalentLabel})
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex min-w-52 flex-col gap-2">

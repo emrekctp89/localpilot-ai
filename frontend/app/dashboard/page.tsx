@@ -8,6 +8,7 @@ import {
   createCheckoutSession,
   type ReviewAnalysisResult,
 } from "@/lib/ai-client";
+import { readBillingInterval } from "@/lib/pro-pricing";
 import { buildReviewDecisionCycle } from "@/lib/business-os";
 import {
   listDecisionCycles,
@@ -284,6 +285,7 @@ export default function Dashboard() {
 
       const data = await createCheckoutSession({
         user_id: authSession.user.id,
+        billing_interval: readBillingInterval(),
       });
       if (data.url) {
         window.location.href = data.url;

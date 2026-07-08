@@ -164,7 +164,8 @@ export async function setupBusiness(
 
 export async function createCheckoutSession(input: {
   user_id: string;
-}): Promise<{ url?: string }> {
+  billing_interval?: "monthly" | "yearly";
+}): Promise<{ url?: string; billing_interval?: string }> {
   return postJson("/create-checkout-session", input);
 }
 

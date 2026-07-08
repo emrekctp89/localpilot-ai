@@ -38,6 +38,7 @@ from middleware.security import (
     parse_allowed_origins,
 )
 from middleware.stripe_checkout import confirm_pro_checkout
+from middleware.stripe_pricing import build_checkout_params, normalize_billing_interval
 from middleware.stripe_webhook import handle_stripe_event
 from ai_cache import (
     build_cache_key,
@@ -306,6 +307,7 @@ class CampaignInput(BaseModel):
 
 class CheckoutInput(BaseModel):
     user_id: str
+    billing_interval: str = "monthly"
 
 
 class ConfirmCheckoutInput(BaseModel):
@@ -607,30 +609,25 @@ async def generate_campaigns(data: CampaignInput):
 @app.post("/create-checkout-session")
 async def create_checkout_session(data: CheckoutInput):
     try:
+        billing_interval = normalize_billing_interval(data.billing_interval)
+        line_items, checkout_mode = build_checkout_params(billing_interval)
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": "try",
-                        "product_data": {
-                            "name": "LocalPilot AI - Pro Paket",
-                            "description": "WhatsApp Asistanı ve Akıllı Kampanya Motoru erişimi.",
-                        },
-                        "unit_amount": 29900,
-                    },
-                    "quantity": 1,
-                }
-            ],
-            mode="payment",
+            line_items=line_items,
+            mode=checkout_mode,
             success_url=(
                 f"{FRONTEND_URL}/dashboard"
                 "?payment=success&session_id={CHECKOUT_SESSION_ID}"
             ),
             cancel_url=f"{FRONTEND_URL}/dashboard?payment=cancel",
-            metadata={"user_id": data.user_id},
+            metadata={
+                "user_id": data.user_id,
+                "billing_interval": billing_interval,
+            },
         )
-        return {"url": session.url}
+        return {"url": session.url, "billing_interval": billing_interval}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

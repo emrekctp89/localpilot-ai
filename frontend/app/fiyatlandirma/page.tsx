@@ -69,10 +69,15 @@ export default function PricingPage() {
                   <td className="py-3 pr-4">Kotalı</td>
                   <td className="py-3">Sınırsız</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-3 pr-4">Finans tahmini & churn</td>
                   <td className="py-3 pr-4">Kotalı</td>
                   <td className="py-3">Sınırsız</td>
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4">Pro faturalandırma</td>
+                  <td className="py-3 pr-4">—</td>
+                  <td className="py-3">₺299/ay veya ₺2.990/yıl</td>
                 </tr>
               </tbody>
             </table>

@@ -41,6 +41,7 @@ export interface PricingPlan {
   cta: string;
   ctaHref: string;
   highlighted?: boolean;
+  billingToggle?: boolean;
   features: string[];
 }
 
@@ -250,11 +251,12 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "pro",
     name: "Pro",
     priceLabel: "₺299",
-    priceNote: "Tek seferlik aktivasyon",
-    description: "Sınırsız AI ve gelişmiş büyüme araçları.",
+    priceNote: "/ ay",
+    description: "Sınırsız AI ve gelişmiş büyüme araçları. Aylık veya yıllık abonelik.",
     cta: "Pro'ya Geç",
     ctaHref: "/auth",
     highlighted: true,
+    billingToggle: true,
     features: [
       "Ücretsiz plandaki her şey",
       "Sınırsız AI kampanya ve analiz",
@@ -280,6 +282,6 @@ export const MARKETING_FAQ = [
   {
     question: "Pro plan nasıl çalışır?",
     answer:
-      "Panelden tek tıkla ödeme yaparsınız; Stripe webhook sonrası Pro özellikleri anında açılır.",
+      "Aylık (₺299) veya yıllık (₺2.990, 2 ay bedava) abonelik seçebilirsiniz. Panelden tek tıkla Stripe Checkout ile ödeme yaparsınız; ödeme sonrası Pro özellikleri açılır.",
   },
 ];

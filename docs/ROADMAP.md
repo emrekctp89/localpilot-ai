@@ -1,7 +1,7 @@
 # LocalPilot AI — Geliştirme Roadmap
 
 **Güncel sürüm:** `2.1.1` (production)  
-**Son güncelleme:** 8 Temmuz 2026  
+**Son güncelleme:** 8 Temmuz 2026 (Faz F yıllık plan)  
 **Aktif sprint:** **Faz F** — büyüme (yıllık plan, referans)
 
 ---
@@ -171,7 +171,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 ## Faz F — Büyüme (P2) ← AKTİF
 
 - [x] Free tier, upgrade CTA, aktivasyon checklist, pazarlama sitesi
-- [ ] Yıllık plan / Stripe Price ID
+- [x] Yıllık plan / Stripe Price ID (kod + UI; Render env bekliyor)
 - [ ] Referans veya ajans komisyon modeli
 
 ---
@@ -200,7 +200,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 
 ## Bu Sprint — Faz F
 
-1. [ ] Yıllık plan tasarımı (fiyatlandırma sayfası + Stripe Price ID)
+1. [x] Yıllık plan tasarımı (fiyatlandırma sayfası + Stripe Price ID)
 2. [ ] Referans / ajans komisyon modeli taslağı
 
 ### Sonraya (opsiyonel)
@@ -219,6 +219,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 - [x] Checklist §6 canlı doğrulama (8 Tem): randevu, sipariş, CRM, AI kampanya, mini site lead, Karar Merkezi
 - [x] CRM takip tarihi blur-kaydet fix (`707fa55`)
 - [x] Sipariş «Teslim Edildi» filtre etiketi + boş durum açıklaması (§6)
+- [x] Pro aylık/yıllık abonelik: fiyatlandırma sayfası, Ayarlar, Stripe Price ID env
 
 ---
 
