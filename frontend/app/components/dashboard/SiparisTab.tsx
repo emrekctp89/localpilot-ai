@@ -308,7 +308,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
               {[
                 ["acik", "Açık"],
                 ["tum", "Tümü"],
-                ["tamamlanan", "Tamamlanan"],
+                ["tamamlanan", "Teslim Edildi"],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -334,7 +334,9 @@ export default function SiparisTab({ business }: SiparisTabProps) {
                 Bu görünümde sipariş yok.
               </p>
               <p className="mt-1 text-sm text-gray-400">
-                Yeni siparişi soldaki formdan ekleyebilirsiniz.
+                {filter === "tamamlanan"
+                  ? "Burada yalnızca durumu Teslim Edildi olan siparişler görünür. Ödeme durumu tek başına yetmez — sipariş kartındaki sol menüden Teslim Edildi seçin."
+                  : "Yeni siparişi soldaki formdan ekleyebilirsiniz."}
               </p>
             </div>
           ) : (

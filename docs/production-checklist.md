@@ -71,12 +71,12 @@ Tablolar doluysa JSON fallback kapatılır:
 > CI: `npm run test:integration` → `main-flows.test.ts` kod bağlantılarını doğrular.  
 > Aşağıdaki maddeler **canlı panelde** manuel test içindir.
 
-- [ ] Randevu oluştur / güncelle / sil
-- [ ] Sipariş oluştur ve ödeme durumu güncelle
-- [ ] CRM müşteri ekle ve takip tarihi kaydet
-- [ ] AI kampanya üret (Pro veya free kota içinde)
-- [ ] Mini site yayınla ve lead formu gönder → CRM'de görünür
-- [ ] Karar Merkezi öneri onayla → görev oluşur
+- [x] Randevu oluştur / güncelle / sil
+- [x] Sipariş oluştur ve ödeme durumu güncelle («Teslim Edildi» = sipariş durumu, ödeme değil)
+- [x] CRM müşteri ekle ve takip tarihi kaydet
+- [x] AI kampanya üret (Pro veya free kota içinde)
+- [x] Mini site yayınla ve lead formu gönder → CRM'de görünür
+- [x] Karar Merkezi öneri onayla → görev oluşur
 
 ## 7. Platform (Faz 6)
 
@@ -106,5 +106,5 @@ GitHub repo → Settings → **Secrets** → Actions (E2E için):
 | `E2E_PUBLIC_BUSINESS_ID` | Mini site lead form E2E |
 
 - [ ] Secrets tanımlı (yoksa CI authenticated E2E skip eder — normal)
-- [ ] GitHub Actions `Production Smoke` workflow yeşil (6 saatte bir)
-- [ ] CI `main` push pipeline yeşil (smoke + integration + ai-service tests)
+- [x] GitHub Actions `Production Smoke` workflow yeşil (6 saatte bir)
+- [x] CI `main` push pipeline yeşil (smoke + integration + ai-service tests)

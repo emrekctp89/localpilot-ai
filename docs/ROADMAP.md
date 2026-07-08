@@ -1,7 +1,7 @@
 # LocalPilot AI — Geliştirme Roadmap
 
 **Güncel sürüm:** `2.1.1` (production)  
-**Son güncelleme:** 7 Temmuz 2026  
+**Son güncelleme:** 8 Temmuz 2026  
 **Aktif sprint:** **Faz F** — büyüme (yıllık plan, referans)
 
 ---
@@ -80,7 +80,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 | Entegrasyonlar (WhatsApp/Google OAuth) | ✅ kodda; canlı credential ertelendi |
 | Platform (ekip, ajans, audit, i18n) | ✅ |
 | Production monitoring | ✅ keep-warm + smoke + CORS |
-| Checklist §6 canlı akışlar | ✅ randevu, sipariş, CRM, AI, lead, karar |
+| Checklist §6 canlı akışlar | ✅ randevu, sipariş, CRM, AI, lead, karar (8 Tem) |
 | Test / CI | ✅ smoke + integration; E2E secrets opsiyonel |
 | RLS çapraz erişim (manuel) | ⏸️ sonraya |
 
@@ -150,7 +150,8 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 
 - [x] Karar Merkezi v2, sektör otomasyon, tek tık aksiyon
 - [x] `main-flows.test.ts`
-- [x] **Checklist §6 canlı doğrulama** — tamamlandı (Temmuz 2026)
+- [x] **Checklist §6 canlı doğrulama** — tamamlandı (8 Temmuz 2026)
+- [x] Sipariş sekmesi: «Teslim Edildi» filtresi yalnızca `teslim_edildi` durumunu gösterir (§6 geri bildirimi)
 
 ---
 
@@ -215,8 +216,9 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 - [x] Render deploy + `/health` + Dockerfile fix
 - [x] GitHub/Vercel/Render URL hizalama
 - [x] Production smoke + keep-warm yeşil
-- [x] Checklist §6: randevu, sipariş, CRM, AI kampanya, mini site lead, Karar Merkezi
-- [x] CRM takip tarihi blur-kaydet fix
+- [x] Checklist §6 canlı doğrulama (8 Tem): randevu, sipariş, CRM, AI kampanya, mini site lead, Karar Merkezi
+- [x] CRM takip tarihi blur-kaydet fix (`707fa55`)
+- [x] Sipariş «Teslim Edildi» filtre etiketi + boş durum açıklaması (§6)
 
 ---
 
