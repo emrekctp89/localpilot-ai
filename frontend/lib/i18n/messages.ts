@@ -13,6 +13,7 @@ export const MESSAGES: Record<Locale, Record<string, string>> = {
     "platform.readOnly": "Salt okunur moddasınız. Değişiklik yapamazsınız.",
     "platform.businessSwitcher": "İşletme seç",
     "platform.agencyMode": "Ajans modu aktif",
+    "platform.partnerProgram": "Partner Programı",
   },
   en: {
     "dashboard.title": "Dashboard",
@@ -26,6 +27,7 @@ export const MESSAGES: Record<Locale, Record<string, string>> = {
     "platform.readOnly": "You are in read-only mode. Changes are disabled.",
     "platform.businessSwitcher": "Select business",
     "platform.agencyMode": "Agency mode active",
+    "platform.partnerProgram": "Partner Program",
   },
 };
 

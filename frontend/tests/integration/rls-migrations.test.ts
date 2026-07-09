@@ -12,7 +12,7 @@ function readMigration(name: string) {
 }
 
 describe("RLS and migration integrity (Faz B)", () => {
-  it("ships migrations 001 through 009 in order", () => {
+  it("ships migrations 001 through 010 in order", () => {
     const files = readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
@@ -26,6 +26,7 @@ describe("RLS and migration integrity (Faz B)", () => {
       "007_fix_rls_recursion.sql",
       "008_schema_migrations.sql",
       "009_business_integrations.sql",
+      "010_partner_program.sql",
     ]);
   });
 

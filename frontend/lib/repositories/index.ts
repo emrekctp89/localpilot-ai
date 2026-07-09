@@ -29,6 +29,13 @@ export {
   revokeBusinessApiKey,
   deleteBusinessWebhook,
 } from "./platform-integrations";
+export {
+  attributeReferralCode,
+  ensurePartnerProfile,
+  fetchPartnerProfile,
+  listPartnerAttributions,
+  listPartnerCommissionLedger,
+} from "./partner-program";
 export { listContentItems, saveContentItems } from "./content-items";
 export {
   listCustomerFollowUps,

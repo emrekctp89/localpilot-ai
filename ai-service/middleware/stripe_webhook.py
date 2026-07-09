@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
+from middleware.partner_commission import record_pro_activation_commission
+
 
 def activate_pro_membership(
     supabase_client: Any, user_id: str
@@ -65,10 +67,21 @@ def handle_stripe_event(
         return {"status": "ignored", "event": event_type}, 200
 
     session = event.get("data", {}).get("object", {})
-    user_id = (session.get("metadata") or {}).get("user_id")
+    metadata = session.get("metadata") or {}
+    user_id = metadata.get("user_id")
+    billing_interval = metadata.get("billing_interval")
     ok, error = activate_pro_membership(supabase_client, user_id)
 
     if ok:
+        commission_ok, commission_error = record_pro_activation_commission(
+            supabase_client,
+            user_id,
+            billing_interval,
+        )
+        if not commission_ok:
+            print(
+                f"partner_commission_skipped user={user_id} detail={commission_error}"
+            )
         return {"status": "success", "event": event_type}, 200
 
     return {"status": "error", "detail": error or "Bilinmeyen hata"}, 500

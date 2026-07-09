@@ -26,12 +26,14 @@ import {
 } from "@/lib/repositories/platform-integrations";
 import type { AuditLogEntry } from "@/lib/platform/audit";
 import type { BusinessMember } from "@/lib/platform/access";
+import PartnerProgramPanel from "./PartnerProgramPanel";
 
 interface PlatformTabProps {
   business: Business;
   access: BusinessAccess;
   businesses: Business[];
   accountEmail?: string;
+  userId?: string;
 }
 
 export default function PlatformTab({
@@ -39,6 +41,7 @@ export default function PlatformTab({
   access,
   businesses,
   accountEmail = "",
+  userId = "",
 }: PlatformTabProps) {
   const { locale, setLocale, t } = useLocale();
   const [members, setMembers] = useState<BusinessMember[]>([]);
@@ -186,6 +189,10 @@ export default function PlatformTab({
           </p>
         )}
       </section>
+
+      {access.canManageTeam && userId ? (
+        <PartnerProgramPanel userId={userId} access={access} />
+      ) : null}
 
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="text-lg font-black text-gray-900">{t("platform.language")}</h3>

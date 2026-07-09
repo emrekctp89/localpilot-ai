@@ -172,7 +172,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 
 - [x] Free tier, upgrade CTA, aktivasyon checklist, pazarlama sitesi
 - [x] Yıllık plan (kod + UI) · Stripe Price ID env **ertelendi** (Stripe bakım)
-- [ ] Referans veya ajans komisyon modeli
+- [x] Referans / ajans komisyon modeli (kod + UI; migration `010` bekliyor)
 
 ---
 
@@ -202,7 +202,9 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 
 1. [x] Yıllık plan tasarımı (fiyatlandırma sayfası + checkout)
    - [ ] `STRIPE_PRICE_ID_MONTHLY` / `YEARLY` Render env (Stripe erişimi sonrası)
-2. [ ] Referans / ajans komisyon modeli taslağı
+2. [x] Referans / ajans komisyon modeli (Platform sekmesi + `010_partner_program.sql`)
+   - [ ] Migration `010` Supabase'de uygula
+   - [ ] Manuel Pro aktivasyonunda komisyon tetikleme (opsiyonel)
 
 ### Sonraya (opsiyonel)
 
@@ -221,6 +223,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 - [x] CRM takip tarihi blur-kaydet fix (`707fa55`)
 - [x] Sipariş «Teslim Edildi» filtre etiketi + boş durum açıklaması (§6)
 - [x] Pro aylık/yıllık abonelik: fiyatlandırma sayfası, Ayarlar, Stripe Price ID env
+- [x] Partner programı: referans linki, ajans %20 / referans %10 komisyon defteri
 
 ---
 

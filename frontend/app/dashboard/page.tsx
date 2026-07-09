@@ -36,6 +36,7 @@ import ReadOnlyBanner from "../components/dashboard/ReadOnlyBanner";
 import { useToast } from "../components/Toast";
 import { useLocale } from "@/hooks/useLocale";
 import { useDashboardSession } from "@/hooks/useDashboardSession";
+import { useReferralAttribution } from "@/hooks/useReferralAttribution";
 import {
   DEFAULT_ONBOARDING_DATA,
   createOnboardingDraftHandlers,
@@ -96,6 +97,11 @@ export default function Dashboard() {
 
   const session = useDashboardSession(draftHandlers);
   const { t } = useLocale();
+
+  useReferralAttribution(
+    session.userId || null,
+    !session.loading && Boolean(session.userId),
+  );
 
   const aiUsageApi = useAiUsage(session.isPro, Boolean(session.business));
 
@@ -547,6 +553,7 @@ export default function Dashboard() {
                   access={session.platformAccess}
                   businesses={session.businesses}
                   accountEmail={session.accountEmail}
+                  userId={session.userId}
                 />
               )}
             </main>

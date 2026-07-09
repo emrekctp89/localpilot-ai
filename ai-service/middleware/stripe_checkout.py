@@ -5,6 +5,7 @@ from middleware.stripe_utils import (
     checkout_session_user_id,
     read_stripe_field,
 )
+from middleware.partner_commission import record_pro_activation_commission
 from middleware.stripe_webhook import activate_pro_membership
 
 
@@ -90,5 +91,17 @@ def confirm_pro_checkout(
             "detail": error or "Pro aktivasyonu başarısız.",
             "is_pro": False,
         }, 500
+
+    metadata = read_stripe_field(session, "metadata") or {}
+    billing_interval = read_stripe_field(metadata, "billing_interval")
+    commission_ok, commission_error = record_pro_activation_commission(
+        supabase_client,
+        effective_user_id,
+        billing_interval,
+    )
+    if not commission_ok:
+        print(
+            f"partner_commission_skipped user={effective_user_id} detail={commission_error}"
+        )
 
     return {"status": "success", "is_pro": True}, 200
