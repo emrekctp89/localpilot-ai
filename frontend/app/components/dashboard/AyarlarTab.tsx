@@ -163,7 +163,8 @@ export default function AyarlarTab({
   );
 
   const publicPath = business?.id ? `/site/${business.id}` : "";
-  const publicUrl = origin && publicPath ? `${origin}${publicPath}` : publicPath;
+  const publicUrl =
+    origin && publicPath ? `${origin}${publicPath}` : publicPath;
   const isPublished = isMiniSitePublished(siteData);
   const previewPath =
     publicPath && !isPublished ? `${publicPath}?preview=1` : publicPath;
@@ -227,8 +228,7 @@ export default function AyarlarTab({
     },
   ];
   const activeTheme =
-    themeOptions.find((theme) => theme.id === selectedTheme) ||
-    themeOptions[0];
+    themeOptions.find((theme) => theme.id === selectedTheme) || themeOptions[0];
 
   const handleFeatureChange = (index: number, value: string) => {
     const newFeatures = [...(siteData.features || ["", "", ""])];
@@ -300,7 +300,11 @@ export default function AyarlarTab({
       setTimeout(() => setSaveMessage(""), 4000);
     } catch (error) {
       console.error("Save Error:", error);
-      alert("Kaydetme hatası: " + ((error instanceof Error ? error.message : "Bilinmeyen hata") || "Bilinmeyen hata"));
+      alert(
+        "Kaydetme hatası: " +
+          ((error instanceof Error ? error.message : "Bilinmeyen hata") ||
+            "Bilinmeyen hata"),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -403,11 +407,7 @@ export default function AyarlarTab({
 
       {!isPro && (
         <div className="mb-6">
-          <ProUpgradeBanner
-            usage={aiUsage}
-            onUpgrade={startCheckout}
-            compact
-          />
+          <ProUpgradeBanner usage={aiUsage} onUpgrade={startCheckout} compact />
         </div>
       )}
 
@@ -441,9 +441,9 @@ export default function AyarlarTab({
             </p>
             {referralAttribution ? (
               <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                Referans kodu <strong>{referralAttribution.referral_code}</strong>{" "}
-                ile kayıt oldunuz. Komisyon partner hesabına yansır; size
-                otomatik indirim uygulanmaz.
+                Referans kodu{" "}
+                <strong>{referralAttribution.referral_code}</strong> ile kayıt
+                oldunuz.
               </p>
             ) : null}
             {!isPro && (
@@ -480,16 +480,22 @@ export default function AyarlarTab({
                 disabled={isStartingCheckout || !handleUpgradeToPro}
                 className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:bg-gray-400"
               >
-                {isStartingCheckout ? "Ödeme sayfası açılıyor..." : "Pro'ya Yükselt"}
+                {isStartingCheckout
+                  ? "Ödeme sayfası açılıyor..."
+                  : "Pro'ya Yükselt"}
               </button>
             )}
             <button
               type="button"
               onClick={checkPlanStatus}
-              disabled={isRefreshingPlan || isActivatingPro || !refreshProStatus}
+              disabled={
+                isRefreshingPlan || isActivatingPro || !refreshProStatus
+              }
               className="rounded-xl border border-indigo-200 bg-white px-5 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
             >
-              {isRefreshingPlan ? "Kontrol ediliyor..." : "Üyelik Durumunu Yenile"}
+              {isRefreshingPlan
+                ? "Kontrol ediliyor..."
+                : "Üyelik Durumunu Yenile"}
             </button>
           </div>
         </div>
@@ -518,7 +524,9 @@ export default function AyarlarTab({
               className="rounded-xl border border-gray-100 bg-gray-50 p-4"
             >
               <p className="font-bold text-gray-900">{feature.title}</p>
-              <p className="mt-1 text-sm text-gray-600">{feature.description}</p>
+              <p className="mt-1 text-sm text-gray-600">
+                {feature.description}
+              </p>
               <p className="mt-2 text-xs font-bold uppercase tracking-wide text-indigo-600">
                 {isPro
                   ? "Pro: Sınırsız"
