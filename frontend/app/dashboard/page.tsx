@@ -55,6 +55,7 @@ import {
   readCheckoutSessionId,
   readPaymentReturn,
 } from "@/lib/dashboard-session-storage";
+import { getVisibleTabs } from "@/lib/dashboard-utils";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -129,6 +130,20 @@ export default function Dashboard() {
     campaigns: campaignsApi.campaigns,
     proActivatedAt: session.proActivatedAt,
   });
+
+  const visibleTabIds = useMemo(
+    () => getVisibleTabs(session.business),
+    [session.business],
+  );
+
+  useEffect(() => {
+    if (
+      visibleTabIds.length > 0 &&
+      !visibleTabIds.includes(activeTab)
+    ) {
+      setActiveTab(visibleTabIds[0]);
+    }
+  }, [visibleTabIds, activeTab]);
 
   const { isSettingUp, setupError, handleCompleteOnboarding } =
     useOnboardingSetup({
@@ -417,10 +432,10 @@ export default function Dashboard() {
           />
         )}
 
-        {session.business && session.business.active_modules && (
+        {session.business && (
           <>
             <TabMenu
-              activeModules={session.business.active_modules}
+              visibleTabIds={visibleTabIds}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />

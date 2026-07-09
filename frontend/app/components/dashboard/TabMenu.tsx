@@ -1,34 +1,17 @@
 import React from "react";
 
 interface TabMenuProps {
-  activeModules: string[];
+  visibleTabIds: string[];
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
 export default function TabMenu({
-  activeModules,
+  visibleTabIds,
   activeTab,
   setActiveTab,
 }: TabMenuProps) {
-  if (!activeModules) return null;
-
-  const RENDERED_TABS = new Set([
-    "ozet",
-    "karar",
-    "is_akisi",
-    "icerik",
-    "crm",
-    "randevu",
-    "siparis",
-    "personel",
-    "google_business",
-    "kasa",
-    "menu",
-    "araclar",
-    "ayarlar",
-    "platform",
-  ]);
+  if (!visibleTabIds || visibleTabIds.length === 0) return null;
 
   const ALL_TABS = [
     {
@@ -104,22 +87,7 @@ export default function TabMenu({
   ];
 
   // Görünür sekmeleri filtreleme
-  const visibleTabs = ALL_TABS.filter(
-    (tab) =>
-      RENDERED_TABS.has(tab.id) &&
-      (activeModules.includes(tab.id) ||
-        tab.id === "ozet" ||
-        tab.id === "karar" ||
-        tab.id === "is_akisi" ||
-        tab.id === "icerik" ||
-        tab.id === "randevu" ||
-        tab.id === "siparis" ||
-        tab.id === "personel" ||
-        tab.id === "google_business" ||
-        tab.id === "araclar" ||
-        tab.id === "ayarlar" ||
-        tab.id === "platform"),
-  );
+  const visibleTabs = ALL_TABS.filter((tab) => visibleTabIds.includes(tab.id));
 
   return (
     <div className="flex overflow-x-auto gap-2 mb-8 p-2 scrollbar-hide glass-panel rounded-full border border-white/40 shadow-sm items-center">

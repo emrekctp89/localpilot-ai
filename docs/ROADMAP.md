@@ -171,7 +171,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 ## Faz F — Büyüme (P2) ← AKTİF
 
 - [x] Free tier, upgrade CTA, aktivasyon checklist, pazarlama sitesi
-- [x] Yıllık plan / Stripe Price ID (kod + UI; Render env bekliyor)
+- [x] Yıllık plan (kod + UI) · Stripe Price ID env **ertelendi** (Stripe bakım)
 - [ ] Referans veya ajans komisyon modeli
 
 ---
@@ -200,7 +200,8 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 
 ## Bu Sprint — Faz F
 
-1. [x] Yıllık plan tasarımı (fiyatlandırma sayfası + Stripe Price ID)
+1. [x] Yıllık plan tasarımı (fiyatlandırma sayfası + checkout)
+   - [ ] `STRIPE_PRICE_ID_MONTHLY` / `YEARLY` Render env (Stripe erişimi sonrası)
 2. [ ] Referans / ajans komisyon modeli taslağı
 
 ### Sonraya (opsiyonel)
@@ -208,7 +209,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
 - [ ] İki hesaplı RLS panel testi (checklist §5)
 - [ ] GitHub E2E secrets
 - [ ] Faz E: Meta/Google env + canlı test
-- [ ] Faz A: Stripe webhook
+- [ ] Faz A: Stripe webhook + Price ID env (Stripe bakım sonrası)
 - [ ] Sentry / merkezi log
 
 ### Tamamlanan (Temmuz 2026)

@@ -44,6 +44,9 @@ export interface Business {
   whatsapp_number?: string;
   working_hours?: string;
   target_audience?: string;
+  business_type?: string;
+  goals?: string[];
+  top_products?: string;
   active_modules?: string[];
   theme_config?: ThemeConfig;
 }
