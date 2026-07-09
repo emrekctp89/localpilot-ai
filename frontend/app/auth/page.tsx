@@ -3,6 +3,20 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
+import { attributeReferralCode } from '@/lib/repositories/partner-program';
+import {
+  clearStoredReferralCode,
+  readStoredReferralCode,
+} from '@/lib/referral-storage';
+
+async function applyPendingReferral() {
+  const code = readStoredReferralCode();
+  if (!code) return;
+  const result = await attributeReferralCode(code);
+  if (result.status === 'success' || result.status === 'ignored') {
+    clearStoredReferralCode();
+  }
+}
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
@@ -37,6 +51,7 @@ export default function AuthPage() {
         // GİRİŞ YAP
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await applyPendingReferral();
         router.push('/dashboard');
       } else {
         // KAYIT OL

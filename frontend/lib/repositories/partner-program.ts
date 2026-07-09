@@ -84,6 +84,26 @@ export async function ensurePartnerProfile(input: {
   return createPartnerProfile(input);
 }
 
+export async function fetchReferredUserAttribution(
+  userId: string,
+): Promise<ReferralAttribution | null> {
+  try {
+    const { data, error } = await supabase
+      .from("referral_attributions")
+      .select("*")
+      .eq("referred_user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      if (isMissingTableError(error)) return null;
+      throw error;
+    }
+    return (data as ReferralAttribution | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function listPartnerAttributions(
   partnerUserId: string,
 ): Promise<ReferralAttribution[]> {

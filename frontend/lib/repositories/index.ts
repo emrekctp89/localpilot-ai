@@ -33,6 +33,7 @@ export {
   attributeReferralCode,
   ensurePartnerProfile,
   fetchPartnerProfile,
+  fetchReferredUserAttribution,
   listPartnerAttributions,
   listPartnerCommissionLedger,
 } from "./partner-program";

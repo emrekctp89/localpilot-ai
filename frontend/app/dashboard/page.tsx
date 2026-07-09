@@ -544,6 +544,7 @@ export default function Dashboard() {
                   proActivatedAt={session.proActivatedAt}
                   onNavigateTab={setActiveTab}
                   onDismissActivationChecklist={activationChecklist.dismiss}
+                  userId={session.userId}
                 />
               )}
 

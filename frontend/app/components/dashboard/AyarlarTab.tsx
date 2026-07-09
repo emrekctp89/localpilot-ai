@@ -17,6 +17,8 @@ import {
   type BillingInterval,
 } from "@/lib/pro-pricing";
 import BillingIntervalToggle from "../marketing/BillingIntervalToggle";
+import { fetchReferredUserAttribution } from "@/lib/repositories/partner-program";
+import type { ReferralAttribution } from "@/lib/partner-program";
 import ProActivationChecklist from "./ProActivationChecklist";
 import ProUpgradeBanner from "./ProUpgradeBanner";
 import type { ActivationChecklistItem } from "@/lib/pro-funnel";
@@ -89,6 +91,7 @@ interface AyarlarTabProps {
   proActivatedAt?: string | null;
   onNavigateTab?: (tab: string) => void;
   onDismissActivationChecklist?: () => void;
+  userId?: string;
 }
 
 export default function AyarlarTab({
@@ -111,6 +114,7 @@ export default function AyarlarTab({
   proActivatedAt = null,
   onNavigateTab,
   onDismissActivationChecklist,
+  userId = "",
 }: AyarlarTabProps) {
   const [siteData, setSiteData] = useState(() =>
     normalizeSiteFormData(plan?.mini_site_data),
@@ -136,7 +140,21 @@ export default function AyarlarTab({
   };
 
   const selectedProPricing = getProPricing(billingInterval);
+  const [referralAttribution, setReferralAttribution] =
+    useState<ReferralAttribution | null>(null);
   const [isRefreshingPlan, setIsRefreshingPlan] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void (async () => {
+      const attribution = await fetchReferredUserAttribution(userId);
+      if (!cancelled) setReferralAttribution(attribution);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
   const [selectedTheme, setSelectedTheme] = useState(
     business.theme_config?.primaryColor || "blue",
   );
@@ -421,6 +439,13 @@ export default function AyarlarTab({
                 ? "Premium AI modelleri ve gelişmiş işletme araçları hesabınızda açık."
                 : "Pro plan ile premium AI modelleri ve gelişmiş analiz araçlarını açın."}
             </p>
+            {referralAttribution ? (
+              <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                Referans kodu <strong>{referralAttribution.referral_code}</strong>{" "}
+                ile kayıt oldunuz. Komisyon partner hesabına yansır; size
+                otomatik indirim uygulanmaz.
+              </p>
+            ) : null}
             {!isPro && (
               <div className="mt-4 space-y-2">
                 <BillingIntervalToggle
@@ -438,6 +463,10 @@ export default function AyarlarTab({
                       ({selectedProPricing.monthlyEquivalentLabel})
                     </span>
                   ) : null}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Liste fiyatı geçerlidir. Partner komisyonu ödeme sonrası
+                  hesaplanır.
                 </p>
               </div>
             )}

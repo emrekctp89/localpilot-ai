@@ -190,6 +190,41 @@ export default function PartnerProgramPanel({
             </div>
           </div>
 
+          {attributions.length > 0 && (
+            <div>
+              <h4 className="text-sm font-black text-gray-900">
+                Yönlendirdiğiniz kayıtlar
+              </h4>
+              <ul className="mt-3 space-y-2">
+                {attributions.slice(0, 5).map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm"
+                  >
+                    <span className="font-mono text-xs text-gray-600">
+                      {item.referral_code}
+                    </span>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                        item.status === "converted"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {item.status === "converted"
+                        ? "Pro dönüştü"
+                        : "Pro bekliyor"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-gray-500">
+                Komisyon yalnızca Pro ödemesi tamamlandığında oluşur; bekleyen
+                kayıtlarda henüz tutar yansımaz.
+              </p>
+            </div>
+          )}
+
           {ledger.length > 0 && (
             <div>
               <h4 className="text-sm font-black text-gray-900">
