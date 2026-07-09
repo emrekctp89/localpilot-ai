@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 
 import { confirmProCheckout } from "@/lib/ai-client";
 import { supabase } from "@/lib/supabase";
-import type { Business, GeneratedPlan, MiniSitePublishStatus } from "@/lib/domain-types";
+import type {
+  Business,
+  GeneratedPlan,
+  MiniSiteData,
+  MiniSitePublishStatus,
+} from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
 import { PRO_FEATURES, type AiUsageSnapshot } from "@/lib/pro-funnel";
 import {
@@ -15,6 +20,54 @@ import BillingIntervalToggle from "../marketing/BillingIntervalToggle";
 import ProActivationChecklist from "./ProActivationChecklist";
 import ProUpgradeBanner from "./ProUpgradeBanner";
 import type { ActivationChecklistItem } from "@/lib/pro-funnel";
+
+const EMPTY_SITE_FORM_DATA: Required<
+  Pick<
+    MiniSiteData,
+    | "hero_slogan"
+    | "about_us"
+    | "cta_text"
+    | "features"
+    | "publish_status"
+    | "seo_title"
+    | "seo_description"
+    | "og_image_url"
+    | "whatsapp_prefill_message"
+  >
+> = {
+  hero_slogan: "",
+  about_us: "",
+  cta_text: "Bize Ulaşın",
+  features: ["", "", ""],
+  publish_status: "published",
+  seo_title: "",
+  seo_description: "",
+  og_image_url: "",
+  whatsapp_prefill_message: "",
+};
+
+function normalizeSiteFormData(
+  data?: Partial<MiniSiteData> | null,
+): typeof EMPTY_SITE_FORM_DATA {
+  const features = [...(data?.features ?? [])];
+  while (features.length < 3) {
+    features.push("");
+  }
+
+  return {
+    ...EMPTY_SITE_FORM_DATA,
+    ...data,
+    hero_slogan: data?.hero_slogan ?? "",
+    about_us: data?.about_us ?? "",
+    cta_text: data?.cta_text ?? "Bize Ulaşın",
+    features: features.slice(0, 3).map((feature) => feature ?? ""),
+    publish_status: data?.publish_status ?? "published",
+    seo_title: data?.seo_title ?? "",
+    seo_description: data?.seo_description ?? "",
+    og_image_url: data?.og_image_url ?? "",
+    whatsapp_prefill_message: data?.whatsapp_prefill_message ?? "",
+  };
+}
 
 interface AyarlarTabProps {
   business: Business;
@@ -59,18 +112,8 @@ export default function AyarlarTab({
   onNavigateTab,
   onDismissActivationChecklist,
 }: AyarlarTabProps) {
-  const [siteData, setSiteData] = useState(
-    plan?.mini_site_data || {
-      hero_slogan: "",
-      about_us: "",
-      cta_text: "Bize Ulaşın",
-      features: ["", "", ""],
-      publish_status: "published" as MiniSitePublishStatus,
-      seo_title: "",
-      seo_description: "",
-      og_image_url: "",
-      whatsapp_prefill_message: "",
-    },
+  const [siteData, setSiteData] = useState(() =>
+    normalizeSiteFormData(plan?.mini_site_data),
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -109,18 +152,7 @@ export default function AyarlarTab({
 
   useEffect(() => {
     if (!plan?.mini_site_data) return;
-    setSiteData({
-      hero_slogan: "",
-      about_us: "",
-      cta_text: "Bize Ulaşın",
-      features: ["", "", ""],
-      publish_status: "published",
-      seo_title: "",
-      seo_description: "",
-      og_image_url: "",
-      whatsapp_prefill_message: "",
-      ...plan.mini_site_data,
-    });
+    setSiteData(normalizeSiteFormData(plan.mini_site_data));
   }, [plan?.mini_site_data]);
 
   const inputClass =
@@ -620,7 +652,7 @@ export default function AyarlarTab({
           <input
             type="text"
             className={inputClass}
-            value={siteData.hero_slogan}
+            value={siteData.hero_slogan || ""}
             onChange={(e) =>
               setSiteData({
                 ...siteData,
@@ -643,7 +675,7 @@ export default function AyarlarTab({
           <textarea
             rows={4}
             className={`${inputClass} resize-none leading-relaxed`}
-            value={siteData.about_us}
+            value={siteData.about_us || ""}
             onChange={(e) =>
               setSiteData({
                 ...siteData,
@@ -746,7 +778,7 @@ export default function AyarlarTab({
           <input
             type="text"
             className={`${inputClass} md:w-1/3`}
-            value={siteData.cta_text}
+            value={siteData.cta_text || ""}
             onChange={(e) =>
               setSiteData({
                 ...siteData,
