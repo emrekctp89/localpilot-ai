@@ -53,6 +53,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
   const [isPro, setIsPro] = useState(false);
   const [proActivatedAt, setProActivatedAt] = useState<string | null>(null);
   const [profileRole, setProfileRole] = useState<ProfileRole>("owner");
+  const [commissionAdmin, setCommissionAdmin] = useState(false);
   const [platformAccess, setPlatformAccess] = useState<BusinessAccess>({
     role: "owner",
     profileRole: "owner",
@@ -170,6 +171,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
         setIsPro(Boolean(context.isPro));
         setProActivatedAt(context.proActivatedAt ?? null);
         setProfileRole(context.profileRole);
+        setCommissionAdmin(context.commissionAdmin);
         setBusinesses(context.businesses);
         setPlatformAccess(context.platformAccess);
 
@@ -332,6 +334,7 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
     isPro,
     proActivatedAt,
     profileRole,
+    commissionAdmin,
     platformAccess,
     accountEmail,
     userId,

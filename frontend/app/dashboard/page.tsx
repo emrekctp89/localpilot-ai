@@ -555,6 +555,7 @@ export default function Dashboard() {
                   businesses={session.businesses}
                   accountEmail={session.accountEmail}
                   userId={session.userId}
+                  commissionAdmin={session.commissionAdmin}
                 />
               )}
             </main>

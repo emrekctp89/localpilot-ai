@@ -6,6 +6,7 @@ export interface UserProfileSnapshot {
   isPro: boolean;
   proActivatedAt: string | null;
   profileRole: ProfileRole;
+  commissionAdmin: boolean;
 }
 
 export interface BusinessListResult {
@@ -18,7 +19,7 @@ export async function fetchUserProfile(
 ): Promise<UserProfileSnapshot> {
   const { data } = await supabase
     .from("profiles")
-    .select("is_pro, pro_activated_at, role")
+    .select("is_pro, pro_activated_at, role, commission_admin")
     .eq("id", userId)
     .single();
 
@@ -28,6 +29,7 @@ export async function fetchUserProfile(
     isPro: Boolean(data?.is_pro),
     proActivatedAt: (data?.pro_activated_at as string | null) ?? null,
     profileRole: role === "agency" ? "agency" : role === "staff" ? "staff" : "owner",
+    commissionAdmin: Boolean(data?.commission_admin),
   };
 }
 

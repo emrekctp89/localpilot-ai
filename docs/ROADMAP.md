@@ -204,6 +204,7 @@ Değişkenler **yalnızca Render ai-service**'e girilir.
    - [ ] `STRIPE_PRICE_ID_MONTHLY` / `YEARLY` Render env (Stripe erişimi sonrası)
 2. [x] Referans / ajans komisyon modeli (Platform sekmesi + `010_partner_program.sql`)
    - [ ] Migration `010` Supabase'de uygula
+   - [x] Panelden komisyon onayı (`commission_admin` + migration `011`)
    - [ ] Manuel Pro aktivasyonunda komisyon tetikleme (opsiyonel)
 
 ### Sonraya (opsiyonel)

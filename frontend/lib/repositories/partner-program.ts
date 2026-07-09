@@ -1,9 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import {
+  allowedCommissionTransitions,
   generateReferralCode,
   normalizeReferralCode,
   PARTNER_COMMISSION_RATES,
   type CommissionLedgerEntry,
+  type CommissionStatus,
   type PartnerProfile,
   type PartnerType,
   type ReferralAttribution,
@@ -168,4 +170,95 @@ export async function attributeReferralCode(
     status: payload.status || "error",
     detail: payload.detail,
   };
+}
+
+export interface AdminCommissionRow extends CommissionLedgerEntry {
+  partner_referral_code: string;
+  partner_type: PartnerType;
+  referred_user_id?: string;
+}
+
+export async function listAdminCommissionQueue(): Promise<AdminCommissionRow[]> {
+  try {
+    const { data: ledger, error: ledgerError } = await supabase
+      .from("commission_ledger")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (ledgerError) {
+      if (isMissingTableError(ledgerError)) return [];
+      throw ledgerError;
+    }
+
+    const entries = (ledger as CommissionLedgerEntry[]) ?? [];
+    if (entries.length === 0) return [];
+
+    const partnerIds = [...new Set(entries.map((entry) => entry.partner_user_id))];
+    const { data: partners, error: partnerError } = await supabase
+      .from("partner_profiles")
+      .select("user_id, referral_code, partner_type")
+      .in("user_id", partnerIds);
+
+    if (partnerError) {
+      if (isMissingTableError(partnerError)) return [];
+      throw partnerError;
+    }
+
+    const partnerMap = new Map(
+      (partners ?? []).map((partner) => [partner.user_id as string, partner]),
+    );
+
+    return entries.map((entry) => {
+      const partner = partnerMap.get(entry.partner_user_id);
+      const metadata = (entry.metadata ?? {}) as Record<string, unknown>;
+      return {
+        ...entry,
+        partner_referral_code: (partner?.referral_code as string) || "—",
+        partner_type: (partner?.partner_type as PartnerType) || "referral",
+        referred_user_id:
+          typeof metadata.referred_user_id === "string"
+            ? metadata.referred_user_id
+            : undefined,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function updateCommissionStatus(
+  ledgerId: string,
+  currentStatus: CommissionStatus,
+  nextStatus: Extract<CommissionStatus, "approved" | "paid" | "cancelled">,
+): Promise<{ ok: boolean; detail?: string }> {
+  if (!allowedCommissionTransitions(currentStatus).includes(nextStatus)) {
+    return {
+      ok: false,
+      detail: `${currentStatus} durumundan ${nextStatus} geçişine izin yok.`,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("commission_ledger")
+    .update({ status: nextStatus })
+    .eq("id", ledgerId)
+    .eq("status", currentStatus)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return { ok: false, detail: "Komisyon yönetimi henüz aktif değil." };
+    }
+    return { ok: false, detail: error.message };
+  }
+
+  if (!data) {
+    return {
+      ok: false,
+      detail: "Kayıt güncellenemedi. Yetkiniz veya kayıt durumu değişmiş olabilir.",
+    };
+  }
+
+  return { ok: true };
 }

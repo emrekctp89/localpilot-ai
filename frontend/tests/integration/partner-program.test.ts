@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  allowedCommissionTransitions,
   buildPartnerDashboardStats,
   buildReferralLink,
   calculateCommissionAmount,
@@ -88,6 +89,19 @@ describe("partner program integration", () => {
     assert.equal(code, "LP-TEST01");
   });
 
+  it("defines commission status transitions for admin actions", () => {
+    assert.deepEqual(allowedCommissionTransitions("pending"), [
+      "approved",
+      "paid",
+      "cancelled",
+    ]);
+    assert.deepEqual(allowedCommissionTransitions("approved"), [
+      "paid",
+      "cancelled",
+    ]);
+    assert.deepEqual(allowedCommissionTransitions("paid"), []);
+  });
+
   it("wires platform and dashboard partner surfaces", () => {
     const platformSource = readSource("app/components/dashboard/PlatformTab.tsx");
     const dashboardSource = readSource("app/dashboard/page.tsx");
@@ -97,6 +111,7 @@ describe("partner program integration", () => {
     );
 
     assert.match(platformSource, /PartnerProgramPanel/);
+    assert.match(platformSource, /CommissionAdminPanel/);
     assert.match(dashboardSource, /useReferralAttribution/);
     assert.match(migrationSource, /partner_profiles/);
     assert.match(migrationSource, /attribute_referral/);

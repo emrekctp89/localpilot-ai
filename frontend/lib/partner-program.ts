@@ -120,3 +120,13 @@ export function formatTryAmount(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+export type CommissionStatus = CommissionLedgerEntry["status"];
+
+export function allowedCommissionTransitions(
+  status: CommissionStatus,
+): Array<Extract<CommissionStatus, "approved" | "paid" | "cancelled">> {
+  if (status === "pending") return ["approved", "paid", "cancelled"];
+  if (status === "approved") return ["paid", "cancelled"];
+  return [];
+}
