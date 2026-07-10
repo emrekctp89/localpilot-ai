@@ -73,6 +73,9 @@ export function validateSiteSlugInput(raw: string): {
   return { ok: true, slug };
 }
 
+/** Default CNAME target for Vercel project domains (user DNS panel). */
+export const CUSTOM_DOMAIN_CNAME_TARGET = "cname.vercel-dns.com";
+
 export function normalizeCustomDomain(raw: string): string {
   return raw
     .trim()
@@ -89,6 +92,138 @@ export function isValidCustomDomain(domain: string): boolean {
   return /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(
     domain,
   );
+}
+
+export function validateCustomDomainInput(raw: string): {
+  ok: boolean;
+  domain: string;
+  error?: string;
+} {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { ok: true, domain: "" };
+  }
+
+  const domain = normalizeCustomDomain(trimmed);
+  if (!isValidCustomDomain(domain)) {
+    return {
+      ok: false,
+      domain,
+      error:
+        "Geçerli bir alan adı girin (örn. www.ornek.com). http:// veya yol eklemeyin.",
+    };
+  }
+
+  return { ok: true, domain };
+}
+
+/**
+ * Compute domain fields to persist when the user saves settings.
+ * Empty input clears domain. New/changed domain → pending_dns.
+ * Unchanged domain keeps existing status (active stays active).
+ */
+export function resolveCustomDomainSaveState(input: {
+  rawInput: string;
+  currentDomain?: string | null;
+  currentStatus?: string | null;
+}): {
+  ok: boolean;
+  custom_domain: string | null;
+  custom_domain_status: CustomDomainStatus;
+  custom_domain_error: string | null;
+  error?: string;
+} {
+  const check = validateCustomDomainInput(input.rawInput);
+  if (!check.ok) {
+    return {
+      ok: false,
+      custom_domain: null,
+      custom_domain_status: "none",
+      custom_domain_error: check.error || null,
+      error: check.error,
+    };
+  }
+
+  if (!check.domain) {
+    return {
+      ok: true,
+      custom_domain: null,
+      custom_domain_status: "none",
+      custom_domain_error: null,
+    };
+  }
+
+  const previous = normalizeCustomDomain(input.currentDomain || "");
+  const previousStatus = resolveCustomDomainStatus(input.currentStatus);
+
+  if (previous === check.domain && previousStatus === "active") {
+    return {
+      ok: true,
+      custom_domain: check.domain,
+      custom_domain_status: "active",
+      custom_domain_error: null,
+    };
+  }
+
+  if (previous === check.domain && previousStatus === "error") {
+    return {
+      ok: true,
+      custom_domain: check.domain,
+      custom_domain_status: "pending_dns",
+      custom_domain_error: null,
+    };
+  }
+
+  if (previous === check.domain && previousStatus === "pending_dns") {
+    return {
+      ok: true,
+      custom_domain: check.domain,
+      custom_domain_status: "pending_dns",
+      custom_domain_error: null,
+    };
+  }
+
+  return {
+    ok: true,
+    custom_domain: check.domain,
+    custom_domain_status: "pending_dns",
+    custom_domain_error: null,
+  };
+}
+
+export function customDomainStatusLabel(
+  status?: string | null,
+): string {
+  switch (resolveCustomDomainStatus(status)) {
+    case "active":
+      return "Aktif";
+    case "pending_dns":
+      return "DNS bekleniyor";
+    case "error":
+      return "Hata";
+    default:
+      return "Yok";
+  }
+}
+
+export function getCustomDomainDnsInstructions(domain: string): {
+  host: string;
+  type: string;
+  target: string;
+  note: string;
+} {
+  const normalized = normalizeCustomDomain(domain);
+  const labels = normalized.split(".");
+  // www.ornek.com → host www; apex ornek.com → @
+  const isApex = labels.length === 2;
+  return {
+    host: isApex ? "@" : labels[0] || "www",
+    type: "CNAME",
+    target: CUSTOM_DOMAIN_CNAME_TARGET,
+    note: isApex
+      ? "Kök (apex) domain için sağlayıcınız A/ALIAS kaydı veya www yönlendirmesi destekliyorsa onu kullanın; aksi halde www alt alan adı önerilir."
+      : "DNS yayılımı 5 dk – 48 saat sürebilir. Otomatik doğrulama (Vercel) sonraki adımda eklenecek.",
+  };
 }
 
 /** Path key for public mini site links (prefer slug). */

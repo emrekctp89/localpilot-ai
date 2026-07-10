@@ -203,7 +203,8 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 - [x] v2.0: ekip, ajans, audit, API, i18n
 - [x] Çoklu işletme faturalandırma taslağı (Platform sekmesinde işletme başına Pro hesap özeti)
 - [x] White-label araştırma + G.1 slug (`docs/white-label-mini-site.md`, migration `012`)
-- [ ] White-label G.2+: özel domain UI + Vercel Domains API + middleware
+- [x] White-label G.2: özel domain UI + DNS talimatları (Ayarlar)
+- [ ] White-label G.3: Vercel Domains API + middleware host rewrite
 
 ---
 
@@ -226,7 +227,8 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 
 1. [x] Çoklu işletme faturalandırma taslağı
 2. [x] White-label mini site araştırması + slug (G.1)
-3. [ ] Özel domain (G.2 DNS UI → G.3 Vercel API + middleware)
+3. [x] Özel domain UI + DNS talimatları (G.2)
+4. [ ] Vercel Domains API + middleware (G.3)
 
 Detay: `docs/white-label-mini-site.md`  
 Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
@@ -257,6 +259,7 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] Komisyon defteri + panelden onay (`CommissionAdminPanel`)
 - [x] Ayarlar mini site controlled input fix
 - [x] White-label araştırma + mini site slug (G.1)
+- [x] White-label G.2 özel domain UI + DNS talimatları
 
 ---
 

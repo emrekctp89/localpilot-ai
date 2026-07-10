@@ -10,8 +10,13 @@ import type {
 } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
 import {
+  customDomainStatusLabel,
+  getCustomDomainDnsInstructions,
   getMiniSitePublicPath,
   getMiniSitePublicUrl,
+  resolveCustomDomainSaveState,
+  resolveCustomDomainStatus,
+  validateCustomDomainInput,
   validateSiteSlugInput,
 } from "@/lib/mini-site-domain";
 import { PRO_FEATURES, type AiUsageSnapshot } from "@/lib/pro-funnel";
@@ -166,31 +171,51 @@ export default function AyarlarTab({
   const [siteSlugInput, setSiteSlugInput] = useState(
     business.site_slug?.trim() || "",
   );
+  const [customDomainInput, setCustomDomainInput] = useState(
+    business.custom_domain?.trim() || "",
+  );
   const [origin] = useState(() =>
     typeof window === "undefined" ? "" : window.location.origin,
   );
 
   useEffect(() => {
     setSiteSlugInput(business.site_slug?.trim() || "");
-  }, [business.site_slug, business.id]);
+    setCustomDomainInput(business.custom_domain?.trim() || "");
+  }, [
+    business.site_slug,
+    business.custom_domain,
+    business.id,
+  ]);
 
   const slugPreview = validateSiteSlugInput(siteSlugInput);
+  const domainPreview = validateCustomDomainInput(customDomainInput);
+  const domainStatus = resolveCustomDomainStatus(
+    business.custom_domain_status,
+  );
   const publicPath = getMiniSitePublicPath({
     id: business?.id,
     site_slug: slugPreview.slug || business?.site_slug || null,
   });
   const publicUrl =
-    origin && publicPath
-      ? `${origin}${publicPath}`
-      : getMiniSitePublicUrl({
-          id: business?.id,
-          site_slug: slugPreview.slug || business?.site_slug || null,
-          custom_domain: business?.custom_domain,
-          custom_domain_status: business?.custom_domain_status,
-        });
+    domainStatus === "active" && business.custom_domain
+      ? getMiniSitePublicUrl(business)
+      : origin && publicPath
+        ? `${origin}${publicPath}`
+        : getMiniSitePublicUrl({
+            id: business?.id,
+            site_slug: slugPreview.slug || business?.site_slug || null,
+            custom_domain: business?.custom_domain,
+            custom_domain_status: business?.custom_domain_status,
+          });
   const isPublished = isMiniSitePublished(siteData);
   const previewPath =
     publicPath && !isPublished ? `${publicPath}?preview=1` : publicPath;
+  const dnsInstructions =
+    domainPreview.ok && domainPreview.domain
+      ? getCustomDomainDnsInstructions(domainPreview.domain)
+      : business.custom_domain
+        ? getCustomDomainDnsInstructions(business.custom_domain)
+        : null;
 
   useEffect(() => {
     if (!plan?.mini_site_data) return;
@@ -304,6 +329,15 @@ export default function AyarlarTab({
           throw new Error(slugCheck.error || "Geçersiz site adresi.");
         }
 
+        const domainSave = resolveCustomDomainSaveState({
+          rawInput: customDomainInput,
+          currentDomain: business.custom_domain,
+          currentStatus: business.custom_domain_status,
+        });
+        if (!domainSave.ok) {
+          throw new Error(domainSave.error || "Geçersiz özel domain.");
+        }
+
         const nextThemeConfig = {
           ...(business.theme_config || {}),
           primaryColor: selectedTheme,
@@ -314,23 +348,38 @@ export default function AyarlarTab({
           .update({
             theme_config: nextThemeConfig,
             site_slug: nextSlug,
+            custom_domain: domainSave.custom_domain,
+            custom_domain_status: domainSave.custom_domain_status,
+            custom_domain_error: domainSave.custom_domain_error,
           })
           .eq("id", business.id);
 
         if (businessError) {
           const code = (businessError as { code?: string }).code;
           if (code === "23505") {
+            const msg = String(
+              (businessError as { message?: string }).message || "",
+            ).toLowerCase();
+            if (msg.includes("custom_domain")) {
+              throw new Error(
+                "Bu alan adı başka bir işletmede kullanılıyor. Farklı bir domain deneyin.",
+              );
+            }
             throw new Error(
-              "Bu site adresi başka bir işletmede kullanılıyor. Farklı bir slug deneyin.",
+              "Bu site adresi veya domain başka bir işletmede kullanılıyor.",
             );
           }
           throw businessError;
         }
         setSiteSlugInput(nextSlug || "");
+        setCustomDomainInput(domainSave.custom_domain || "");
         setBusiness?.({
           ...business,
           theme_config: nextThemeConfig,
           site_slug: nextSlug,
+          custom_domain: domainSave.custom_domain,
+          custom_domain_status: domainSave.custom_domain_status,
+          custom_domain_error: domainSave.custom_domain_error,
         });
       }
 
@@ -656,12 +705,82 @@ export default function AyarlarTab({
               </div>
               <p className="mt-1.5 text-xs text-gray-500">
                 Boş bırakılırsa UUID linki kullanılır. Kaydettikten sonra hem
-                slug hem UUID çalışır. Özel domain (white-label) sonraki adım.
+                slug hem UUID çalışır.
               </p>
               {siteSlugInput.trim() && !slugPreview.ok ? (
                 <p className="mt-1.5 text-xs font-medium text-rose-600">
                   {slugPreview.error}
                 </p>
+              ) : null}
+            </div>
+
+            <div className="mt-5 max-w-xl rounded-xl border border-indigo-100 bg-white p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="custom-domain"
+                  className="text-sm font-bold text-gray-700"
+                >
+                  Özel domain (white-label)
+                </label>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
+                    domainStatus === "active"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : domainStatus === "pending_dns"
+                        ? "bg-amber-100 text-amber-800"
+                        : domainStatus === "error"
+                          ? "bg-rose-100 text-rose-800"
+                          : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {customDomainStatusLabel(domainStatus)}
+                </span>
+              </div>
+              <input
+                id="custom-domain"
+                type="text"
+                value={customDomainInput}
+                onChange={(e) => setCustomDomainInput(e.target.value)}
+                placeholder="www.ornek.com"
+                className="mt-2 w-full border border-indigo-200 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="mt-1.5 text-xs text-gray-500">
+                Kendi alan adınızı bağlayın. Kaydedince durum &quot;DNS
+                bekleniyor&quot; olur. Otomatik Vercel doğrulama bir sonraki
+                adımda gelecek.
+              </p>
+              {customDomainInput.trim() && !domainPreview.ok ? (
+                <p className="mt-1.5 text-xs font-medium text-rose-600">
+                  {domainPreview.error}
+                </p>
+              ) : null}
+              {business.custom_domain_error ? (
+                <p className="mt-1.5 text-xs font-medium text-rose-600">
+                  {business.custom_domain_error}
+                </p>
+              ) : null}
+              {dnsInstructions &&
+              (customDomainInput.trim() || business.custom_domain) ? (
+                <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/80 px-3 py-3 text-sm text-indigo-950">
+                  <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                    DNS kaydı
+                  </p>
+                  <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                    <dt className="font-semibold text-indigo-800">Tip</dt>
+                    <dd className="font-mono">{dnsInstructions.type}</dd>
+                    <dt className="font-semibold text-indigo-800">Host</dt>
+                    <dd className="font-mono">{dnsInstructions.host}</dd>
+                    <dt className="font-semibold text-indigo-800">Hedef</dt>
+                    <dd className="break-all font-mono">
+                      {dnsInstructions.target}
+                    </dd>
+                  </dl>
+                  <p className="mt-2 text-xs text-indigo-800/90">
+                    {dnsInstructions.note}
+                  </p>
+                </div>
               ) : null}
             </div>
           </div>

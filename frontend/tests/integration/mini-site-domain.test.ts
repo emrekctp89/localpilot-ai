@@ -4,6 +4,9 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  CUSTOM_DOMAIN_CNAME_TARGET,
+  customDomainStatusLabel,
+  getCustomDomainDnsInstructions,
   getMiniSitePathKey,
   getMiniSitePublicPath,
   getMiniSitePublicUrl,
@@ -12,6 +15,8 @@ import {
   looksLikeUuid,
   normalizeCustomDomain,
   normalizeSiteSlug,
+  resolveCustomDomainSaveState,
+  validateCustomDomainInput,
   validateSiteSlugInput,
 } from "../../lib/mini-site-domain";
 
@@ -62,7 +67,41 @@ describe("mini site domain (Faz G white-label)", () => {
     assert.equal(isValidCustomDomain("not a domain"), false);
   });
 
-  it("wires site page resolve and Ayarlar slug field", () => {
+  it("resolves custom domain save state and DNS instructions", () => {
+    assert.equal(validateCustomDomainInput("").ok, true);
+    assert.equal(validateCustomDomainInput("not-a-domain").ok, false);
+
+    const cleared = resolveCustomDomainSaveState({
+      rawInput: "",
+      currentDomain: "www.ornek.com",
+      currentStatus: "pending_dns",
+    });
+    assert.equal(cleared.custom_domain, null);
+    assert.equal(cleared.custom_domain_status, "none");
+
+    const pending = resolveCustomDomainSaveState({
+      rawInput: "www.Yeni.com",
+      currentDomain: null,
+      currentStatus: "none",
+    });
+    assert.equal(pending.custom_domain, "www.yeni.com");
+    assert.equal(pending.custom_domain_status, "pending_dns");
+
+    const keepActive = resolveCustomDomainSaveState({
+      rawInput: "www.ornek.com",
+      currentDomain: "www.ornek.com",
+      currentStatus: "active",
+    });
+    assert.equal(keepActive.custom_domain_status, "active");
+
+    const dns = getCustomDomainDnsInstructions("www.ornek.com");
+    assert.equal(dns.type, "CNAME");
+    assert.equal(dns.host, "www");
+    assert.equal(dns.target, CUSTOM_DOMAIN_CNAME_TARGET);
+    assert.equal(customDomainStatusLabel("pending_dns"), "DNS bekleniyor");
+  });
+
+  it("wires site page resolve and Ayarlar slug/domain fields", () => {
     const pageSource = readSource("app/site/[id]/page.tsx");
     const settingsSource = readSource("app/components/dashboard/AyarlarTab.tsx");
     const migration = readFileSync(
@@ -74,7 +113,10 @@ describe("mini site domain (Faz G white-label)", () => {
     assert.match(pageSource, /looksLikeUuid/);
     assert.match(pageSource, /site_slug/);
     assert.match(settingsSource, /siteSlugInput/);
+    assert.match(settingsSource, /customDomainInput/);
     assert.match(settingsSource, /validateSiteSlugInput/);
+    assert.match(settingsSource, /resolveCustomDomainSaveState/);
+    assert.match(settingsSource, /DNS kaydı/);
     assert.match(settingsSource, /site_slug/);
     assert.match(migration, /site_slug/);
     assert.match(migration, /custom_domain_status/);

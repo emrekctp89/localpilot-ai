@@ -1,8 +1,8 @@
 # White-label Mini Site — Özel Domain Araştırması (Faz G)
 
 **Tarih:** 10 Temmuz 2026  
-**Durum:** Araştırma tamam · Faz 1 (slug) kodda · Özel domain planlandı  
-**Mevcut URL:** `{app}/site/{businessId}` (UUID)
+**Durum:** Araştırma tamam · G.1 slug ✅ · G.2 domain UI ✅ · G.3 API/middleware planlı  
+**Mevcut URL:** `{app}/site/{slug|uuid}` · özel domain kaydı Ayarlar’da
 
 ---
 
@@ -138,9 +138,9 @@ Canonical:
 
 | Faz | Kapsam | Durum |
 |-----|--------|--------|
-| **G.1** | `site_slug`, resolve UUID\|slug, Ayarlar UI, test, migration `012` | Bu PR |
-| **G.2** | Custom domain kolonları + panel UI + DNS kopya metni (API yok) | Sonraki |
-| **G.3** | Vercel Domains API + middleware host rewrite | Credential sonrası |
+| **G.1** | `site_slug`, resolve UUID\|slug, Ayarlar UI, test, migration `012` | ✅ |
+| **G.2** | Custom domain panel UI + DNS CNAME talimatı + `pending_dns` kaydı | ✅ |
+| **G.3** | Vercel Domains API + middleware host rewrite | Sonraki |
 | **G.4** | White-label footer / marka bayrağı | G.3 ile |
 
 ---
@@ -157,12 +157,24 @@ Canonical:
 
 ---
 
-## 11. Kabul kriterleri (G.1)
+## 11. Kabul kriterleri
 
-- [x] Migration `012` repo’da
+### G.1
+- [x] Migration `012` repo’da + Supabase uygulandı
 - [x] `/site/{slug}` ve `/site/{uuid}` aynı içeriği üretir
 - [x] Ayarlar’da slug kaydı + public link slug kullanır
 - [x] Geçersiz slug reddedilir (normalize + validasyon)
 - [x] Unit/integration test slug normalize/resolve
 
-G.2+ için: DNS doğrulama E2E, middleware host test, Vercel sandbox domain.
+### G.2
+- [x] Ayarlar’da özel domain input + durum rozeti
+- [x] DNS CNAME talimatı (`cname.vercel-dns.com`)
+- [x] Kayıt → `pending_dns` / temizle → `none`
+- [x] Active domain değişmeden kaydedilince status korunur
+- [x] Test: `resolveCustomDomainSaveState` + Ayarlar wiring
+
+### G.3+
+- [ ] Vercel Domains API ile domain ekle / verify
+- [ ] Middleware `Host` → business rewrite
+- [ ] Canonical URL custom domain
+- [ ] White-label footer bayrağı
