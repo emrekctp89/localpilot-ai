@@ -9,6 +9,11 @@ import type {
   MiniSitePublishStatus,
 } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
+import {
+  getMiniSitePublicPath,
+  getMiniSitePublicUrl,
+  validateSiteSlugInput,
+} from "@/lib/mini-site-domain";
 import { PRO_FEATURES, type AiUsageSnapshot } from "@/lib/pro-funnel";
 import {
   getProPricing,
@@ -158,13 +163,31 @@ export default function AyarlarTab({
   const [selectedTheme, setSelectedTheme] = useState(
     business.theme_config?.primaryColor || "blue",
   );
+  const [siteSlugInput, setSiteSlugInput] = useState(
+    business.site_slug?.trim() || "",
+  );
   const [origin] = useState(() =>
     typeof window === "undefined" ? "" : window.location.origin,
   );
 
-  const publicPath = business?.id ? `/site/${business.id}` : "";
+  useEffect(() => {
+    setSiteSlugInput(business.site_slug?.trim() || "");
+  }, [business.site_slug, business.id]);
+
+  const slugPreview = validateSiteSlugInput(siteSlugInput);
+  const publicPath = getMiniSitePublicPath({
+    id: business?.id,
+    site_slug: slugPreview.slug || business?.site_slug || null,
+  });
   const publicUrl =
-    origin && publicPath ? `${origin}${publicPath}` : publicPath;
+    origin && publicPath
+      ? `${origin}${publicPath}`
+      : getMiniSitePublicUrl({
+          id: business?.id,
+          site_slug: slugPreview.slug || business?.site_slug || null,
+          custom_domain: business?.custom_domain,
+          custom_domain_status: business?.custom_domain_status,
+        });
   const isPublished = isMiniSitePublished(siteData);
   const previewPath =
     publicPath && !isPublished ? `${publicPath}?preview=1` : publicPath;
@@ -276,17 +299,39 @@ export default function AyarlarTab({
       if (resultError) throw resultError;
 
       if (business.id) {
+        const slugCheck = validateSiteSlugInput(siteSlugInput);
+        if (!slugCheck.ok) {
+          throw new Error(slugCheck.error || "Geçersiz site adresi.");
+        }
+
         const nextThemeConfig = {
           ...(business.theme_config || {}),
           primaryColor: selectedTheme,
         };
+        const nextSlug = slugCheck.slug || null;
         const { error: businessError } = await supabase
           .from("businesses")
-          .update({ theme_config: nextThemeConfig })
+          .update({
+            theme_config: nextThemeConfig,
+            site_slug: nextSlug,
+          })
           .eq("id", business.id);
 
-        if (businessError) throw businessError;
-        setBusiness?.({ ...business, theme_config: nextThemeConfig });
+        if (businessError) {
+          const code = (businessError as { code?: string }).code;
+          if (code === "23505") {
+            throw new Error(
+              "Bu site adresi başka bir işletmede kullanılıyor. Farklı bir slug deneyin.",
+            );
+          }
+          throw businessError;
+        }
+        setSiteSlugInput(nextSlug || "");
+        setBusiness?.({
+          ...business,
+          theme_config: nextThemeConfig,
+          site_slug: nextSlug,
+        });
       }
 
       if (setPlan) {
@@ -589,6 +634,36 @@ export default function AyarlarTab({
                 {publicUrl}
               </p>
             )}
+            <div className="mt-4 max-w-xl">
+              <label
+                htmlFor="site-slug"
+                className="block text-sm font-bold text-gray-700"
+              >
+                Kısa site adresi (slug)
+              </label>
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-sm text-gray-500 shrink-0">/site/</span>
+                <input
+                  id="site-slug"
+                  type="text"
+                  value={siteSlugInput}
+                  onChange={(e) => setSiteSlugInput(e.target.value)}
+                  placeholder="ornek-kuafor"
+                  className="w-full border border-emerald-200 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-gray-500">
+                Boş bırakılırsa UUID linki kullanılır. Kaydettikten sonra hem
+                slug hem UUID çalışır. Özel domain (white-label) sonraki adım.
+              </p>
+              {siteSlugInput.trim() && !slugPreview.ok ? (
+                <p className="mt-1.5 text-xs font-medium text-rose-600">
+                  {slugPreview.error}
+                </p>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 lg:min-w-72">

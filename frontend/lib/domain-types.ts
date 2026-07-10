@@ -32,6 +32,12 @@ export interface MiniSiteData {
   sector_workflow_items?: SectorWorkflowItem[];
 }
 
+export type CustomDomainStatus =
+  | "none"
+  | "pending_dns"
+  | "active"
+  | "error";
+
 export interface Business {
   id?: string;
   owner_id?: string;
@@ -49,6 +55,12 @@ export interface Business {
   top_products?: string;
   active_modules?: string[];
   theme_config?: ThemeConfig;
+  /** Public path key: /site/{site_slug} */
+  site_slug?: string | null;
+  /** White-label hostname (Faz G.2+) */
+  custom_domain?: string | null;
+  custom_domain_status?: CustomDomainStatus | string | null;
+  custom_domain_error?: string | null;
 }
 
 export interface BusinessDiagnosis {

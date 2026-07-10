@@ -7,18 +7,52 @@ import {
   buildLocalBusinessJsonLd,
   buildMiniSiteSeo,
   buildWhatsAppDeepLink,
-  getMiniSiteUrl,
   isMiniSitePublished,
 } from "@/lib/mini-site";
+import {
+  getMiniSitePublicUrl,
+  looksLikeUuid,
+  normalizeSiteSlug,
+} from "@/lib/mini-site-domain";
+import type { Business } from "@/lib/domain-types";
 import LeadForm from "./LeadForm";
 import MiniSiteDraft from "./MiniSiteDraft";
 
-async function loadMiniSiteContext(businessId: string) {
-  const { data: business } = await supabase
+async function loadBusinessByIdOrSlug(idOrSlug: string) {
+  const key = idOrSlug.trim();
+  if (!key) return null;
+
+  if (looksLikeUuid(key)) {
+    const { data } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("id", key)
+      .maybeSingle();
+    return (data as Business | null) ?? null;
+  }
+
+  const slug = normalizeSiteSlug(key);
+  if (!slug) return null;
+
+  const { data } = await supabase
     .from("businesses")
     .select("*")
-    .eq("id", businessId)
-    .single();
+    .eq("site_slug", slug)
+    .maybeSingle();
+  return (data as Business | null) ?? null;
+}
+
+async function loadMiniSiteContext(idOrSlug: string) {
+  const business = await loadBusinessByIdOrSlug(idOrSlug);
+  if (!business?.id) {
+    return {
+      business: null as Business | null,
+      siteData: {} as MiniSiteData,
+      products: [] as Product[],
+    };
+  }
+
+  const businessId = business.id;
 
   const { data: plan } = await supabase
     .from("generated_plans")
@@ -53,7 +87,7 @@ export async function generateMetadata({
   }
 
   const { title, description } = buildMiniSiteSeo(business, siteData);
-  const canonicalUrl = getMiniSiteUrl(resolvedParams.id);
+  const canonicalUrl = getMiniSitePublicUrl(business);
   const published = isMiniSitePublished(siteData);
   const ogImage = siteData.og_image_url?.trim();
 
@@ -91,20 +125,21 @@ export default async function BusinessSite({
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  const businessId = resolvedParams.id;
   const isOwnerPreview = resolvedSearchParams.preview === "1";
 
   const { business, siteData, products: productList } =
-    await loadMiniSiteContext(businessId);
+    await loadMiniSiteContext(resolvedParams.id);
 
-  if (!business) return notFound();
+  if (!business?.id) return notFound();
+
+  const businessId = business.id;
 
   if (!isMiniSitePublished(siteData) && !isOwnerPreview) {
     return <MiniSiteDraft business={business} />;
   }
   const activeModules = business.active_modules || [];
   const featuredProducts = productList.slice(0, 3);
-  const canonicalUrl = getMiniSiteUrl(businessId);
+  const canonicalUrl = getMiniSitePublicUrl(business);
   const structuredData = buildLocalBusinessJsonLd(
     business,
     siteData,
