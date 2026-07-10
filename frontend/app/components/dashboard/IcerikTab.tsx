@@ -499,7 +499,7 @@ export default function IcerikTab({ business }: IcerikTabProps) {
       )}
 
       {activeSubTab === "whatsapp" && (
-        <div className="space-y-6 animate-fade-in-up">
+        <div className="space-y-5 animate-fade-in-up sm:space-y-6">
           <section className="rounded-2xl border border-green-100 bg-green-50 p-5">
             <p className="text-xs font-black uppercase tracking-widest text-green-700">
               WhatsApp Business API

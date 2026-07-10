@@ -249,7 +249,7 @@ export default function KararMerkeziTab({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-5 animate-fade-in-up sm:space-y-6">
       <section className="rounded-2xl bg-gradient-to-r from-violet-700 to-indigo-700 p-6 text-white shadow-lg md:p-8">
         <p className="text-xs font-black uppercase tracking-widest text-violet-200">
           İşletmenin Üst Aklı
@@ -370,7 +370,7 @@ export default function KararMerkeziTab({
             return (
               <article
                 key={cycle.id}
-                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+                className="lp-card p-5 sm:p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>

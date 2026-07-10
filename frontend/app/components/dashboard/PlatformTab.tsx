@@ -183,7 +183,7 @@ export default function PlatformTab({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
           {t("platform.title")}
         </p>
@@ -261,7 +261,7 @@ export default function PlatformTab({
         </p>
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <h3 className="text-lg font-black text-gray-900">{t("platform.language")}</h3>
         <div className="mt-4 flex gap-2">
           {(["tr", "en"] as const).map((value) => (
@@ -281,7 +281,7 @@ export default function PlatformTab({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <h3 className="text-lg font-black text-gray-900">{t("platform.team")}</h3>
         {access.canManageTeam ? (
           <div className="mt-4 flex flex-col gap-3 md:flex-row">
@@ -343,7 +343,7 @@ export default function PlatformTab({
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <h3 className="text-lg font-black text-gray-900">{t("platform.audit")}</h3>
         {loading ? (
           <p className="mt-3 text-sm text-gray-500">Yükleniyor...</p>
@@ -370,7 +370,7 @@ export default function PlatformTab({
         )}
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <h3 className="text-lg font-black text-gray-900">{t("platform.api")}</h3>
         {access.canManageIntegrations ? (
           <div className="mt-4 flex flex-col gap-3 md:flex-row">
@@ -426,7 +426,7 @@ export default function PlatformTab({
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <h3 className="text-lg font-black text-gray-900">{t("platform.webhooks")}</h3>
         {access.canManageIntegrations ? (
           <>

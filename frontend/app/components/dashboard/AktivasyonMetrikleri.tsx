@@ -60,7 +60,7 @@ export default function AktivasyonMetrikleri({
 }: AktivasyonMetrikleriProps) {
   if (loading) {
     return (
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="lp-card p-5 sm:p-6">
         <p className="animate-pulse text-sm font-medium text-gray-500">
           Aktivasyon metrikleri hesaplanıyor...
         </p>
@@ -82,7 +82,7 @@ export default function AktivasyonMetrikleri({
     .length;
 
   return (
-    <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <section className="lp-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
