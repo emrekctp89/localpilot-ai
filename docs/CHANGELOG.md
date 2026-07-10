@@ -13,11 +13,13 @@
 - Auto-suggest mini site slug from business name.
 - Manual Pro commission: `014_manual_pro_commission.sql` RPC + commission admin form.
 - Auto-assign unique `site_slug` on `/setup-business` when migration 012 is present.
+- Migration `015`: backfill `site_slug` for existing businesses + migration registry 012–015.
 
 ### Changed
 - Marketing container desktop gutters so content does not hug viewport edges.
 - Production URLs and roadmap advanced to Faz G / UI polish track.
 - Schema verify script covers partner tables, domain columns, and RPCs 013–014.
+- Production checklist: commission admin + manual Pro commission steps.
 
 ## 2.1.1 - 2026-07-07
 

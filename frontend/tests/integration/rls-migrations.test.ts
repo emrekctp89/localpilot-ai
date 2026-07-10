@@ -12,7 +12,7 @@ function readMigration(name: string) {
 }
 
 describe("RLS and migration integrity (Faz B)", () => {
-  it("ships migrations 001 through 014 in order", () => {
+  it("ships migrations 001 through 015 in order", () => {
     const files = readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
@@ -31,7 +31,15 @@ describe("RLS and migration integrity (Faz B)", () => {
       "012_mini_site_domains.sql",
       "013_resolve_mini_site_domain.sql",
       "014_manual_pro_commission.sql",
+      "015_backfill_site_slugs.sql",
     ]);
+  });
+
+  it("backfills site_slug with TR-aware normalizer", () => {
+    const sql = readMigration("015_backfill_site_slugs.sql");
+    assert.match(sql, /lp_normalize_site_slug/);
+    assert.match(sql, /lp_backfill_business_site_slugs/);
+    assert.match(sql, /SELECT public\.lp_backfill_business_site_slugs/);
   });
 
   it("defines security definer helpers to avoid RLS recursion", () => {

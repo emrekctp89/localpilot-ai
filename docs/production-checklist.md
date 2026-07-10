@@ -38,6 +38,25 @@ WHERE id = '<kullanici-uuid>';
 
 **İleride (Faz A):** Stripe checkout + webhook otomasyonu yeniden açılabilir.
 
+**Manuel Pro sonrası partner komisyonu:** Stripe yokken SQL ile Pro verdiyseniz ve kullanıcı `?ref=` ile geldiyse:
+
+1. `014_manual_pro_commission.sql` uygulanmış olmalı  
+2. Admin hesabına yetki:
+```sql
+UPDATE profiles SET commission_admin = true WHERE id = '<admin-uuid>';
+```
+3. Panel → **Platform** → Komisyon Yönetimi → referred user UUID → **Komisyon yaz**  
+4. Listeden Onayla / Ödendi
+
+- [ ] `commission_admin = true` (admin hesap)
+- [ ] Manuel Pro + attribution sonrası defterde `pending` satır
+
+## 4b. Mini site slug (Faz G)
+
+- [x] `012`–`014` migration’lar (slug / domain / manuel komisyon)
+- [ ] `015_backfill_site_slugs.sql` — mevcut işletmelere slug backfill (opsiyonel)
+- [ ] Yeni onboarding sonrası Ayarlar’da `/site/{slug}` dolu
+
 ## 5. Supabase migrations ve RLS (Faz B)
 
 Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
