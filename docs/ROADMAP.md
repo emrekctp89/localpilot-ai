@@ -268,6 +268,7 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] Dashboard sekme polish (CRM/Randevu/Sipariş/Görev/Onboarding) + EmptyState
 - [x] Offline banner, ModuleLoading, slug önerisi, skip-link, CHANGELOG 2.4.0
 - [x] Manuel Pro → komisyon (`014` + Komisyon Yönetimi «Komisyon yaz»)
+- [x] Onboarding’de otomatik `site_slug` ataması (ai-service)
 
 ---
 

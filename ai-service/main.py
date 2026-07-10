@@ -46,6 +46,7 @@ from ai_cache import (
     get_cached_response,
     set_cached_response,
 )
+from site_slug import allocate_unique_site_slug
 from prompt_context import (
     build_business_profile_block,
     build_campaign_mode_instruction,
@@ -1105,32 +1106,38 @@ async def setup_business(data: BusinessSetup):
 
     # 🚀 ADIM 2: SUPABASE'E İŞLETMEYİ KAYDET
     try:
-        new_biz = (
-            supabase.table("businesses")
-            .insert(
-                {
-                    "owner_id": data.owner_id,
-                    "name": data.name,
-                    "sector": data.industry,
-                    "industry": data.industry,
-                    "city": data.city,
-                    "address": data.address,
-                    "whatsapp_number": data.whatsapp_number,
-                    "working_hours": data.working_hours,
-                    "business_type": data.business_type,
-                    "goals": data.goals,
-                    "top_products": data.top_products,
-                    "target_audience": data.target_audience,
-                    "contact_points": data.contact_points,
-                    "unique_selling_point": data.unique_selling_point,
-                    "brand_tone": data.brand_tone,
-                    "color_preference": data.color_preference,
-                    "active_modules": active_modules,
-                    "theme_config": theme_config,
-                }
-            )
-            .execute()
-        )
+        business_payload = {
+            "owner_id": data.owner_id,
+            "name": data.name,
+            "sector": data.industry,
+            "industry": data.industry,
+            "city": data.city,
+            "address": data.address,
+            "whatsapp_number": data.whatsapp_number,
+            "working_hours": data.working_hours,
+            "business_type": data.business_type,
+            "goals": data.goals,
+            "top_products": data.top_products,
+            "target_audience": data.target_audience,
+            "contact_points": data.contact_points,
+            "unique_selling_point": data.unique_selling_point,
+            "brand_tone": data.brand_tone,
+            "color_preference": data.color_preference,
+            "active_modules": active_modules,
+            "theme_config": theme_config,
+        }
+        # Prefer readable public URL at create-time (migration 012).
+        site_slug = allocate_unique_site_slug(supabase, data.name)
+        if site_slug:
+            business_payload["site_slug"] = site_slug
+
+        try:
+            new_biz = supabase.table("businesses").insert(business_payload).execute()
+        except Exception as insert_error:
+            # site_slug column missing or unique race → retry without slug
+            print(f"⚠️ business insert with site_slug failed: {insert_error}")
+            business_payload.pop("site_slug", None)
+            new_biz = supabase.table("businesses").insert(business_payload).execute()
 
         business_id = new_biz.data[0]["id"]
 

@@ -119,3 +119,47 @@ SELECT 'ai_quality_feedback',
          SELECT 1 FROM information_schema.tables
          WHERE table_schema = 'public' AND table_name = 'ai_quality_feedback'
        );
+
+-- 010–011 partner program
+SELECT 'partner_profiles',
+       EXISTS (
+         SELECT 1 FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'partner_profiles'
+       );
+SELECT 'commission_ledger',
+       EXISTS (
+         SELECT 1 FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'commission_ledger'
+       );
+
+-- 012 mini site domains
+SELECT 'businesses_site_slug',
+       EXISTS (
+         SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'businesses'
+           AND column_name = 'site_slug'
+       );
+SELECT 'businesses_custom_domain',
+       EXISTS (
+         SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'businesses'
+           AND column_name = 'custom_domain'
+       );
+
+-- 013 domain resolve RPC
+SELECT 'fn_resolve_mini_site_by_domain',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'resolve_mini_site_by_domain'
+       );
+
+-- 014 manual pro commission RPC
+SELECT 'fn_record_manual_pro_commission',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'record_manual_pro_commission'
+       );
