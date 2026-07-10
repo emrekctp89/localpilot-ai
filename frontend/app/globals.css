@@ -104,8 +104,47 @@ input:-webkit-autofill:active {
     background: var(--background);
   }
 
+  /*
+   * Marketing/public shell: generous side gutters on desktop.
+   * Mobile stays compact; large screens get real margin (not edge-hugging text).
+   * Dashboard uses its own max-w-7xl + padding — leave that alone.
+   */
   .lp-container {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    width: 100%;
+    max-width: 72rem; /* ~max-w-6xl, slightly tighter than 7xl */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
+  @media (min-width: 640px) {
+    .lp-container {
+      padding-left: max(2rem, env(safe-area-inset-left));
+      padding-right: max(2rem, env(safe-area-inset-right));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .lp-container {
+      padding-left: max(3rem, env(safe-area-inset-left));
+      padding-right: max(3rem, env(safe-area-inset-right));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .lp-container {
+      padding-left: max(4rem, env(safe-area-inset-left));
+      padding-right: max(4rem, env(safe-area-inset-right));
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .lp-container {
+      max-width: 80rem; /* open up a bit on very wide screens */
+      padding-left: max(5rem, env(safe-area-inset-left));
+      padding-right: max(5rem, env(safe-area-inset-right));
+    }
   }
 
   .lp-eyebrow {

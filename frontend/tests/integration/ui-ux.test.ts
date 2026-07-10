@@ -18,6 +18,8 @@ describe("UI/UX design system", () => {
     assert.match(css, /\.lp-input/);
     assert.match(css, /\.lp-card/);
     assert.match(css, /animate-fade-in-up/);
+    assert.match(css, /\.lp-container/);
+    assert.match(css, /max\(3rem/);
   });
 
   it("uses brand auth shell with accessible messages", () => {
