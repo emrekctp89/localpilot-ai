@@ -229,7 +229,7 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 2. [x] White-label mini site araştırması + slug (G.1)
 3. [x] Özel domain UI + DNS talimatları (G.2)
 4. [x] Vercel Domains API + middleware (G.3)
-5. [x] G.4 Pro-only custom domain gate + Menü/Kasa UX
+5. [ ] Opsiyonel: G.4 polish / Pro-only domain gate
 
 Detay: `docs/white-label-mini-site.md`  
 Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
@@ -266,7 +266,6 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] UI/UX design system (`lp-*` tokens) + Auth/landing/vitrin polish
 - [x] Dashboard sekme polish (CRM/Randevu/Sipariş/Görev/Onboarding) + EmptyState
 - [x] Offline banner, ModuleLoading, slug önerisi, skip-link, CHANGELOG 2.4.0
-- [x] Pro-only custom domain; Menü arama/empty; Kasa toast + empty
 
 ---
 

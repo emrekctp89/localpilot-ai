@@ -346,23 +346,13 @@ export default function AyarlarTab({
           throw new Error(slugCheck.error || "Geçersiz site adresi.");
         }
 
-        const domainSave = isPro
-          ? resolveCustomDomainSaveState({
-              rawInput: customDomainInput,
-              currentDomain: business.custom_domain,
-              currentStatus: business.custom_domain_status,
-            })
-          : {
-              ok: true as const,
-              custom_domain: null,
-              custom_domain_status: "none" as const,
-              custom_domain_error: null,
-            };
+        const domainSave = resolveCustomDomainSaveState({
+          rawInput: customDomainInput,
+          currentDomain: business.custom_domain,
+          currentStatus: business.custom_domain_status,
+        });
         if (!domainSave.ok) {
-          throw new Error(
-            ("error" in domainSave && domainSave.error) ||
-              "Geçersiz özel domain.",
-          );
+          throw new Error(domainSave.error || "Geçersiz özel domain.");
         }
 
         const nextThemeConfig = {
@@ -838,123 +828,97 @@ export default function AyarlarTab({
                 >
                   Özel domain (white-label)
                 </label>
-                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-indigo-700">
-                  Pro
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
+                    domainStatus === "active"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : domainStatus === "pending_dns"
+                        ? "bg-amber-100 text-amber-800"
+                        : domainStatus === "error"
+                          ? "bg-rose-100 text-rose-800"
+                          : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {customDomainStatusLabel(domainStatus)}
                 </span>
-                {isPro ? (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
-                      domainStatus === "active"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : domainStatus === "pending_dns"
-                          ? "bg-amber-100 text-amber-800"
-                          : domainStatus === "error"
-                            ? "bg-rose-100 text-rose-800"
-                            : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {customDomainStatusLabel(domainStatus)}
-                  </span>
-                ) : null}
               </div>
-
-              {!isPro ? (
-                <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/80 px-3 py-3">
-                  <p className="text-sm font-medium text-indigo-950">
-                    Kendi alan adınızı bağlamak Pro özelliğidir. Ücretsiz planda
-                    slug ve LocalPilot linki kullanılabilir.
+              <input
+                id="custom-domain"
+                type="text"
+                value={customDomainInput}
+                onChange={(e) => setCustomDomainInput(e.target.value)}
+                placeholder="www.ornek.com"
+                className="mt-2 w-full border border-indigo-200 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="mt-1.5 text-xs text-gray-500">
+                Kendi alan adınızı bağlayın. Kaydedince durum &quot;DNS
+                bekleniyor&quot; olur; ardından DNS kaydını ekleyip doğrulayın.
+              </p>
+              {customDomainInput.trim() && !domainPreview.ok ? (
+                <p className="mt-1.5 text-xs font-medium text-rose-600">
+                  {domainPreview.error}
+                </p>
+              ) : null}
+              {business.custom_domain_error ? (
+                <p className="mt-1.5 text-xs font-medium text-rose-600">
+                  {business.custom_domain_error}
+                </p>
+              ) : null}
+              {dnsInstructions &&
+              (customDomainInput.trim() || business.custom_domain) ? (
+                <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/80 px-3 py-3 text-sm text-indigo-950">
+                  <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                    DNS kaydı
                   </p>
-                  {handleUpgradeToPro ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleUpgradeToPro()}
-                      className="lp-btn-primary mt-3"
+                  <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                    <dt className="font-semibold text-indigo-800">Tip</dt>
+                    <dd className="font-mono">{dnsInstructions.type}</dd>
+                    <dt className="font-semibold text-indigo-800">Host</dt>
+                    <dd className="font-mono">{dnsInstructions.host}</dd>
+                    <dt className="font-semibold text-indigo-800">Hedef</dt>
+                    <dd className="break-all font-mono">
+                      {dnsInstructions.target}
+                    </dd>
+                  </dl>
+                  <p className="mt-2 text-xs text-indigo-800/90">
+                    {dnsInstructions.note}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleVerifyCustomDomain()}
+                    disabled={
+                      isVerifyingDomain ||
+                      !business?.id ||
+                      !(
+                        business.custom_domain ||
+                        domainPreview.domain
+                      ) ||
+                      domainStatus === "none"
+                    }
+                    className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:bg-gray-400"
+                  >
+                    {isVerifyingDomain
+                      ? "Doğrulanıyor..."
+                      : domainStatus === "active"
+                        ? "Yeniden doğrula"
+                        : "DNS’i doğrula"}
+                  </button>
+                  {domainVerifyMessage ? (
+                    <p
+                      className={`mt-2 text-xs font-medium ${
+                        domainStatus === "active" &&
+                        domainVerifyMessage.includes("doğrulandı")
+                          ? "text-emerald-700"
+                          : "text-indigo-900"
+                      }`}
                     >
-                      Pro&apos;ya yükselt
-                    </button>
+                      {domainVerifyMessage}
+                    </p>
                   ) : null}
                 </div>
-              ) : (
-                <>
-                  <input
-                    id="custom-domain"
-                    type="text"
-                    value={customDomainInput}
-                    onChange={(e) => setCustomDomainInput(e.target.value)}
-                    placeholder="www.ornek.com"
-                    className="mt-2 w-full border border-indigo-200 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                  <p className="mt-1.5 text-xs text-gray-500">
-                    Kendi alan adınızı bağlayın. Kaydedince durum &quot;DNS
-                    bekleniyor&quot; olur; ardından DNS kaydını ekleyip
-                    doğrulayın.
-                  </p>
-                  {customDomainInput.trim() && !domainPreview.ok ? (
-                    <p className="mt-1.5 text-xs font-medium text-rose-600">
-                      {domainPreview.error}
-                    </p>
-                  ) : null}
-                  {business.custom_domain_error ? (
-                    <p className="mt-1.5 text-xs font-medium text-rose-600">
-                      {business.custom_domain_error}
-                    </p>
-                  ) : null}
-                  {dnsInstructions &&
-                  (customDomainInput.trim() || business.custom_domain) ? (
-                    <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/80 px-3 py-3 text-sm text-indigo-950">
-                      <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
-                        DNS kaydı
-                      </p>
-                      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                        <dt className="font-semibold text-indigo-800">Tip</dt>
-                        <dd className="font-mono">{dnsInstructions.type}</dd>
-                        <dt className="font-semibold text-indigo-800">Host</dt>
-                        <dd className="font-mono">{dnsInstructions.host}</dd>
-                        <dt className="font-semibold text-indigo-800">Hedef</dt>
-                        <dd className="break-all font-mono">
-                          {dnsInstructions.target}
-                        </dd>
-                      </dl>
-                      <p className="mt-2 text-xs text-indigo-800/90">
-                        {dnsInstructions.note}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => void handleVerifyCustomDomain()}
-                        disabled={
-                          isVerifyingDomain ||
-                          !business?.id ||
-                          !(
-                            business.custom_domain || domainPreview.domain
-                          ) ||
-                          domainStatus === "none"
-                        }
-                        className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:bg-gray-400"
-                      >
-                        {isVerifyingDomain
-                          ? "Doğrulanıyor..."
-                          : domainStatus === "active"
-                            ? "Yeniden doğrula"
-                            : "DNS’i doğrula"}
-                      </button>
-                      {domainVerifyMessage ? (
-                        <p
-                          className={`mt-2 text-xs font-medium ${
-                            domainStatus === "active" &&
-                            domainVerifyMessage.includes("doğrulandı")
-                              ? "text-emerald-700"
-                              : "text-indigo-900"
-                          }`}
-                        >
-                          {domainVerifyMessage}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </>
-              )}
+              ) : null}
             </div>
           </div>
 

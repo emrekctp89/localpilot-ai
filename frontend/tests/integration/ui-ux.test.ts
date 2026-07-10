@@ -73,22 +73,4 @@ describe("UI/UX design system", () => {
     assert.match(ayarlar, /İsimden öner/);
     assert.match(loading, /aria-busy/);
   });
-
-  it("gates custom domain behind Pro and polishes Menu/Kasa", () => {
-    const ayarlar = readSource("app/components/dashboard/AyarlarTab.tsx");
-    const menu = readSource("app/components/dashboard/MenuTab.tsx");
-    const kasa = readSource("app/components/dashboard/KasaTab.tsx");
-
-    assert.match(ayarlar, /isPro/);
-    assert.match(ayarlar, /Pro özelliğidir/);
-    assert.match(ayarlar, /Pro'ya yükselt|Pro&apos;ya yükselt/);
-    assert.match(menu, /EmptyState/);
-    assert.match(menu, /ModuleLoading/);
-    assert.match(menu, /searchQuery/);
-    assert.match(menu, /showToast/);
-    assert.match(kasa, /EmptyState/);
-    assert.match(kasa, /showToast/);
-    assert.doesNotMatch(menu, /alert\(/);
-    assert.doesNotMatch(kasa, /alert\(/);
-  });
 });

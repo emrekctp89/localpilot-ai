@@ -4,8 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { forecastFinance } from "@/lib/ai-client";
 import { supabase } from "@/lib/supabase";
 import type { Business, Transaction } from "@/lib/domain-types";
-import { useToast } from "../Toast";
-import EmptyState from "./EmptyState";
 
 interface Forecast {
   status: "success" | "insufficient_data";
@@ -22,7 +20,6 @@ interface KasaTabProps {
 }
 
 export default function KasaTab({ business }: KasaTabProps) {
-  const { showToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [newTx, setNewTx] = useState({
     type: "gelir" as Transaction["type"],
@@ -215,12 +212,8 @@ export default function KasaTab({ business }: KasaTabProps) {
         category: "Genel",
       });
       setForecast(null);
-      showToast("İşlem kaydedildi.", "success");
     } else {
-      showToast(
-        "İşlem kaydedilemedi: " + (error?.message || "Bilinmeyen hata"),
-        "error",
-      );
+      alert("İşlem kaydedilemedi: " + (error?.message || "Bilinmeyen hata"));
     }
 
     setIsAdding(false);
@@ -239,19 +232,12 @@ export default function KasaTab({ business }: KasaTabProps) {
       });
 
       if (data.status === "insufficient_data") {
-        showToast(
-          data.message || "Tahmin için daha fazla gelir işlemi gerekiyor.",
-          "info",
-        );
+        alert(data.message || "Tahmin için daha fazla gelir işlemi gerekiyor.");
       } else {
         setForecast(data as Forecast);
-        showToast("Finans tahmini hazır.", "success");
       }
     } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Tahmin hesaplanamadı.",
-        "error",
-      );
+      alert(error instanceof Error ? error.message : "Tahmin hesaplanamadı.");
     } finally {
       setIsForecasting(false);
     }
@@ -562,17 +548,24 @@ export default function KasaTab({ business }: KasaTabProps) {
           </div>
 
           {transactions.length === 0 ? (
-            <EmptyState
-              icon="💰"
-              title="Henüz finansal işlem yok"
-              description="Tahmin motoru için en az 3 gelir işlemi ekleyin. Soldaki formdan başlayabilirsiniz."
-            />
+            <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <p className="text-gray-500 mt-2 font-medium">
+                Henüz bir finansal işlem girmediniz.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Tahminleme motorunu çalıştırmak için en az 3 gelir işlemi
+                ekleyin.
+              </p>
+            </div>
           ) : filteredTransactions.length === 0 ? (
-            <EmptyState
-              icon="🔎"
-              title="Seçilen dönemde işlem yok"
-              description="Farklı bir tarih filtresi seçerek tekrar deneyin."
-            />
+            <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <p className="text-gray-600 font-bold">
+                Seçilen dönemde işlem yok.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Farklı bir tarih filtresi seçerek tekrar deneyin.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {filteredTransactions.map((tx) => {

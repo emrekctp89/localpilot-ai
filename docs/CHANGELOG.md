@@ -11,9 +11,6 @@
 - UI design system (`lp-*` tokens), Auth/landing polish, dashboard module polish.
 - Empty states, module loading skeletons, offline banner, skip-to-content a11y link.
 - Auto-suggest mini site slug from business name.
-- Pro-only custom domain gate in Ayarlar (slug remains free).
-- Menu product search, EmptyState, ModuleLoading, toast feedback.
-- Kasa toast feedback and empty states.
 
 ### Changed
 - Marketing container desktop gutters so content does not hug viewport edges.
