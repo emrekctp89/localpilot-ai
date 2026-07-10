@@ -19,6 +19,8 @@ import {
   validateCustomDomainInput,
   validateSiteSlugInput,
 } from "../../lib/mini-site-domain";
+import { isPlatformHost, stripPort } from "../../lib/platform-hosts";
+import { mapVercelResultToDomainStatus } from "../../lib/vercel-domains";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -101,24 +103,64 @@ describe("mini site domain (Faz G white-label)", () => {
     assert.equal(customDomainStatusLabel("pending_dns"), "DNS bekleniyor");
   });
 
-  it("wires site page resolve and Ayarlar slug/domain fields", () => {
+  it("classifies platform vs custom hosts and maps Vercel verify results", () => {
+    assert.equal(stripPort("www.Ornek.com:443"), "www.ornek.com");
+    assert.equal(isPlatformHost("localhost"), true);
+    assert.equal(isPlatformHost("localpilot-ai-1b2h-phi.vercel.app"), true);
+    assert.equal(
+      isPlatformHost("www.ornek.com", "https://localpilot-ai-1b2h-phi.vercel.app"),
+      false,
+    );
+    assert.equal(
+      isPlatformHost("localpilot-ai-1b2h-phi.vercel.app", "https://localpilot-ai-1b2h-phi.vercel.app"),
+      true,
+    );
+
+    assert.equal(
+      mapVercelResultToDomainStatus({ name: "a.com", verified: true })
+        .custom_domain_status,
+      "active",
+    );
+    assert.equal(
+      mapVercelResultToDomainStatus({
+        name: "a.com",
+        verified: false,
+        configured: true,
+      }).custom_domain_status,
+      "pending_dns",
+    );
+  });
+
+  it("wires site page resolve, middleware, verify API and Ayarlar domain UI", () => {
     const pageSource = readSource("app/site/[id]/page.tsx");
     const settingsSource = readSource("app/components/dashboard/AyarlarTab.tsx");
-    const migration = readFileSync(
+    const middlewareSource = readSource("middleware.ts");
+    const verifySource = readSource("app/api/custom-domain/verify/route.ts");
+    const migration012 = readFileSync(
       join(root, "../supabase/migrations/012_mini_site_domains.sql"),
+      "utf8",
+    );
+    const migration013 = readFileSync(
+      join(root, "../supabase/migrations/013_resolve_mini_site_domain.sql"),
       "utf8",
     );
 
     assert.match(pageSource, /loadBusinessByIdOrSlug/);
     assert.match(pageSource, /looksLikeUuid/);
     assert.match(pageSource, /site_slug/);
+    assert.match(pageSource, /custom_domain_status === \"active\"/);
     assert.match(settingsSource, /siteSlugInput/);
     assert.match(settingsSource, /customDomainInput/);
-    assert.match(settingsSource, /validateSiteSlugInput/);
-    assert.match(settingsSource, /resolveCustomDomainSaveState/);
-    assert.match(settingsSource, /DNS kaydı/);
-    assert.match(settingsSource, /site_slug/);
-    assert.match(migration, /site_slug/);
-    assert.match(migration, /custom_domain_status/);
+    assert.match(settingsSource, /handleVerifyCustomDomain/);
+    assert.match(settingsSource, /\/api\/custom-domain\/verify/);
+    assert.match(settingsSource, /Doğrulanıyor/);
+    assert.match(middlewareSource, /resolveBusinessIdByCustomDomain/);
+    assert.match(middlewareSource, /isPlatformHost/);
+    assert.match(middlewareSource, /x-mini-site-custom-domain/);
+    assert.match(verifySource, /verifyProjectDomain/);
+    assert.match(verifySource, /VERCEL_TOKEN|isVercelDomainsConfigured/);
+    assert.match(migration012, /site_slug/);
+    assert.match(migration012, /custom_domain_status/);
+    assert.match(migration013, /resolve_mini_site_by_domain/);
   });
 });

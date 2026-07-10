@@ -1,8 +1,8 @@
 # White-label Mini Site — Özel Domain Araştırması (Faz G)
 
 **Tarih:** 10 Temmuz 2026  
-**Durum:** Araştırma tamam · G.1 slug ✅ · G.2 domain UI ✅ · G.3 API/middleware planlı  
-**Mevcut URL:** `{app}/site/{slug|uuid}` · özel domain kaydı Ayarlar’da
+**Durum:** G.1–G.3 kodda · env + migration `013` production’da uygulanmalı  
+**Mevcut URL:** `{app}/site/{slug|uuid}` · aktif custom domain → host rewrite
 
 ---
 
@@ -140,8 +140,8 @@ Canonical:
 |-----|--------|--------|
 | **G.1** | `site_slug`, resolve UUID\|slug, Ayarlar UI, test, migration `012` | ✅ |
 | **G.2** | Custom domain panel UI + DNS CNAME talimatı + `pending_dns` kaydı | ✅ |
-| **G.3** | Vercel Domains API + middleware host rewrite | Sonraki |
-| **G.4** | White-label footer / marka bayrağı | G.3 ile |
+| **G.3** | Vercel Domains API + middleware host rewrite + `013` RPC | ✅ |
+| **G.4** | White-label footer (active domain’de LocalPilot gizle) | ✅ (temel) |
 
 ---
 
@@ -173,8 +173,10 @@ Canonical:
 - [x] Active domain değişmeden kaydedilince status korunur
 - [x] Test: `resolveCustomDomainSaveState` + Ayarlar wiring
 
-### G.3+
-- [ ] Vercel Domains API ile domain ekle / verify
-- [ ] Middleware `Host` → business rewrite
-- [ ] Canonical URL custom domain
-- [ ] White-label footer bayrağı
+### G.3
+- [x] Vercel Domains API (`lib/vercel-domains.ts`) + `/api/custom-domain/verify`
+- [x] Middleware `Host` → `resolve_mini_site_by_domain` → `/site/{id}`
+- [x] Canonical URL custom domain (`getMiniSitePublicUrl` active)
+- [x] Active domain’de LocalPilot footer gizleme
+- [ ] Production: `013` SQL (kullanıcı uygular)
+- [ ] **Sonra:** Vercel env — `docs/ROADMAP.md` → «Sonra yapılacak — Vercel custom domain env»

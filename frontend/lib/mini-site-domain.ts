@@ -221,8 +221,8 @@ export function getCustomDomainDnsInstructions(domain: string): {
     type: "CNAME",
     target: CUSTOM_DOMAIN_CNAME_TARGET,
     note: isApex
-      ? "Kök (apex) domain için sağlayıcınız A/ALIAS kaydı veya www yönlendirmesi destekliyorsa onu kullanın; aksi halde www alt alan adı önerilir."
-      : "DNS yayılımı 5 dk – 48 saat sürebilir. Otomatik doğrulama (Vercel) sonraki adımda eklenecek.",
+      ? "Kök (apex) domain için sağlayıcınız A/ALIAS kaydı veya www yönlendirmesi destekliyorsa onu kullanın; aksi halde www alt alan adı önerilir. Kaydettikten sonra «DNS’i doğrula» ile Vercel’e ekleyin."
+      : "DNS yayılımı 5 dk – 48 saat sürebilir. Kaydettikten sonra «DNS’i doğrula» butonu domain’i Vercel projesine ekler ve doğrular.",
   };
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import { confirmProCheckout } from "@/lib/ai-client";
+import { ensureSupabaseSession } from "@/lib/supabase-auth";
 import { supabase } from "@/lib/supabase";
 import type {
   Business,
@@ -174,6 +175,8 @@ export default function AyarlarTab({
   const [customDomainInput, setCustomDomainInput] = useState(
     business.custom_domain?.trim() || "",
   );
+  const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
+  const [domainVerifyMessage, setDomainVerifyMessage] = useState("");
   const [origin] = useState(() =>
     typeof window === "undefined" ? "" : window.location.origin,
   );
@@ -425,6 +428,73 @@ export default function AyarlarTab({
       setCopyMessage("Kopyalanamadi. Linki elle secebilirsiniz.");
     }
     setTimeout(() => setCopyMessage(""), 2500);
+  };
+
+  const handleVerifyCustomDomain = async () => {
+    if (!business?.id) return;
+    setIsVerifyingDomain(true);
+    setDomainVerifyMessage("");
+    try {
+      const session = await ensureSupabaseSession();
+      if (!session?.access_token) {
+        setDomainVerifyMessage("Oturum bulunamadı. Yeniden giriş yapın.");
+        return;
+      }
+      const res = await fetch("/api/custom-domain/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ businessId: business.id }),
+      });
+      const payload = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        status?: string;
+        domain?: string;
+        business?: {
+          custom_domain?: string | null;
+          custom_domain_status?: string | null;
+          custom_domain_error?: string | null;
+        };
+      };
+
+      if (payload.business) {
+        setBusiness?.({
+          ...business,
+          custom_domain:
+            payload.business.custom_domain ?? business.custom_domain,
+          custom_domain_status:
+            payload.business.custom_domain_status ??
+            business.custom_domain_status,
+          custom_domain_error:
+            payload.business.custom_domain_error ?? null,
+        });
+        if (payload.business.custom_domain) {
+          setCustomDomainInput(payload.business.custom_domain);
+        }
+      }
+
+      if (payload.ok) {
+        setDomainVerifyMessage(
+          `Domain doğrulandı: ${payload.domain || customDomainInput}. Artık bu host mini sitenizi açar.`,
+        );
+      } else {
+        setDomainVerifyMessage(
+          payload.error || "Domain doğrulanamadı. DNS kaydını kontrol edin.",
+        );
+      }
+    } catch (error) {
+      setDomainVerifyMessage(
+        error instanceof Error
+          ? error.message
+          : "Domain doğrulama isteği başarısız.",
+      );
+    } finally {
+      setIsVerifyingDomain(false);
+      setTimeout(() => setDomainVerifyMessage(""), 8000);
+    }
   };
 
   const handleOpenPublicSite = () => {
@@ -748,8 +818,7 @@ export default function AyarlarTab({
               />
               <p className="mt-1.5 text-xs text-gray-500">
                 Kendi alan adınızı bağlayın. Kaydedince durum &quot;DNS
-                bekleniyor&quot; olur. Otomatik Vercel doğrulama bir sonraki
-                adımda gelecek.
+                bekleniyor&quot; olur; ardından DNS kaydını ekleyip doğrulayın.
               </p>
               {customDomainInput.trim() && !domainPreview.ok ? (
                 <p className="mt-1.5 text-xs font-medium text-rose-600">
@@ -780,6 +849,38 @@ export default function AyarlarTab({
                   <p className="mt-2 text-xs text-indigo-800/90">
                     {dnsInstructions.note}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleVerifyCustomDomain()}
+                    disabled={
+                      isVerifyingDomain ||
+                      !business?.id ||
+                      !(
+                        business.custom_domain ||
+                        domainPreview.domain
+                      ) ||
+                      domainStatus === "none"
+                    }
+                    className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:bg-gray-400"
+                  >
+                    {isVerifyingDomain
+                      ? "Doğrulanıyor..."
+                      : domainStatus === "active"
+                        ? "Yeniden doğrula"
+                        : "DNS’i doğrula"}
+                  </button>
+                  {domainVerifyMessage ? (
+                    <p
+                      className={`mt-2 text-xs font-medium ${
+                        domainStatus === "active" &&
+                        domainVerifyMessage.includes("doğrulandı")
+                          ? "text-emerald-700"
+                          : "text-indigo-900"
+                      }`}
+                    >
+                      {domainVerifyMessage}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>

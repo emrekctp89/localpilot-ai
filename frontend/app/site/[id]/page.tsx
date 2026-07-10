@@ -574,19 +574,22 @@ export default async function BusinessSite({
         </section>
       </main>
 
-      {/* Footer */}
+      {/* Footer — white-label: hide LocalPilot credit when custom domain is active */}
       <footer className="border-t border-gray-200/60 bg-white/50 backdrop-blur-lg py-8 text-center mt-auto">
         <p className="text-sm font-semibold text-gray-900 mb-1">
           {business.name}
         </p>
 
-        <p className="text-xs text-gray-500">
-          Bu dijital vitrin{" "}
-          <a href="#" className={`font-bold ${theme.text} hover:underline`}>
-            LocalPilot AI
-          </a>{" "}
-          tarafından saniyeler içinde oluşturulmuştur.
-        </p>
+        {business.custom_domain_status === "active" &&
+        business.custom_domain ? null : (
+          <p className="text-xs text-gray-500">
+            Bu dijital vitrin{" "}
+            <a href="/" className={`font-bold ${theme.text} hover:underline`}>
+              LocalPilot AI
+            </a>{" "}
+            tarafından saniyeler içinde oluşturulmuştur.
+          </p>
+        )}
       </footer>
     </div>
   );
