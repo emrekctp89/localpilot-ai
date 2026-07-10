@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py .
 COPY ai_cache.py .
 COPY prompt_context.py .
+COPY site_slug.py .
 COPY middleware ./middleware
 COPY integrations ./integrations
 
