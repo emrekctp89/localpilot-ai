@@ -28,10 +28,12 @@ export function getSiteBaseUrl() {
   return "http://localhost:3000";
 }
 
+/** @deprecated Prefer getMiniSitePublicPath(business) — uses site_slug when set. */
 export function getMiniSitePath(businessId: string) {
   return `/site/${businessId}`;
 }
 
+/** @deprecated Prefer getMiniSitePublicUrl(business) for slug/custom domain. */
 export function getMiniSiteUrl(businessId: string) {
   return `${getSiteBaseUrl()}${getMiniSitePath(businessId)}`;
 }

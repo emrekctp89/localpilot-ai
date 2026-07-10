@@ -63,5 +63,7 @@ describe("RLS and migration integrity (Faz B)", () => {
     assert.match(verify, /businesses_site_slug/);
     assert.match(verify, /fn_resolve_mini_site_by_domain/);
     assert.match(verify, /fn_record_manual_pro_commission/);
+    assert.match(verify, /fn_lp_normalize_site_slug/);
+    assert.match(verify, /fn_lp_backfill_business_site_slugs/);
   });
 });

@@ -1,9 +1,9 @@
 import React from "react";
 import type { Business, GeneratedPlan } from "@/lib/domain-types";
 import { useActivationMetrics } from "@/hooks/useActivationMetrics";
+import { getMiniSitePublicPath } from "@/lib/mini-site-domain";
 import AktivasyonMetrikleri from "./AktivasyonMetrikleri";
 import OperasyonOzeti from "./OperasyonOzeti";
-// import { supabase } from '@/lib/supabase'; // Gerçek projede bunu açın
 
 // --- CANVAS ÖNİZLEME (MOCK) İÇİN GEÇİCİ VERİ ---
 // Gerçek ortamda bu veriler 'plan' prop'u üzerinden FastAPI'nin kaydettiği yerlerden (Supabase) gelecek.
@@ -106,7 +106,11 @@ export default function OzetTab({
           <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
             <button
               type="button"
-              onClick={() => window.open(`/site/${business?.id}`, "_blank")}
+              onClick={() => {
+                const path = getMiniSitePublicPath(business);
+                if (!path) return;
+                window.open(path, "_blank", "noopener,noreferrer");
+              }}
               className="inline-flex min-h-11 items-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-indigo-800 shadow-md transition hover:bg-indigo-50"
             >
               Mini sitemi görüntüle ➔

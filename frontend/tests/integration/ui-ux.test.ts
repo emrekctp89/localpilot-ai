@@ -44,8 +44,10 @@ describe("UI/UX design system", () => {
     assert.match(home, /lp-btn-primary/);
     assert.match(home, /bg-clip-text/);
     assert.match(ozet, /Karar Merkezi/);
+    assert.match(ozet, /getMiniSitePublicPath/);
     assert.match(ozet, /rounded-full/);
     assert.doesNotMatch(ozet, /transparenttextures\.com/);
+    assert.doesNotMatch(ozet, /\/site\/\$\{business\?\.id\}/);
     assert.match(nav, /lp-btn-primary/);
     assert.match(pricing, /lp-page/);
     assert.match(pricing, /lp-eyebrow/);

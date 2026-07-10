@@ -163,3 +163,17 @@ SELECT 'fn_record_manual_pro_commission',
          JOIN pg_namespace n ON n.oid = p.pronamespace
          WHERE n.nspname = 'public' AND p.proname = 'record_manual_pro_commission'
        );
+
+-- 015 slug backfill helpers
+SELECT 'fn_lp_normalize_site_slug',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'lp_normalize_site_slug'
+       );
+SELECT 'fn_lp_backfill_business_site_slugs',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'lp_backfill_business_site_slugs'
+       );
