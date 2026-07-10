@@ -51,8 +51,26 @@ describe("UI/UX design system", () => {
     assert.match(pricing, /lp-eyebrow/);
     assert.match(randevu, /lp-input/);
     assert.match(randevu, /EmptyState/);
+    assert.match(randevu, /ModuleLoading/);
     assert.match(crm, /lp-card/);
     assert.match(crm, /EmptyState/);
     assert.match(empty, /lp-btn-primary/);
+  });
+
+  it("ships offline banner, skip link and slug suggestion", () => {
+    const layout = readSource("app/layout.tsx");
+    const offline = readSource("app/components/OfflineBanner.tsx");
+    const domain = readSource("lib/mini-site-domain.ts");
+    const ayarlar = readSource("app/components/dashboard/AyarlarTab.tsx");
+    const loading = readSource("app/components/dashboard/ModuleLoading.tsx");
+
+    assert.match(layout, /İçeriğe atla/);
+    assert.match(layout, /OfflineBanner/);
+    assert.match(layout, /main-content/);
+    assert.match(offline, /navigator\.onLine/);
+    assert.match(domain, /suggestSiteSlugFromName/);
+    assert.match(ayarlar, /suggestSiteSlugFromName/);
+    assert.match(ayarlar, /İsimden öner/);
+    assert.match(loading, /aria-busy/);
   });
 });

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Business, StaffTask } from "@/lib/domain-types";
 import { listStaffTasks, saveStaffTasks } from "@/lib/repositories";
+import EmptyState from "./EmptyState";
+import ModuleLoading from "./ModuleLoading";
 
 interface GorevlerTabProps {
   business: Business;
@@ -129,11 +131,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
   ).length;
 
   if (loading) {
-    return (
-      <div className="rounded-2xl bg-white p-12 text-center font-medium text-gray-500">
-        Görevler yükleniyor...
-      </div>
-    );
+    return <ModuleLoading label="Görevler yükleniyor..." />;
   }
 
   return (
@@ -277,14 +275,11 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
           </div>
 
           {filteredTasks.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="font-bold text-gray-700">
-                Bu görünümde görev yok.
-              </p>
-              <p className="mt-1 text-sm text-gray-400">
-                Yeni görevi soldaki formdan ekleyebilirsiniz.
-              </p>
-            </div>
+            <EmptyState
+              icon="✅"
+              title="Bu görünümde görev yok"
+              description="Yeni görevi soldaki formdan ekleyebilirsiniz."
+            />
           ) : (
             <div className="mt-4 space-y-3">
               {filteredTasks.map((task) => {

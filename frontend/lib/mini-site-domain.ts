@@ -50,6 +50,13 @@ export function isValidSiteSlug(slug: string): boolean {
   return SLUG_RE.test(slug);
 }
 
+/** Suggest a public path slug from business display name. */
+export function suggestSiteSlugFromName(name?: string | null): string {
+  if (!name?.trim()) return "";
+  const slug = normalizeSiteSlug(name);
+  return isValidSiteSlug(slug) ? slug : "";
+}
+
 export function validateSiteSlugInput(raw: string): {
   ok: boolean;
   slug: string;

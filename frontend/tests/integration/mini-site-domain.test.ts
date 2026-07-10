@@ -16,6 +16,7 @@ import {
   normalizeCustomDomain,
   normalizeSiteSlug,
   resolveCustomDomainSaveState,
+  suggestSiteSlugFromName,
   validateCustomDomainInput,
   validateSiteSlugInput,
 } from "../../lib/mini-site-domain";
@@ -35,6 +36,8 @@ describe("mini site domain (Faz G white-label)", () => {
     assert.equal(isValidSiteSlug("guzel-kuafor"), true);
     assert.equal(isValidSiteSlug("a"), false);
     assert.equal(isValidSiteSlug(""), false);
+    assert.equal(suggestSiteSlugFromName("Yıldız Makine"), "yildiz-makine");
+    assert.equal(suggestSiteSlugFromName(""), "");
   });
 
   it("rejects empty-invalid and UUID-as-slug", () => {

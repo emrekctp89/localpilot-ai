@@ -265,6 +265,7 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] Mobil shell + PWA (manifest, SW, alt nav, safe-area)
 - [x] UI/UX design system (`lp-*` tokens) + Auth/landing/vitrin polish
 - [x] Dashboard sekme polish (CRM/Randevu/Sipariş/Görev/Onboarding) + EmptyState
+- [x] Offline banner, ModuleLoading, slug önerisi, skip-link, CHANGELOG 2.4.0
 
 ---
 

@@ -12,6 +12,7 @@ import {
 } from "@/lib/integrations";
 import { listAppointments, saveAppointments } from "@/lib/repositories";
 import EmptyState from "./EmptyState";
+import ModuleLoading from "./ModuleLoading";
 
 interface RandevuTabProps {
   business: Business;
@@ -189,11 +190,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
   };
 
   if (loading) {
-    return (
-      <div className="lp-card p-12 text-center text-sm font-medium text-slate-500">
-        Randevular yükleniyor...
-      </div>
-    );
+    return <ModuleLoading label="Randevular yükleniyor..." />;
   }
 
   return (

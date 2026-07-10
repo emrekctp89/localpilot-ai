@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Business, Order } from "@/lib/domain-types";
 import { listOrders, saveOrders } from "@/lib/repositories";
+import EmptyState from "./EmptyState";
+import ModuleLoading from "./ModuleLoading";
 
 interface SiparisTabProps {
   business: Business;
@@ -152,11 +154,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
     .reduce((sum, order) => sum + Number(order.total), 0);
 
   if (loading) {
-    return (
-      <div className="lp-card p-12 text-center text-sm font-medium text-slate-500">
-        Siparişler yükleniyor...
-      </div>
-    );
+    return <ModuleLoading label="Siparişler yükleniyor..." />;
   }
 
   return (
@@ -329,16 +327,15 @@ export default function SiparisTab({ business }: SiparisTabProps) {
           </div>
 
           {filteredOrders.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="font-bold text-gray-700">
-                Bu görünümde sipariş yok.
-              </p>
-              <p className="mt-1 text-sm text-gray-400">
-                {filter === "tamamlanan"
-                  ? "Burada yalnızca durumu Teslim Edildi olan siparişler görünür. Ödeme durumu tek başına yetmez — sipariş kartındaki sol menüden Teslim Edildi seçin."
-                  : "Yeni siparişi soldaki formdan ekleyebilirsiniz."}
-              </p>
-            </div>
+            <EmptyState
+              icon="📦"
+              title="Bu görünümde sipariş yok"
+              description={
+                filter === "tamamlanan"
+                  ? "Burada yalnızca durumu Teslim Edildi olan siparişler görünür. Ödeme durumu tek başına yetmez — kart menüsünden Teslim Edildi seçin."
+                  : "Yeni siparişi soldaki formdan ekleyebilirsiniz."
+              }
+            />
           ) : (
             <div className="mt-4 space-y-3">
               {filteredOrders.map((order) => (

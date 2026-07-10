@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.4.0 - 2026-07-10
+
+### Added
+- Partner program: referral links, agency/referral commissions, admin approval panel.
+- Monthly/yearly Pro plan UI and checkout wiring.
+- Faz G multi-business billing draft on Platform tab.
+- White-label mini site: `site_slug`, custom domain UI, DNS verify API, host middleware (G.1–G.3).
+- PWA: web manifest, service worker, install prompt, offline page, mobile bottom tab bar.
+- UI design system (`lp-*` tokens), Auth/landing polish, dashboard module polish.
+- Empty states, module loading skeletons, offline banner, skip-to-content a11y link.
+- Auto-suggest mini site slug from business name.
+
+### Changed
+- Marketing container desktop gutters so content does not hug viewport edges.
+- Production URLs and roadmap advanced to Faz G / UI polish track.
+
 ## 2.1.1 - 2026-07-07
 
 ### Added

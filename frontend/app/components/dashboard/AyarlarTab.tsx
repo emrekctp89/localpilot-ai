@@ -17,6 +17,7 @@ import {
   getMiniSitePublicUrl,
   resolveCustomDomainSaveState,
   resolveCustomDomainStatus,
+  suggestSiteSlugFromName,
   validateCustomDomainInput,
   validateSiteSlugInput,
 } from "@/lib/mini-site-domain";
@@ -170,7 +171,12 @@ export default function AyarlarTab({
     business.theme_config?.primaryColor || "blue",
   );
   const [siteSlugInput, setSiteSlugInput] = useState(
-    business.site_slug?.trim() || "",
+    business.site_slug?.trim() ||
+      suggestSiteSlugFromName(business.name) ||
+      "",
+  );
+  const [slugTouched, setSlugTouched] = useState(
+    Boolean(business.site_slug?.trim()),
   );
   const [customDomainInput, setCustomDomainInput] = useState(
     business.custom_domain?.trim() || "",
@@ -182,12 +188,20 @@ export default function AyarlarTab({
   );
 
   useEffect(() => {
-    setSiteSlugInput(business.site_slug?.trim() || "");
+    const savedSlug = business.site_slug?.trim() || "";
+    if (savedSlug) {
+      setSiteSlugInput(savedSlug);
+      setSlugTouched(true);
+    } else if (!slugTouched) {
+      setSiteSlugInput(suggestSiteSlugFromName(business.name) || "");
+    }
     setCustomDomainInput(business.custom_domain?.trim() || "");
   }, [
     business.site_slug,
     business.custom_domain,
+    business.name,
     business.id,
+    slugTouched,
   ]);
 
   const slugPreview = validateSiteSlugInput(siteSlugInput);
@@ -766,12 +780,34 @@ export default function AyarlarTab({
                   id="site-slug"
                   type="text"
                   value={siteSlugInput}
-                  onChange={(e) => setSiteSlugInput(e.target.value)}
+                  onChange={(e) => {
+                    setSlugTouched(true);
+                    setSiteSlugInput(e.target.value);
+                  }}
                   placeholder="ornek-kuafor"
                   className="w-full border border-emerald-200 rounded-lg px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500 outline-none"
                   autoComplete="off"
                   spellCheck={false}
                 />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const suggested = suggestSiteSlugFromName(business.name);
+                    if (!suggested) return;
+                    setSlugTouched(true);
+                    setSiteSlugInput(suggested);
+                  }}
+                  className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-50"
+                >
+                  İsimden öner
+                </button>
+                {!business.site_slug && siteSlugInput ? (
+                  <span className="text-xs font-medium text-emerald-700">
+                    Kaydettiğinizde kısa link aktif olur
+                  </span>
+                ) : null}
               </div>
               <p className="mt-1.5 text-xs text-gray-500">
                 Boş bırakılırsa UUID linki kullanılır. Kaydettikten sonra hem
