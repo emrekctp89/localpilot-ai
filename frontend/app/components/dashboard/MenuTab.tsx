@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from "react";
+"use client";
 
-// 🚀 ÖNEMLİ DİKKAT:
-// Kendi yerel projenize kopyalarken aşağıdaki yorum satırını kaldırıp
-// altındaki "const supabase = { ... }" sahte objesini SİLİNİZ.
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Business, Product } from "@/lib/domain-types";
+import { useToast } from "../Toast";
+import EmptyState from "./EmptyState";
+import ModuleLoading from "./ModuleLoading";
 
 interface MenuTabProps {
   business: Business;
 }
 
 export default function MenuTab({ business }: MenuTabProps) {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Modal State'leri
+  const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -26,7 +27,6 @@ export default function MenuTab({ business }: MenuTabProps) {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      // Önizleme ortamı kontrolü
       if (!business?.id) {
         setProducts([
           {
@@ -56,15 +56,29 @@ export default function MenuTab({ business }: MenuTabProps) {
       setLoading(false);
     };
 
-    fetchProducts();
+    void fetchProducts();
   }, [business]);
 
-  // Yeni Ürün Ekle
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase("tr-TR");
+    if (!q) return products;
+    return products.filter((product) => {
+      const haystack = [
+        product.name,
+        product.description,
+        product.category,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("tr-TR");
+      return haystack.includes(q);
+    });
+  }, [products, searchQuery]);
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // EĞER ÖNİZLEME ORTAMINDA İSEK SADECE EKRANDA SİMÜLE ET
     if (!business?.id) {
       const mockProduct = {
         id: `mock-${Date.now()}`,
@@ -79,10 +93,10 @@ export default function MenuTab({ business }: MenuTabProps) {
       setIsModalOpen(false);
       setNewProduct({ name: "", description: "", price: "", category: "" });
       setIsSubmitting(false);
+      showToast("Ürün eklendi (önizleme).", "success");
       return;
     }
 
-    // GERÇEK ORTAM - SUPABASE KAYDI
     const { data, error } = await supabase
       .from("products")
       .insert([
@@ -101,20 +115,23 @@ export default function MenuTab({ business }: MenuTabProps) {
       setProducts([data, ...products]);
       setIsModalOpen(false);
       setNewProduct({ name: "", description: "", price: "", category: "" });
+      showToast("Ürün eklendi.", "success");
     } else {
-      alert("Ürün eklenirken hata oluştu: " + (error?.message || ""));
+      showToast(
+        "Ürün eklenirken hata: " + (error?.message || "Bilinmeyen hata"),
+        "error",
+      );
     }
 
     setIsSubmitting(false);
   };
 
-  // Ürün Sil
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm("Bu ürünü silmek istediğinize emin misiniz?")) return;
 
-    // Önizleme kontrolü
     if (!business?.id) {
       setProducts(products.filter((p) => p.id !== productId));
+      showToast("Ürün silindi (önizleme).", "success");
       return;
     }
 
@@ -125,103 +142,130 @@ export default function MenuTab({ business }: MenuTabProps) {
 
     if (!error) {
       setProducts(products.filter((p) => p.id !== productId));
+      showToast("Ürün silindi.", "success");
     } else {
-      alert("Ürün silinirken hata oluştu.");
+      showToast("Ürün silinirken hata oluştu.", "error");
     }
   };
 
   if (loading) {
-    return (
-      <div className="p-12 text-center text-gray-500 animate-pulse font-medium">
-        Ürünler yükleniyor...
-      </div>
-    );
+    return <ModuleLoading label="Ürünler yükleniyor..." />;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up relative">
-      {/* ÜST BAR & YENİ EKLE BUTONU */}
-      <div className="bg-gradient-to-r from-rose-600 to-pink-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="relative space-y-5 animate-fade-in-up sm:space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-rose-600 via-pink-600 to-slate-900 p-5 text-white shadow-lg sm:rounded-3xl sm:p-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold mb-1">📦 Ürün ve Menü Yönetimi</h2>
-          <p className="text-rose-100 text-sm">
-            Buraya eklediğiniz her ürün, anında Mini Sitenizde sergilenir.
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-rose-100">
+            Vitrin
+          </p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+            Ürün ve menü
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-rose-50/90">
+            Eklediğiniz ürünler mini sitede anında sergilenir.
           </p>
         </div>
-
         <button
+          type="button"
           onClick={() => setIsModalOpen(true)}
-          className="bg-white text-rose-600 px-6 py-3 rounded-xl font-bold shadow-md hover:bg-rose-50 transition flex items-center gap-2 whitespace-nowrap"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-rose-700 shadow-md transition hover:bg-rose-50"
         >
-          <span className="text-xl">+</span> Yeni Ürün Ekle
+          <span className="text-lg" aria-hidden="true">
+            +
+          </span>
+          Yeni ürün
         </button>
       </div>
 
-      {/* ÜRÜNLER LİSTESİ (GRID) */}
-      {products.length === 0 ? (
-        <div className="bg-white p-12 text-center rounded-xl border border-gray-100 shadow-sm">
-          <span className="text-5xl mb-4 block">🍔</span>
-          <h3 className="text-xl font-bold text-gray-800">
-            Menünüz henüz boş.
-          </h3>
-          <p className="text-gray-500 mt-2 max-w-md mx-auto">
-            Müşterilerinizin ne sunduğunuzu görebilmesi için ilk ürününüzü veya
-            hizmetinizi hemen ekleyin.
+      {products.length > 0 ? (
+        <div className="lp-card p-4 sm:p-5">
+          <label htmlFor="menu-search" className="lp-label">
+            Ara
+          </label>
+          <input
+            id="menu-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Ürün, kategori veya açıklama..."
+            className="lp-input"
+          />
+          <p className="mt-2 text-xs font-medium text-slate-500">
+            {filteredProducts.length} / {products.length} ürün
           </p>
         </div>
+      ) : null}
+
+      {products.length === 0 ? (
+        <div className="lp-card">
+          <EmptyState
+            icon="🍔"
+            title="Menünüz henüz boş"
+            description="Müşterilerin ne sunduğunuzu görmesi için ilk ürün veya hizmetinizi ekleyin."
+            actionLabel="+ Yeni ürün"
+            onAction={() => setIsModalOpen(true)}
+          />
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="lp-card">
+          <EmptyState
+            icon="🔎"
+            title="Eşleşen ürün yok"
+            description="Arama metnini değiştirerek tekrar deneyin."
+          />
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredProducts.map((product) => (
+            <article
               key={product.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition group"
+              className="lp-card-interactive overflow-hidden"
             >
               <div className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md mb-2 inline-block">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="lp-chip mb-2 bg-rose-50 text-rose-700">
                       {product.category || "Genel"}
                     </span>
-                    <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                    <h3 className="text-lg font-black leading-tight text-slate-900">
                       {product.name}
                     </h3>
                   </div>
-
-                  <span className="font-black text-xl text-gray-900 bg-gray-50 px-2 py-1 rounded-lg">
+                  <span className="shrink-0 rounded-lg bg-slate-50 px-2 py-1 text-lg font-black text-slate-900">
                     ₺{product.price}
                   </span>
                 </div>
-
-                <p className="text-gray-500 text-sm line-clamp-2 min-h-[40px]">
+                <p className="min-h-10 text-sm text-slate-500 line-clamp-2">
                   {product.description || "Açıklama girilmemiş."}
                 </p>
               </div>
-
-              <div className="bg-gray-50 p-3 border-t border-gray-100 flex justify-end">
+              <div className="flex justify-end border-t border-slate-100 bg-slate-50/80 p-3">
                 <button
-                  onClick={() => handleDeleteProduct(product.id)}
-                  className="text-gray-400 hover:text-red-600 text-sm font-bold flex items-center gap-1 transition"
+                  type="button"
+                  onClick={() => void handleDeleteProduct(product.id)}
+                  className="text-sm font-bold text-slate-400 transition hover:text-rose-600"
                 >
-                  <span>🗑️</span> Sil
+                  Sil
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
 
-      {/* YENİ ÜRÜN EKLEME MODALI */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in-up">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                Yeni Ürün Ekle
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in-up">
+          <div className="lp-card relative w-full max-w-md p-6 sm:p-8">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h3 className="text-xl font-black text-slate-900 sm:text-2xl">
+                Yeni ürün ekle
               </h3>
-
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-red-500 text-3xl font-light transition leading-none"
+                className="text-3xl font-light leading-none text-slate-400 transition hover:text-rose-500"
+                aria-label="Kapat"
               >
                 &times;
               </button>
@@ -229,16 +273,16 @@ export default function MenuTab({ business }: MenuTabProps) {
 
             <form onSubmit={handleAddProduct} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Ürün / Hizmet Adı
+                <label htmlFor="product-name" className="lp-label">
+                  Ürün / hizmet adı
                 </label>
-
                 <input
+                  id="product-name"
                   type="text"
                   required
                   autoFocus
                   placeholder="Örn: Filtre Kahve"
-                  className="w-full border border-gray-300 rounded-xl p-3 bg-white text-black placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 outline-none"
+                  className="lp-input"
                   value={newProduct.name}
                   onChange={(e) =>
                     setNewProduct({ ...newProduct, name: e.target.value })
@@ -246,34 +290,34 @@ export default function MenuTab({ business }: MenuTabProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                  <label htmlFor="product-price" className="lp-label">
                     Fiyat (₺)
                   </label>
-
                   <input
+                    id="product-price"
                     type="number"
-                    step="0.01"
                     required
-                    placeholder="150"
-                    className="w-full border border-gray-300 rounded-xl p-3 bg-white text-black placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 outline-none"
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    className="lp-input"
                     value={newProduct.price}
                     onChange={(e) =>
                       setNewProduct({ ...newProduct, price: e.target.value })
                     }
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                  <label htmlFor="product-category" className="lp-label">
                     Kategori
                   </label>
-
                   <input
+                    id="product-category"
                     type="text"
-                    placeholder="Örn: İçecekler"
-                    className="w-full border border-gray-300 rounded-xl p-3 bg-white text-black placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 outline-none"
+                    placeholder="Genel"
+                    className="lp-input"
                     value={newProduct.category}
                     onChange={(e) =>
                       setNewProduct({
@@ -286,17 +330,14 @@ export default function MenuTab({ business }: MenuTabProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">
-                  Açıklama{" "}
-                  <span className="text-gray-400 font-normal">
-                    (İsteğe bağlı)
-                  </span>
+                <label htmlFor="product-desc" className="lp-label">
+                  Açıklama
                 </label>
-
                 <textarea
+                  id="product-desc"
                   rows={3}
-                  placeholder="Ürün içerik bilgisi vb..."
-                  className="w-full border border-gray-300 rounded-xl p-3 bg-white text-black placeholder:text-gray-400 focus:ring-2 focus:ring-rose-500 outline-none resize-none"
+                  placeholder="Kısa açıklama"
+                  className="lp-input resize-none"
                   value={newProduct.description}
                   onChange={(e) =>
                     setNewProduct({
@@ -304,30 +345,20 @@ export default function MenuTab({ business }: MenuTabProps) {
                       description: e.target.value,
                     })
                   }
-                ></textarea>
+                />
               </div>
 
-              <div className="flex gap-3 mt-8">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition"
-                >
-                  İptal
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 bg-rose-600 text-white font-bold py-3.5 rounded-xl hover:bg-rose-700 disabled:bg-gray-400 transition"
-                >
-                  {isSubmitting ? "Ekleniyor..." : "Ekle"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="lp-btn-primary lp-btn-block bg-rose-600 shadow-rose-600/20 hover:bg-rose-700"
+              >
+                {isSubmitting ? "Kaydediliyor..." : "Ürünü kaydet"}
+              </button>
             </form>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

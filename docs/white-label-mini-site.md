@@ -141,7 +141,7 @@ Canonical:
 | **G.1** | `site_slug`, resolve UUID\|slug, Ayarlar UI, test, migration `012` | ✅ |
 | **G.2** | Custom domain panel UI + DNS CNAME talimatı + `pending_dns` kaydı | ✅ |
 | **G.3** | Vercel Domains API + middleware host rewrite + `013` RPC | ✅ |
-| **G.4** | White-label footer (active domain’de LocalPilot gizle) | ✅ (temel) |
+| **G.4** | White-label footer + Pro-only domain gate | ✅ |
 
 ---
 
