@@ -262,3 +262,47 @@ export async function updateCommissionStatus(
 
   return { ok: true };
 }
+
+/**
+ * After manual SQL Pro activation, commission admin can create ledger row.
+ * Requires migration 014 (record_manual_pro_commission).
+ */
+export async function triggerManualProCommission(
+  referredUserId: string,
+  billingInterval: "monthly" | "yearly" = "monthly",
+): Promise<{ status: string; detail?: string; commission_amount_try?: number }> {
+  const userId = referredUserId.trim();
+  if (!userId) {
+    return { status: "error", detail: "Kullanıcı UUID gerekli." };
+  }
+
+  const { data, error } = await supabase.rpc("record_manual_pro_commission", {
+    p_referred_user_id: userId,
+    p_billing_interval: billingInterval,
+  });
+
+  if (error) {
+    if (isMissingTableError(error)) {
+      return {
+        status: "error",
+        detail: "Migration 014 henüz uygulanmamış olabilir.",
+      };
+    }
+    return { status: "error", detail: error.message };
+  }
+
+  const payload = (data ?? {}) as {
+    status?: string;
+    detail?: string;
+    commission_amount_try?: number;
+  };
+
+  return {
+    status: payload.status || "error",
+    detail: payload.detail,
+    commission_amount_try:
+      typeof payload.commission_amount_try === "number"
+        ? payload.commission_amount_try
+        : undefined,
+  };
+}

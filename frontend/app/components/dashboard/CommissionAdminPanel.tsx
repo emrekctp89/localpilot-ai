@@ -7,6 +7,7 @@ import {
 } from "@/lib/partner-program";
 import {
   listAdminCommissionQueue,
+  triggerManualProCommission,
   updateCommissionStatus,
   type AdminCommissionRow,
 } from "@/lib/repositories/partner-program";
@@ -23,6 +24,12 @@ export default function CommissionAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
+  const [manualUserId, setManualUserId] = useState("");
+  const [manualInterval, setManualInterval] = useState<"monthly" | "yearly">(
+    "monthly",
+  );
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualMessage, setManualMessage] = useState("");
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -65,6 +72,31 @@ export default function CommissionAdminPanel() {
     setUpdatingId(null);
   };
 
+  const handleManualCommission = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setManualBusy(true);
+    setManualMessage("");
+    const result = await triggerManualProCommission(
+      manualUserId,
+      manualInterval,
+    );
+    if (result.status === "success") {
+      setManualMessage(
+        result.detail ||
+          (result.commission_amount_try != null
+            ? `Komisyon eklendi: ₺${result.commission_amount_try}`
+            : "Komisyon eklendi."),
+      );
+      setManualUserId("");
+      await loadQueue();
+    } else if (result.status === "ignored") {
+      setManualMessage(result.detail || "İşlem atlandı.");
+    } else {
+      setManualMessage(result.detail || "Komisyon tetiklenemedi.");
+    }
+    setManualBusy(false);
+  };
+
   const activeRows = rows.filter((row) => row.status !== "cancelled");
 
   return (
@@ -79,6 +111,53 @@ export default function CommissionAdminPanel() {
         Bekleyen partner komisyonlarını panelden onaylayın veya ödendi olarak
         işaretleyin.
       </p>
+
+      <form
+        onSubmit={(e) => void handleManualCommission(e)}
+        className="mt-5 rounded-xl border border-amber-100 bg-white p-4"
+      >
+        <p className="text-sm font-bold text-gray-900">
+          Manuel Pro → komisyon
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          SQL ile <code className="font-mono">is_pro=true</code> yaptıktan
+          sonra, referanslı kullanıcının UUID&apos;sini girin (migration 014).
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={manualUserId}
+            onChange={(e) => setManualUserId(e.target.value)}
+            placeholder="referred user UUID"
+            className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
+            required
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <select
+            value={manualInterval}
+            onChange={(e) =>
+              setManualInterval(e.target.value as "monthly" | "yearly")
+            }
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-700"
+          >
+            <option value="monthly">Aylık (₺299)</option>
+            <option value="yearly">Yıllık (₺2.990)</option>
+          </select>
+          <button
+            type="submit"
+            disabled={manualBusy || !manualUserId.trim()}
+            className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:bg-gray-400"
+          >
+            {manualBusy ? "İşleniyor..." : "Komisyon yaz"}
+          </button>
+        </div>
+        {manualMessage ? (
+          <p className="mt-2 text-xs font-medium text-amber-900">
+            {manualMessage}
+          </p>
+        ) : null}
+      </form>
 
       {loading ? (
         <p className="mt-4 text-sm text-gray-500">Yükleniyor...</p>

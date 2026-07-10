@@ -11,6 +11,7 @@
 - UI design system (`lp-*` tokens), Auth/landing polish, dashboard module polish.
 - Empty states, module loading skeletons, offline banner, skip-to-content a11y link.
 - Auto-suggest mini site slug from business name.
+- Manual Pro commission: `014_manual_pro_commission.sql` RPC + commission admin form.
 
 ### Changed
 - Marketing container desktop gutters so content does not hug viewport edges.

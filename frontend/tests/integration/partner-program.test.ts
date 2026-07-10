@@ -105,8 +105,16 @@ describe("partner program integration", () => {
   it("wires platform and dashboard partner surfaces", () => {
     const platformSource = readSource("app/components/dashboard/PlatformTab.tsx");
     const dashboardSource = readSource("app/dashboard/page.tsx");
+    const adminSource = readSource(
+      "app/components/dashboard/CommissionAdminPanel.tsx",
+    );
+    const repoSource = readSource("lib/repositories/partner-program.ts");
     const migrationSource = readFileSync(
       join(root, "../supabase/migrations/010_partner_program.sql"),
+      "utf8",
+    );
+    const migration014 = readFileSync(
+      join(root, "../supabase/migrations/014_manual_pro_commission.sql"),
       "utf8",
     );
 
@@ -115,6 +123,11 @@ describe("partner program integration", () => {
     assert.match(dashboardSource, /useReferralAttribution/);
     assert.match(migrationSource, /partner_profiles/);
     assert.match(migrationSource, /attribute_referral/);
+    assert.match(migration014, /record_manual_pro_commission/);
+    assert.match(migration014, /manual_is_pro/);
+    assert.match(repoSource, /triggerManualProCommission/);
+    assert.match(adminSource, /triggerManualProCommission/);
+    assert.match(adminSource, /Komisyon yaz/);
     assert.equal(generateReferralCode().startsWith("LP-"), true);
   });
 });
