@@ -393,21 +393,23 @@ export default function Dashboard() {
         className={`fixed bottom-[-10%] left-[20%] w-[40rem] h-[40rem] rounded-full mix-blend-multiply filter blur-[120px] opacity-20 animate-blob animation-delay-4000 pointer-events-none ${glowColor}`}
       ></div>
 
-      <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="glass-panel flex flex-col gap-4 p-5 md:px-8 rounded-[2rem] mb-8 shadow-sm border border-white/60 backdrop-blur-xl animate-fade-in-up lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">🚀</span>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-gray-900">
+      <div className="relative z-10 mx-auto max-w-7xl p-3 safe-pb-nav sm:p-6 lg:p-8">
+        <header className="glass-panel mb-5 flex flex-col gap-3 rounded-2xl border border-white/60 p-4 shadow-sm backdrop-blur-xl animate-fade-in-up sm:mb-8 sm:gap-4 sm:rounded-[2rem] sm:p-5 md:px-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="text-2xl sm:text-3xl" aria-hidden="true">
+              🚀
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-black tracking-tight text-gray-900 sm:text-xl">
                 LocalPilot
               </h1>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 sm:text-xs">
                 {t("dashboard.title", "Yönetim Paneli")}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <BusinessSwitcher
               businesses={session.businesses}
               activeBusinessId={session.business?.id}
@@ -415,11 +417,12 @@ export default function Dashboard() {
               label={t("platform.businessSwitcher")}
             />
             <button
+              type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
                 router.push("/auth");
               }}
-              className="text-sm font-bold text-gray-500 hover:text-red-600 bg-white/50 px-4 py-2 rounded-full transition hover:bg-red-50"
+              className="min-h-11 rounded-full bg-white/50 px-4 py-2 text-sm font-bold text-gray-500 transition hover:bg-red-50 hover:text-red-600"
             >
               {t("dashboard.signOut", "Çıkış Yap")} ➔
             </button>

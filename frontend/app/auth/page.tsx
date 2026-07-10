@@ -68,9 +68,9 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 text-black">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-gray-50 px-4 py-8 text-black">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-md sm:p-8">
+        <h1 className="mb-6 text-center text-xl font-bold sm:text-2xl">
           {isLogin ? 'LocalPilot Giriş' : 'Yeni Hesap Oluştur'}
         </h1>
         <form onSubmit={handleAuth} className="space-y-4">

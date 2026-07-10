@@ -262,6 +262,7 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] White-label araştırma + mini site slug (G.1)
 - [x] White-label G.2 özel domain UI + DNS talimatları
 - [x] White-label G.3 middleware + verify API + footer hide
+- [x] Mobil shell + PWA (manifest, SW, alt nav, safe-area)
 
 ---
 
