@@ -1,7 +1,7 @@
 # LocalPilot AI — Proje Sunumu ve Teknik Rapor
 
-**Sürüm:** 2.0.0 (production)  
-**Güncelleme:** 7 Temmuz 2026  
+**Sürüm:** 2.4.0 (production)  
+**Güncelleme:** 10 Temmuz 2026  
 **Repo:** [github.com/emrekctp89/localpilot-ai](https://github.com/emrekctp89/localpilot-ai)
 
 ---

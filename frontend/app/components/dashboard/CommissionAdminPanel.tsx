@@ -32,8 +32,21 @@ export default function CommissionAdminPanel() {
   }, []);
 
   useEffect(() => {
-    void loadQueue();
-  }, [loadQueue]);
+    let cancelled = false;
+
+    const loadInitialQueue = async () => {
+      const nextRows = await listAdminCommissionQueue();
+      if (cancelled) return;
+      setRows(nextRows);
+      setLoading(false);
+    };
+
+    void loadInitialQueue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleStatusChange = async (
     row: AdminCommissionRow,

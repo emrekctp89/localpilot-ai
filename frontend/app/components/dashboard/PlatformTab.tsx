@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Business } from "@/lib/domain-types";
 import type { BusinessAccess, BusinessMemberRole } from "@/lib/platform/access";
@@ -26,6 +26,10 @@ import {
 } from "@/lib/repositories/platform-integrations";
 import type { AuditLogEntry } from "@/lib/platform/audit";
 import type { BusinessMember } from "@/lib/platform/access";
+import {
+  buildMultiBusinessBillingSummary,
+  formatBillingAmount,
+} from "@/lib/platform/billing";
 import CommissionAdminPanel from "./CommissionAdminPanel";
 import PartnerProgramPanel from "./PartnerProgramPanel";
 
@@ -63,6 +67,10 @@ export default function PlatformTab({
   const [loading, setLoading] = useState(true);
 
   const businessId = business.id || "";
+  const billingSummary = useMemo(
+    () => buildMultiBusinessBillingSummary(businesses, access),
+    [access, businesses],
+  );
 
   useEffect(() => {
     if (!businessId) return;
@@ -198,6 +206,60 @@ export default function PlatformTab({
       {access.canManageTeam && userId ? (
         <PartnerProgramPanel userId={userId} access={access} />
       ) : null}
+
+      <section className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
+          Faz G · Faturalandırma
+        </p>
+        <h3 className="mt-1 text-lg font-black text-gray-900">
+          {billingSummary.headline}
+        </h3>
+        <p className="mt-2 text-sm text-gray-600">
+          Çoklu işletme modelinde her işletmenin Pro durumu ayrı izlenir; ödeme
+          veya abonelik değişikliği kullanıcı checkout onayı olmadan yapılmaz.
+        </p>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl bg-white px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              İşletme
+            </p>
+            <p className="mt-1 text-2xl font-black text-gray-900">
+              {billingSummary.businessCount}
+            </p>
+            <p className="text-xs text-gray-500">
+              {billingSummary.additionalBusinessCount > 0
+                ? `${billingSummary.additionalBusinessCount} ek işletme`
+                : "Tek işletme"}
+            </p>
+          </div>
+          <div className="rounded-xl bg-white px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Aylık taslak
+            </p>
+            <p className="mt-1 text-2xl font-black text-gray-900">
+              {formatBillingAmount(billingSummary.monthlyTotalTry)}
+            </p>
+            <p className="text-xs text-gray-500">İşletme başına Pro</p>
+          </div>
+          <div className="rounded-xl bg-white px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Yıllık taslak
+            </p>
+            <p className="mt-1 text-2xl font-black text-gray-900">
+              {formatBillingAmount(billingSummary.yearlyTotalTry)}
+            </p>
+            <p className="text-xs text-gray-500">
+              Öneri:{" "}
+              {billingSummary.recommendedInterval === "yearly"
+                ? "yıllık"
+                : "aylık"}
+            </p>
+          </div>
+        </div>
+        <p className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-medium text-indigo-800">
+          Sonraki adım: {billingSummary.nextAction}
+        </p>
+      </section>
 
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="text-lg font-black text-gray-900">{t("platform.language")}</h3>

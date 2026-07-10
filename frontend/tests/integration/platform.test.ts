@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { resolveBusinessAccess, roleLabel } from "../../lib/platform/access";
+import { buildMultiBusinessBillingSummary } from "../../lib/platform/billing";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -58,14 +59,41 @@ describe("platform integration", () => {
     assert.equal(roleLabel("read_only", "en"), "Read-only");
   });
 
+  it("builds multi-business billing summaries for Faz G", () => {
+    const access = resolveBusinessAccess(
+      "agency-1",
+      { id: "biz-1", owner_id: "agency-1" },
+      null,
+      "agency",
+    );
+    const summary = buildMultiBusinessBillingSummary(
+      [
+        { id: "biz-1", owner_id: "agency-1", name: "Kuaför" },
+        { id: "biz-2", owner_id: "agency-1", name: "Galeri" },
+        { id: "biz-3", owner_id: "agency-1", name: "Tesisat" },
+      ],
+      access,
+    );
+
+    assert.equal(summary.mode, "agency_portfolio");
+    assert.equal(summary.businessCount, 3);
+    assert.equal(summary.additionalBusinessCount, 2);
+    assert.equal(summary.monthlyTotalTry, 897);
+    assert.equal(summary.yearlyTotalTry, 8970);
+    assert.equal(summary.recommendedInterval, "yearly");
+  });
+
   it("wires dashboard platform surfaces", () => {
     const dashboardSource = readSource("app/dashboard/page.tsx");
     const sessionSource = readSource("hooks/useDashboardSession.ts");
     const leadSource = readSource("app/site/[id]/LeadForm.tsx");
+    const platformSource = readSource("app/components/dashboard/PlatformTab.tsx");
 
     assert.match(dashboardSource, /PlatformTab/);
     assert.match(dashboardSource, /BusinessSwitcher/);
     assert.match(dashboardSource, /platformAccess/);
+    assert.match(platformSource, /billingSummary/);
+    assert.match(platformSource, /checkout onayı olmadan yapılmaz/);
     assert.match(sessionSource, /switchBusiness/);
     assert.match(sessionSource, /fetchDashboardContext/);
     assert.match(leadSource, /triggerBusinessWebhooks/);

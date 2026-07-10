@@ -1,7 +1,7 @@
 # LocalPilot AI — Geliştirme Roadmap
 
 **Güncel sürüm:** `2.4.0` (Faz F — büyüme)  
-**Son güncelleme:** 8 Temmuz 2026  
+**Son güncelleme:** 10 Temmuz 2026  
 **Aktif sprint:** **Faz G** — platform ölçeği (Faz F opsiyonel kapanış maddeleri sürüyor)
 
 ---
@@ -201,7 +201,7 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 ## Faz G — Platform Ölçeği (P3) ← AKTİF
 
 - [x] v2.0: ekip, ajans, audit, API, i18n
-- [ ] Çoklu işletme faturalandırma
+- [x] Çoklu işletme faturalandırma taslağı (Platform sekmesinde işletme başına Pro hesap özeti)
 - [ ] White-label mini site (özel domain)
 
 ---
@@ -223,7 +223,7 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 
 ## Bu Sprint — Faz G
 
-1. [ ] Çoklu işletme faturalandırma taslağı
+1. [x] Çoklu işletme faturalandırma taslağı
 2. [ ] White-label mini site (özel domain) araştırması
 
 ### Faz F kapanış (opsiyonel)
