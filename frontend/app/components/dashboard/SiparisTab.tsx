@@ -153,15 +153,15 @@ export default function SiparisTab({ business }: SiparisTabProps) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white p-12 text-center font-medium text-gray-500">
+      <div className="lp-card p-12 text-center text-sm font-medium text-slate-500">
         Siparişler yükleniyor...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="rounded-2xl bg-gradient-to-r from-indigo-700 to-blue-700 p-6 text-white shadow-lg">
+    <div className="space-y-5 animate-fade-in-up sm:space-y-6">
+      <div className="rounded-2xl bg-gradient-to-br from-indigo-700 via-blue-700 to-slate-900 p-5 text-white shadow-lg sm:rounded-3xl sm:p-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-indigo-100">
@@ -205,7 +205,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <form
           onSubmit={handleAddOrder}
-          className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          className="lp-card space-y-3 p-5 sm:p-6"
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-black text-gray-900">Yeni Sipariş</h3>
@@ -222,7 +222,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
               setForm({ ...form, customerName: event.target.value })
             }
             placeholder="Müşteri adı"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-indigo-500"
+            className="lp-input"
           />
           <input
             value={form.phone}
@@ -230,7 +230,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
               setForm({ ...form, phone: event.target.value })
             }
             placeholder="Telefon"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-indigo-500"
+            className="lp-input"
           />
           <textarea
             required
@@ -240,7 +240,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
               setForm({ ...form, summary: event.target.value })
             }
             placeholder="Sipariş özeti"
-            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-indigo-500"
+            className="lp-input resize-none"
           />
           <input
             required
@@ -252,7 +252,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
               setForm({ ...form, total: event.target.value })
             }
             placeholder="Toplam tutar"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-indigo-500"
+            className="lp-input"
           />
           <div className="grid grid-cols-2 gap-3">
             <select
@@ -263,7 +263,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
                   channel: event.target.value as Order["channel"],
                 })
               }
-              className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm font-bold text-gray-700"
+              className="lp-input text-sm font-bold"
             >
               <option value="whatsapp">WhatsApp</option>
               <option value="telefon">Telefon</option>
@@ -279,7 +279,7 @@ export default function SiparisTab({ business }: SiparisTabProps) {
                     .value as Order["paymentStatus"],
                 })
               }
-              className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm font-bold text-gray-700"
+              className="lp-input text-sm font-bold"
             >
               <option value="bekliyor">Ödeme Bekliyor</option>
               <option value="odendi">Ödendi</option>
@@ -288,13 +288,13 @@ export default function SiparisTab({ business }: SiparisTabProps) {
           <button
             type="submit"
             disabled={saveStatus === "saving"}
-            className="w-full rounded-xl bg-indigo-600 py-3 font-bold text-white transition hover:bg-indigo-700 disabled:bg-gray-400"
+            className="lp-btn-primary lp-btn-block"
           >
             Siparişi Kaydet
           </button>
         </form>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="lp-card p-5 sm:p-6">
           <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-black text-gray-900">

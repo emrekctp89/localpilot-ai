@@ -236,7 +236,7 @@ export default function OnboardingWizard({
       : "border-gray-200 focus:border-blue-500";
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-gray-100 mt-10 animate-fade-in-up">
+    <div className="lp-card mx-auto mt-6 max-w-2xl animate-fade-in-up p-6 sm:mt-10 sm:p-8">
       <div className="text-center mb-8">
         <span className="text-4xl block mb-4">🚀</span>
         <h1 className="text-2xl font-bold text-gray-900">
@@ -286,7 +286,7 @@ export default function OnboardingWizard({
       {step === 1 && (
         <div className="space-y-5 animate-fade-in-up">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               İşletmenizin Adı
             </label>
             <input
@@ -301,7 +301,7 @@ export default function OnboardingWizard({
             <FieldError field="name" errors={stepErrors} visible={showErrors} />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Sektörünüz <span className="text-red-500">*</span>
             </label>
             <select
@@ -356,7 +356,7 @@ export default function OnboardingWizard({
             )}
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Hangi Şehirdesiniz?
             </label>
             <input
@@ -382,7 +382,7 @@ export default function OnboardingWizard({
       {step === 2 && (
         <div className="space-y-5 animate-fade-in-up">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Tam Adresiniz (Google Maps için)
             </label>
             <textarea
@@ -400,7 +400,7 @@ export default function OnboardingWizard({
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               WhatsApp / İletişim Numaranız
             </label>
             <input
@@ -422,7 +422,7 @@ export default function OnboardingWizard({
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Çalışma Saatleriniz
             </label>
             <input
@@ -456,7 +456,7 @@ export default function OnboardingWizard({
       {step === 3 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               İşletme Modeliniz Nedir?
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -509,7 +509,7 @@ export default function OnboardingWizard({
             <FieldError field="goals" errors={stepErrors} visible={showErrors} />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               En Popüler 3 Ürün / Hizmetiniz Nedir?
             </label>
             <textarea
@@ -549,7 +549,7 @@ export default function OnboardingWizard({
       {step === 4 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Ağırlıklı Müşteri Kitleniz Kimler?{" "}
               <span className="text-xs font-normal text-gray-500">
                 (Çoklu Seçim)
@@ -618,7 +618,7 @@ export default function OnboardingWizard({
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               İşletmenizi Özel Yapan Şey Ne? (Neden Siz?)
             </label>
             <textarea
@@ -660,7 +660,7 @@ export default function OnboardingWizard({
       {step === 5 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Markanızın Tonu Nasıl?
             </label>
             <div className="grid grid-cols-2 gap-2 mb-6">
@@ -685,7 +685,7 @@ export default function OnboardingWizard({
               visible={showErrors}
             />
 
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="lp-label">
               Siteniz İçin Renk Tercihiniz?
             </label>
             <select

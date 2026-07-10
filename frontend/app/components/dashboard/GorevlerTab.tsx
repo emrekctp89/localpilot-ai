@@ -137,7 +137,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-5 animate-fade-in-up sm:space-y-6">
       <div className="rounded-2xl bg-gradient-to-r from-slate-800 to-gray-700 p-6 text-white shadow-lg">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
@@ -172,7 +172,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <form
           onSubmit={handleAddTask}
-          className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          className="lp-card space-y-3 p-5 sm:p-6"
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-black text-gray-900">Yeni Görev</h3>
@@ -189,7 +189,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
               setForm({ ...form, title: event.target.value })
             }
             placeholder="Görev başlığı"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-slate-500"
+            className="lp-input"
           />
           <input
             required
@@ -198,7 +198,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
               setForm({ ...form, assignee: event.target.value })
             }
             placeholder="Sorumlu kişi"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-slate-500"
+            className="lp-input"
           />
           <div className="grid grid-cols-2 gap-3">
             <input
@@ -231,7 +231,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
               setForm({ ...form, notes: event.target.value })
             }
             placeholder="Görev notları"
-            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-slate-500"
+            className="lp-input resize-none"
           />
           <button
             type="submit"
@@ -242,7 +242,7 @@ export default function GorevlerTab({ business }: GorevlerTabProps) {
           </button>
         </form>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="lp-card p-5 sm:p-6">
           <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-black text-gray-900">

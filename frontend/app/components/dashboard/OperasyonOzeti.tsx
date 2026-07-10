@@ -163,10 +163,10 @@ export default function OperasyonOzeti({
   ];
 
   return (
-    <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm md:p-8">
+    <section className="lp-card p-5 sm:p-6 md:p-8">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
+          <p className="lp-eyebrow">
             Günlük Kontrol Merkezi
           </p>
           <h3 className="mt-1 text-xl font-black text-gray-900">
@@ -186,7 +186,7 @@ export default function OperasyonOzeti({
             key={card.tab}
             type="button"
             onClick={() => setActiveTab(card.tab)}
-            className="group rounded-2xl border border-gray-100 bg-gray-50 p-5 text-left transition hover:-translate-y-0.5 hover:border-gray-200 hover:bg-white hover:shadow-md"
+            className="group rounded-2xl border border-slate-100 bg-slate-50 p-5 text-left transition hover:-translate-y-0.5 hover:border-indigo-100 hover:bg-white hover:shadow-md"
           >
             <div className="flex items-center justify-between gap-3">
               <span

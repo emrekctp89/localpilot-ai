@@ -244,7 +244,7 @@ export default function KasaTab({ business }: KasaTabProps) {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-5 animate-fade-in-up sm:space-y-6">
       <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 

@@ -11,6 +11,7 @@ import {
   writeCalendarSyncState,
 } from "@/lib/integrations";
 import { listAppointments, saveAppointments } from "@/lib/repositories";
+import EmptyState from "./EmptyState";
 
 interface RandevuTabProps {
   business: Business;
@@ -189,15 +190,15 @@ export default function RandevuTab({ business }: RandevuTabProps) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white p-12 text-center font-medium text-gray-500">
+      <div className="lp-card p-12 text-center text-sm font-medium text-slate-500">
         Randevular yükleniyor...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="rounded-2xl bg-gradient-to-r from-teal-700 to-cyan-700 p-6 text-white shadow-lg">
+    <div className="space-y-5 animate-fade-in-up sm:space-y-6">
+      <div className="rounded-2xl bg-gradient-to-br from-teal-700 via-cyan-700 to-slate-900 p-5 text-white shadow-lg sm:rounded-3xl sm:p-6">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-teal-100">
@@ -246,7 +247,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
             type="button"
             onClick={handleExportUpcomingIcs}
             disabled={upcomingAppointments.length === 0}
-            className="rounded-xl bg-cyan-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-800 disabled:bg-gray-400"
+            className="lp-btn-primary bg-cyan-700 shadow-cyan-700/20 hover:bg-cyan-800"
           >
             Yaklaşan Randevuları ICS İndir
           </button>
@@ -256,7 +257,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <form
           onSubmit={handleAddAppointment}
-          className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+          className="lp-card space-y-3 p-5 sm:p-6"
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-black text-gray-900">Yeni Randevu</h3>
@@ -273,7 +274,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               setForm({ ...form, customerName: event.target.value })
             }
             placeholder="Müşteri adı"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-teal-500"
+            className="lp-input"
           />
           <input
             value={form.phone}
@@ -281,7 +282,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               setForm({ ...form, phone: event.target.value })
             }
             placeholder="Telefon"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-teal-500"
+            className="lp-input"
           />
           <input
             required
@@ -290,7 +291,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               setForm({ ...form, service: event.target.value })
             }
             placeholder="Hizmet / görüşme konusu"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-teal-500"
+            className="lp-input"
           />
           <div className="grid grid-cols-2 gap-3">
             <input
@@ -300,7 +301,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               onChange={(event) =>
                 setForm({ ...form, date: event.target.value })
               }
-              className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 outline-none focus:border-teal-500"
+              className="lp-input"
             />
             <input
               required
@@ -309,7 +310,7 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               onChange={(event) =>
                 setForm({ ...form, time: event.target.value })
               }
-              className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 outline-none focus:border-teal-500"
+              className="lp-input"
             />
           </div>
           <textarea
@@ -319,18 +320,18 @@ export default function RandevuTab({ business }: RandevuTabProps) {
               setForm({ ...form, notes: event.target.value })
             }
             placeholder="Notlar"
-            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-teal-500"
+            className="lp-input resize-none"
           />
           <button
             type="submit"
             disabled={saveStatus === "saving"}
-            className="w-full rounded-xl bg-teal-600 py-3 font-bold text-white transition hover:bg-teal-700 disabled:bg-gray-400"
+            className="lp-btn-primary lp-btn-block bg-teal-600 shadow-teal-600/20 hover:bg-teal-700"
           >
             Randevuyu Kaydet
           </button>
         </form>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="lp-card p-5 sm:p-6">
           <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-black text-gray-900">
@@ -365,20 +366,17 @@ export default function RandevuTab({ business }: RandevuTabProps) {
           </div>
 
           {filteredAppointments.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="font-bold text-gray-700">
-                Bu görünümde randevu yok.
-              </p>
-              <p className="mt-1 text-sm text-gray-400">
-                Yeni randevuyu soldaki formdan ekleyebilirsiniz.
-              </p>
-            </div>
+            <EmptyState
+              icon="📅"
+              title="Bu görünümde randevu yok"
+              description="Yeni randevuyu soldaki formdan ekleyebilirsiniz."
+            />
           ) : (
             <div className="mt-4 space-y-3">
               {filteredAppointments.map((appointment) => (
                 <article
                   key={appointment.id}
-                  className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">

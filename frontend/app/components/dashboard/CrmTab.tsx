@@ -18,6 +18,7 @@ import type {
   Customer,
   CustomerFollowUp,
 } from "@/lib/domain-types";
+import EmptyState from "./EmptyState";
 
 interface CrmTabProps {
   business: Business;
@@ -392,10 +393,10 @@ export default function CrmTab({ business }: CrmTabProps) {
     : {};
 
   return (
-    <div className="space-y-6 animate-fade-in-up relative">
+    <div className="relative space-y-5 animate-fade-in-up sm:space-y-6">
       {/* ÜST BİLGİ KARTLARI VE AI BUTONU */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+        <div className="lp-card flex items-center gap-4 p-5">
           <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl">
             👥
           </div>
@@ -408,7 +409,7 @@ export default function CrmTab({ business }: CrmTabProps) {
             </p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100 flex items-center gap-4">
+        <div className="lp-card flex items-center gap-4 border-orange-100 p-5">
           <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-2xl">
             🔥
           </div>
@@ -506,12 +507,12 @@ export default function CrmTab({ business }: CrmTabProps) {
       )}
 
       {/* MÜŞTERİ LİSTESİ */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      <div className="lp-card overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 p-4 sm:p-5">
           <h2 className="text-lg font-bold text-gray-800">Müşteri Rehberi</h2>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition"
+            className="lp-btn-primary"
           >
             + Yeni Ekle
           </button>
@@ -523,12 +524,12 @@ export default function CrmTab({ business }: CrmTabProps) {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Müşteri adı, telefon veya not ara..."
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+            className="lp-input"
           />
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+            className="lp-input text-sm font-bold"
           >
             <option value="all">Tüm durumlar</option>
             {statusOptions.map((status) => (
@@ -543,22 +544,19 @@ export default function CrmTab({ business }: CrmTabProps) {
         </div>
 
         {customers.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="text-5xl mb-4 block">📭</span>
-            <h3 className="text-lg font-bold text-gray-800">
-              Henüz müşteri kaydınız yok.
-            </h3>
-          </div>
+          <EmptyState
+            icon="📭"
+            title="Henüz müşteri kaydınız yok"
+            description="Mini site lead’leri veya manuel ekleme ile müşteri rehberinizi doldurun."
+            actionLabel="+ Yeni müşteri"
+            onAction={() => setIsModalOpen(true)}
+          />
         ) : filteredCustomers.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="text-5xl mb-4 block">🔎</span>
-            <h3 className="text-lg font-bold text-gray-800">
-              Eşleşen müşteri bulunamadı.
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              Arama metnini veya durum filtresini değiştirerek tekrar deneyin.
-            </p>
-          </div>
+          <EmptyState
+            icon="🔎"
+            title="Eşleşen müşteri bulunamadı"
+            description="Arama metnini veya durum filtresini değiştirerek tekrar deneyin."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

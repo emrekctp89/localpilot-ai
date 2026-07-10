@@ -36,6 +36,9 @@ describe("UI/UX design system", () => {
     const ozet = readSource("app/components/dashboard/OzetTab.tsx");
     const nav = readSource("app/components/marketing/MarketingNav.tsx");
     const pricing = readSource("app/fiyatlandirma/page.tsx");
+    const randevu = readSource("app/components/dashboard/RandevuTab.tsx");
+    const crm = readSource("app/components/dashboard/CrmTab.tsx");
+    const empty = readSource("app/components/dashboard/EmptyState.tsx");
 
     assert.match(home, /lp-page/);
     assert.match(home, /lp-btn-primary/);
@@ -46,5 +49,10 @@ describe("UI/UX design system", () => {
     assert.match(nav, /lp-btn-primary/);
     assert.match(pricing, /lp-page/);
     assert.match(pricing, /lp-eyebrow/);
+    assert.match(randevu, /lp-input/);
+    assert.match(randevu, /EmptyState/);
+    assert.match(crm, /lp-card/);
+    assert.match(crm, /EmptyState/);
+    assert.match(empty, /lp-btn-primary/);
   });
 });
