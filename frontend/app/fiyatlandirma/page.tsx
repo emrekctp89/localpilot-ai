@@ -14,18 +14,16 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#fafafa] text-gray-900">
+    <div className="lp-page">
       <MarketingNav currentPath="/fiyatlandirma" />
 
-      <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
-            Fiyatlandırma
-          </p>
-          <h1 className="mt-2 text-4xl font-black tracking-tight text-gray-900 sm:text-5xl">
+      <main className="lp-container py-12 sm:py-16">
+        <div className="max-w-3xl animate-fade-in-up">
+          <p className="lp-eyebrow">Fiyatlandırma</p>
+          <h1 className="lp-title mt-2 text-4xl sm:text-5xl">
             Basit planlar, net değer
           </h1>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="lp-lead mt-4">
             Ücretsiz planda tüm operasyon modüllerine erişin. Pro ile AI
             limitlerini kaldırın ve büyüme araçlarını tam açın.
           </p>
@@ -35,8 +33,8 @@ export default function PricingPage() {
           <PricingCards plans={PRICING_PLANS} />
         </div>
 
-        <section className="mt-16 rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h2 className="text-2xl font-black text-gray-900">Plan farkları</h2>
+        <section className="lp-card mt-16 p-6 sm:p-8">
+          <h2 className="text-2xl font-black text-slate-900">Plan farkları</h2>
           <div className="mt-6 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>

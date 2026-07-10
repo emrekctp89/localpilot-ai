@@ -382,7 +382,7 @@ export default function Dashboard() {
     );
 
   return (
-    <div className="min-h-screen relative bg-[#fafafa] overflow-x-hidden selection:bg-blue-200 selection:text-blue-900 text-gray-900">
+    <div className="lp-page relative overflow-x-hidden selection:bg-indigo-200 selection:text-indigo-900">
       <div
         className={`fixed top-[-10%] left-[-10%] w-[30rem] h-[30rem] rounded-full mix-blend-multiply filter blur-[120px] opacity-20 animate-blob pointer-events-none ${glowColor}`}
       ></div>
@@ -394,16 +394,19 @@ export default function Dashboard() {
       ></div>
 
       <div className="relative z-10 mx-auto max-w-7xl p-3 safe-pb-nav sm:p-6 lg:p-8">
-        <header className="glass-panel mb-5 flex flex-col gap-3 rounded-2xl border border-white/60 p-4 shadow-sm backdrop-blur-xl animate-fade-in-up sm:mb-8 sm:gap-4 sm:rounded-[2rem] sm:p-5 md:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <header className="glass-panel mb-5 flex flex-col gap-3 rounded-2xl p-4 animate-fade-in-up sm:mb-8 sm:gap-4 sm:rounded-[2rem] sm:p-5 md:px-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="text-2xl sm:text-3xl" aria-hidden="true">
-              🚀
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-white"
+              aria-hidden="true"
+            >
+              L
             </span>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-black tracking-tight text-gray-900 sm:text-xl">
+              <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">
                 LocalPilot
               </h1>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 sm:text-xs">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 sm:text-xs">
                 {t("dashboard.title", "Yönetim Paneli")}
               </p>
             </div>
@@ -422,7 +425,7 @@ export default function Dashboard() {
                 await supabase.auth.signOut();
                 router.push("/auth");
               }}
-              className="min-h-11 rounded-full bg-white/50 px-4 py-2 text-sm font-bold text-gray-500 transition hover:bg-red-50 hover:text-red-600"
+              className="lp-btn-ghost min-h-11 text-slate-500 hover:bg-rose-50 hover:text-rose-600"
             >
               {t("dashboard.signOut", "Çıkış Yap")} ➔
             </button>

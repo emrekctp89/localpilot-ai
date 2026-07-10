@@ -9,27 +9,30 @@ export default function MarketingNav({ currentPath = "/" }: MarketingNavProps) {
     `text-sm font-bold transition ${
       currentPath === path
         ? "text-indigo-700"
-        : "text-gray-600 hover:text-indigo-700"
+        : "text-slate-600 hover:text-indigo-700"
     }`;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/60 bg-white/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <Link href="/" className="flex min-w-0 items-center gap-2">
-          <span className="text-2xl" aria-hidden="true">
-            🚀
+    <header className="sticky top-0 z-50 border-b border-white/70 bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <div className="lp-container flex items-center justify-between gap-3 py-3 sm:py-4">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-xs font-black text-white"
+            aria-hidden="true"
+          >
+            L
           </span>
           <div className="min-w-0">
-            <p className="truncate text-base font-black tracking-tight text-gray-900 sm:text-lg">
+            <p className="truncate text-base font-black tracking-tight text-slate-900 sm:text-lg">
               LocalPilot
             </p>
-            <p className="hidden text-[10px] font-bold uppercase tracking-widest text-gray-500 xs:block sm:block">
+            <p className="hidden text-[10px] font-bold uppercase tracking-widest text-slate-500 sm:block">
               AI İşletme OS
             </p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-8 md:flex" aria-label="Pazarlama">
           <a href="/#ozellikler" className={linkClass("/")}>
             Özellikler
           </a>
@@ -44,14 +47,11 @@ export default function MarketingNav({ currentPath = "/" }: MarketingNavProps) {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <Link
             href="/auth"
-            className="hidden min-h-11 items-center rounded-full px-4 py-2 text-sm font-bold text-gray-600 transition hover:bg-gray-100 sm:inline-flex"
+            className="hidden min-h-11 items-center rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 sm:inline-flex"
           >
             Giriş Yap
           </Link>
-          <Link
-            href="/auth"
-            className="inline-flex min-h-11 items-center rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 sm:px-5"
-          >
+          <Link href="/auth" className="lp-btn-primary px-4 sm:px-5">
             <span className="sm:hidden">Başla</span>
             <span className="hidden sm:inline">Ücretsiz Dene</span>
           </Link>

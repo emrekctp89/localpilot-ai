@@ -37,21 +37,19 @@ export default function PricingCards({ plans }: PricingCardsProps) {
         return (
           <article
             key={plan.id}
-            className={`rounded-3xl border p-8 ${
+            className={`rounded-3xl border p-6 sm:p-8 ${
               plan.highlighted
-                ? "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white shadow-xl"
-                : "border-gray-200 bg-white shadow-sm"
+                ? "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white shadow-xl ring-1 ring-indigo-100"
+                : "border-slate-200 bg-white shadow-sm"
             }`}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
-                  {plan.name}
-                </p>
-                <p className="mt-2 text-4xl font-black text-gray-900">
+                <p className="lp-eyebrow">{plan.name}</p>
+                <p className="mt-2 text-4xl font-black tracking-tight text-slate-900">
                   {proPricing?.priceLabel ?? plan.priceLabel}
                 </p>
-                <p className="text-sm font-medium text-gray-500">
+                <p className="text-sm font-medium text-slate-500">
                   {proPricing?.priceNote ?? plan.priceNote}
                 </p>
                 {proPricing?.monthlyEquivalentLabel && (
@@ -61,7 +59,7 @@ export default function PricingCards({ plans }: PricingCardsProps) {
                 )}
               </div>
               {plan.highlighted && (
-                <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-black text-white">
+                <span className="lp-chip bg-indigo-600 text-white">
                   Önerilen
                 </span>
               )}
@@ -94,10 +92,10 @@ export default function PricingCards({ plans }: PricingCardsProps) {
 
             <Link
               href={plan.ctaHref}
-              className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition ${
+              className={`mt-8 ${
                 plan.highlighted
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                  : "border border-gray-200 bg-white text-gray-800 hover:bg-gray-50"
+                  ? "lp-btn-primary lp-btn-block"
+                  : "lp-btn-secondary lp-btn-block"
               }`}
             >
               {plan.cta}

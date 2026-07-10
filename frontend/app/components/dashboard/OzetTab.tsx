@@ -70,48 +70,68 @@ export default function OzetTab({
   const next7Days = activePlan?.next_7_days_plan || [];
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
-      {/* 🌟 1. KARŞILAMA VE ANA TEŞHİS KARTI */}
-      <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+    <div className="space-y-6 animate-fade-in-up sm:space-y-8">
+      {/* Karşılama + AI teşhis */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 p-5 text-white shadow-xl sm:rounded-3xl sm:p-8">
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">👋</span>
-            <h2 className="text-3xl font-black tracking-tight">
-              Hoş Geldin, {business?.name || "İşletme Sahibi"}!
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-200">
+            Bugünkü vitrin
+          </p>
+          <div className="mt-2 flex items-start gap-3">
+            <span className="text-2xl sm:text-3xl" aria-hidden="true">
+              👋
+            </span>
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+              Hoş geldin
+              {business?.name ? (
+                <>
+                  ,{" "}
+                  <span className="text-indigo-100">{business.name}</span>
+                </>
+              ) : null}
             </h2>
           </div>
 
           {diagnosis.summary ? (
-            <p className="text-blue-100 text-lg max-w-2xl mt-4 leading-relaxed border-l-4 border-blue-400 pl-4">
+            <p className="mt-4 max-w-2xl border-l-4 border-indigo-300/80 pl-4 text-base leading-relaxed text-indigo-50 sm:text-lg">
               &quot;{diagnosis.summary}&quot;
             </p>
           ) : (
-            <p className="text-blue-100 text-lg max-w-2xl mt-2">
-              İşletmenizin dijital kontrol merkezine hoş geldiniz. Soldaki
-              menüden modülleri kullanmaya başlayabilirsiniz.
+            <p className="mt-3 max-w-2xl text-base text-indigo-100 sm:text-lg">
+              İşletmenizin dijital kontrol merkezi. Alttaki sekmelerden
+              operasyonu yönetin, AI önerilerini uygulayın.
             </p>
           )}
 
-          <div className="mt-8 flex flex-wrap gap-4">
-            {/* 🚀 BUTONLAR ARTIK ÇALIŞIYOR */}
+          <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
             <button
+              type="button"
               onClick={() => window.open(`/site/${business?.id}`, "_blank")}
-              className="bg-white text-indigo-800 px-6 py-3 rounded-xl font-bold shadow-md hover:bg-gray-50 transition transform hover:-translate-y-0.5"
+              className="inline-flex min-h-11 items-center rounded-full bg-white px-5 py-2.5 text-sm font-bold text-indigo-800 shadow-md transition hover:bg-indigo-50"
             >
-              Mini Sitemi Görüntüle ➔
+              Mini sitemi görüntüle ➔
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("ayarlar")}
-              className="bg-indigo-600/50 border border-indigo-400 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-600/70 transition backdrop-blur-sm"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/15"
             >
-              Ayarlara Git
+              Ayarlar
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("karar")}
+              className="inline-flex min-h-11 items-center rounded-full border border-white/20 bg-transparent px-5 py-2.5 text-sm font-bold text-indigo-100 transition hover:bg-white/10"
+            >
+              Karar Merkezi
             </button>
           </div>
         </div>
 
-        {/* Dekoratif Arka Plan */}
-        <div className="absolute right-0 top-0 w-64 h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
-        <div className="absolute -right-10 -bottom-10 text-9xl opacity-20 pointer-events-none transform -rotate-12">
+        <div
+          className="pointer-events-none absolute -right-8 -bottom-10 text-8xl opacity-15 sm:text-9xl"
+          aria-hidden="true"
+        >
           🚀
         </div>
       </div>

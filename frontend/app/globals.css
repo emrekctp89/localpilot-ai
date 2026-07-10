@@ -1,8 +1,29 @@
 @import "tailwindcss";
 
+/* ── LocalPilot design tokens ───────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f7fb;
+  --foreground: #0f172a;
+  --lp-surface: #ffffff;
+  --lp-surface-muted: #f1f5f9;
+  --lp-border: #e2e8f0;
+  --lp-border-strong: #cbd5e1;
+  --lp-brand: #4f46e5;
+  --lp-brand-hover: #4338ca;
+  --lp-brand-soft: #eef2ff;
+  --lp-brand-ink: #312e81;
+  --lp-accent: #0ea5e9;
+  --lp-success: #059669;
+  --lp-warning: #d97706;
+  --lp-danger: #e11d48;
+  --lp-muted: #64748b;
+  --lp-radius-sm: 0.75rem;
+  --lp-radius: 1rem;
+  --lp-radius-lg: 1.5rem;
+  --lp-radius-xl: 2rem;
+  --lp-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 8px 24px rgb(15 23 42 / 0.06);
+  --lp-shadow-lg: 0 12px 40px rgb(15 23 42 / 0.12);
+  --lp-focus: 0 0 0 3px rgb(79 70 229 / 0.28);
 }
 
 @theme inline {
@@ -11,17 +32,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
-
-/* İstersen dark mode'u şimdilik kapalı bırak.
-   Çünkü bu kısım body'yi siyah yapıp bazı yazıları görünmez yapabilir. */
-/*
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-*/
 
 html {
   scroll-behavior: smooth;
@@ -32,58 +42,167 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  /* iOS safe areas for PWA standalone */
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  line-height: 1.5;
 }
 
-/* Touch: larger tap targets & no double-tap zoom jank on controls */
 button,
 [role="button"],
 a {
   touch-action: manipulation;
 }
 
-/* FORM ELEMANLARI İÇİN GLOBAL DÜZELTME */
+/* Form base — white fields, readable size on iOS */
 input,
 textarea,
 select {
   background-color: #ffffff !important;
-  color: #111827 !important;
-  /* iOS zooms inputs under 16px — keep readable on mobile */
+  color: #0f172a !important;
   font-size: 16px;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280 !important;
+  color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
 select option {
   background-color: #ffffff;
-  color: #111827;
+  color: #0f172a;
 }
 
-/* Autofill düzeltmesi */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #111827 !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
 
-/* 🚀 FÜTÜRİSTİK TASARIM EFEKTLERİ */
+/* Focus ring for keyboard users */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--lp-focus);
+}
+
+/* ── Design system utilities ───────────────────────────── */
+@layer components {
+  .lp-page {
+    @apply min-h-dvh text-slate-900;
+    background: var(--background);
+  }
+
+  .lp-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .lp-eyebrow {
+    @apply text-xs font-black uppercase tracking-[0.18em] text-indigo-600;
+  }
+
+  .lp-title {
+    @apply font-black tracking-tight text-slate-900;
+  }
+
+  .lp-lead {
+    @apply text-base leading-relaxed text-slate-600 sm:text-lg;
+  }
+
+  .lp-card {
+    border-radius: var(--lp-radius-lg);
+    border: 1px solid var(--lp-border);
+    background: var(--lp-surface);
+    box-shadow: var(--lp-shadow);
+  }
+
+  .lp-card-interactive {
+    border-radius: var(--lp-radius-lg);
+    border: 1px solid var(--lp-border);
+    background: var(--lp-surface);
+    box-shadow: var(--lp-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .lp-card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lp-shadow-lg);
+    border-color: #c7d2fe;
+  }
+
+  .lp-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-slate-900 transition;
+    min-height: 48px;
+  }
+
+  .lp-input:focus {
+    border-color: #818cf8;
+    box-shadow: var(--lp-focus);
+  }
+
+  .lp-label {
+    @apply mb-1.5 block text-sm font-bold text-slate-700;
+  }
+
+  .lp-btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .lp-btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .lp-btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .lp-btn-ghost {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-transparent px-5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .lp-btn-block {
+    @apply w-full;
+  }
+
+  .lp-chip {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-black;
+  }
+
+  .lp-section {
+    @apply py-16 sm:py-20;
+  }
+
+  .lp-muted {
+    color: var(--lp-muted);
+  }
+
+  .lp-divider {
+    @apply border-t border-slate-200;
+  }
+
+  .lp-link {
+    @apply font-bold text-indigo-600 transition hover:text-indigo-800;
+  }
+}
+
 @layer utilities {
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+    @apply border border-white/50 bg-white/75 shadow-[0_8px_30px_rgb(15,23,42,0.06)] backdrop-blur-xl;
   }
 
   .glass-panel-dark {
-    @apply bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)];
+    @apply border border-slate-700/50 bg-slate-900/85 shadow-[0_8px_30px_rgb(0,0,0,0.14)] backdrop-blur-xl;
   }
 
   .bento-grid {
@@ -102,7 +221,10 @@ input:-webkit-autofill:active {
     animation-delay: 4s;
   }
 
-  /* Horizontal tab / chip scroller without visible scrollbar */
+  .animate-fade-in-up {
+    animation: fade-in-up 0.45s ease-out both;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -132,16 +254,24 @@ input:-webkit-autofill:active {
   0% {
     transform: translate(0px, 0px) scale(1);
   }
-
   33% {
     transform: translate(30px, -50px) scale(1.1);
   }
-
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
-
   100% {
     transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
