@@ -58,6 +58,8 @@ describe("main flows smoke (Faz D · checklist §6)", () => {
     assert.match(leadSource, /isValidLeadPhone/);
     assert.match(sitePage, /MiniSiteStickyCta/);
     assert.match(sitePage, /MiniSiteShare/);
+    assert.match(sitePage, /MiniSiteTopBar/);
+    assert.match(sitePage, /mapsHref|google\.com\/maps/);
     assert.match(sitePage, /loadPublicMiniSite|loadMiniSiteContext/);
   });
 

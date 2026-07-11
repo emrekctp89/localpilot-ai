@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.3 - 2026-07-11
+
+### Added
+- Mini site sticky top bar with name + CTA.
+- Contact chips: call, WhatsApp, maps, working hours.
+- Feature cards filter empty strings; up to 3 highlights.
+
+### Changed
+- Product/menu section shows whenever products exist (not only menu module).
+
 ## 2.5.2 - 2026-07-11
 
 ### Added

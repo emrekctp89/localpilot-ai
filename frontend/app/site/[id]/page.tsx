@@ -7,6 +7,7 @@ import {
   buildMiniSiteSeo,
   buildWhatsAppDeepLink,
   isMiniSitePublished,
+  normalizeWhatsAppNumber,
 } from "@/lib/mini-site";
 import { getMiniSitePublicUrl } from "@/lib/mini-site-domain";
 import { loadPublicMiniSite } from "@/lib/repositories/public-mini-site";
@@ -14,6 +15,7 @@ import LeadForm from "./LeadForm";
 import MiniSiteDraft from "./MiniSiteDraft";
 import MiniSiteShare from "./MiniSiteShare";
 import MiniSiteStickyCta from "./MiniSiteStickyCta";
+import MiniSiteTopBar from "./MiniSiteTopBar";
 
 async function loadMiniSiteContext(idOrSlug: string) {
   return loadPublicMiniSite(idOrSlug);
@@ -85,7 +87,13 @@ export default async function BusinessSite({
     return <MiniSiteDraft business={business} />;
   }
   const activeModules = business.active_modules || [];
+  const showProducts =
+    productList.length > 0 &&
+    (activeModules.includes("menu") || productList.length > 0);
   const featuredProducts = productList.slice(0, 3);
+  const featureItems = (siteData.features || [])
+    .map((feature) => feature?.trim())
+    .filter((feature): feature is string => Boolean(feature));
   const canonicalUrl = getMiniSitePublicUrl(business);
   const structuredData = buildLocalBusinessJsonLd(
     business,
@@ -96,6 +104,15 @@ export default async function BusinessSite({
   const whatsappMessage = buildDefaultWhatsAppMessage(business, siteData);
   const whatsappHref = business.whatsapp_number
     ? buildWhatsAppDeepLink(business.whatsapp_number, whatsappMessage)
+    : "";
+  const phoneDigits = business.whatsapp_number
+    ? normalizeWhatsAppNumber(business.whatsapp_number)
+    : "";
+  const phoneHref = phoneDigits ? `tel:+${phoneDigits}` : "";
+  const mapsHref = business.address?.trim()
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        [business.address, business.city].filter(Boolean).join(", "),
+      )}`
     : "";
   const productCategories = Array.from(
     new Set(
@@ -203,6 +220,14 @@ export default async function BusinessSite({
           görmez.
         </div>
       )}
+
+      <MiniSiteTopBar
+        businessName={business.name || "İşletme"}
+        ctaText={ctaLabel}
+        themeBgClass={theme.bg}
+        whatsappHref={whatsappHref || undefined}
+      />
+
       {/* Hero section */}
       <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden px-4 sm:min-h-[85vh]">
         {/* Animated Background Globs */}
@@ -307,26 +332,24 @@ export default async function BusinessSite({
             </div>
           )}
 
-          {siteData.features
-            ?.slice(0, 2)
-            .map((feature: string, idx: number) => (
-              <div
-                key={idx}
-                className="glass-panel rounded-3xl p-8 flex flex-col justify-center hover:-translate-y-1 transition-transform duration-300"
+          {featureItems.slice(0, 3).map((feature, idx) => (
+            <div
+              key={`${feature}-${idx}`}
+              className="glass-panel flex flex-col justify-center rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
+            >
+              <span
+                className={`mb-6 flex h-12 w-12 items-center justify-center rounded-full text-xl ${theme.light} ${theme.text}`}
               >
-                <span
-                  className={`w-12 h-12 rounded-full ${theme.light} ${theme.text} flex items-center justify-center text-xl mb-6`}
-                >
-                  {idx === 0 ? "✨" : "🛡️"}
-                </span>
+                {idx === 0 ? "✨" : idx === 1 ? "🛡️" : "🚀"}
+              </span>
 
-                <h3 className="font-bold text-xl text-gray-900">{feature}</h3>
-              </div>
-            ))}
+              <h3 className="text-xl font-bold text-gray-900">{feature}</h3>
+            </div>
+          ))}
         </section>
 
         {/* Products and services */}
-        {activeModules.includes("menu") && (
+        {showProducts && (
           <section id="menu" className="pt-12">
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 mb-10">
               <div>
@@ -506,21 +529,59 @@ export default async function BusinessSite({
         )}
 
         {/* Contact form */}
-        <section id="iletisim" className="max-w-3xl mx-auto pt-12 pb-12">
-          <div className="glass-panel-dark text-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <section id="iletisim" className="mx-auto max-w-3xl scroll-mt-24 pt-12 pb-12">
+          <div className="relative overflow-hidden rounded-[2.5rem] glass-panel-dark p-8 text-white shadow-2xl md:p-12">
             <div
-              className={`absolute top-0 right-0 w-64 h-64 ${theme.bg} opacity-20 rounded-full blur-3xl`}
+              className={`absolute top-0 right-0 h-64 w-64 rounded-full opacity-20 blur-3xl ${theme.bg}`}
             />
 
-            <div className="relative z-10 text-center mb-10">
-              <h2 className="text-3xl font-black mb-3 text-white">
+            <div className="relative z-10 mb-8 text-center md:mb-10">
+              <h2 className="mb-3 text-3xl font-black text-white">
                 Bize Ulaşın / Randevu Alın
               </h2>
 
-              <p className="text-gray-400 font-medium">
-                Bize ulaşın, detayları hemen görüşelim.
+              <p className="font-medium text-gray-400">
+                Formu doldurun; en kısa sürede dönüş yapalım.
               </p>
             </div>
+
+            {(phoneHref || mapsHref || business.working_hours || whatsappHref) && (
+              <div className="relative z-10 mb-8 flex flex-wrap justify-center gap-2">
+                {phoneHref ? (
+                  <a
+                    href={phoneHref}
+                    className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/15"
+                  >
+                    📞 Ara
+                  </a>
+                ) : null}
+                {whatsappHref ? (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border border-emerald-400/30 bg-emerald-500/20 px-4 py-2 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/30"
+                  >
+                    💬 WhatsApp
+                  </a>
+                ) : null}
+                {mapsHref ? (
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/15"
+                  >
+                    📍 Harita
+                  </a>
+                ) : null}
+                {business.working_hours ? (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-gray-300">
+                    ⏰ {business.working_hours}
+                  </span>
+                ) : null}
+              </div>
+            )}
 
             <LeadForm
               businessId={businessId}
