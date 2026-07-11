@@ -6,7 +6,10 @@ test.describe("Auth guard", () => {
   }) => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/auth/);
-    await expect(page.getByRole("heading", { name: "LocalPilot Giriş" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Panele giriş yap|Ücretsiz başla/i }),
+    ).toBeVisible();
+    await expect(page.getByLabel("E-posta")).toBeVisible();
   });
 
   test("auth page exposes email/password login", async ({ page }) => {
@@ -17,7 +20,7 @@ test.describe("Auth guard", () => {
       page.getByRole("button", { name: "Giriş Yap", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Google ile Devam Et" }),
+      page.getByRole("button", { name: /Google ile devam et/i }),
     ).toBeVisible();
   });
 });
