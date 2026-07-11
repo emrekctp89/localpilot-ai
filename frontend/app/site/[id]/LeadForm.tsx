@@ -178,15 +178,13 @@ export default function LeadForm({
               id="lead-phone"
               type="tel"
               required
-              inputMode="tel"
-              autoComplete="tel"
+              name="phone"
               placeholder="05XX XXX XX XX"
               className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
               value={formData.phone}
               onChange={(event) =>
                 setFormData({ ...formData, phone: event.target.value })
               }
-              aria-invalid={status === "error" && errorMessage.includes("telefon") ? true : undefined}
             />
           </div>
         </div>
