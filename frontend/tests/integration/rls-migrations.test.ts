@@ -12,7 +12,7 @@ function readMigration(name: string) {
 }
 
 describe("RLS and migration integrity (Faz B)", () => {
-  it("ships migrations 001 through 015 in order", () => {
+  it("ships migrations 001 through 016 in order", () => {
     const files = readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
@@ -74,5 +74,7 @@ describe("RLS and migration integrity (Faz B)", () => {
     assert.match(verify, /fn_record_manual_pro_commission/);
     assert.match(verify, /fn_lp_normalize_site_slug/);
     assert.match(verify, /fn_lp_backfill_business_site_slugs/);
+    assert.match(verify, /fn_resolve_public_mini_site/);
+    assert.match(verify, /fn_business_exists/);
   });
 });

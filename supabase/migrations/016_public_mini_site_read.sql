@@ -36,7 +36,8 @@ SET search_path = public
 AS $$
 DECLARE
   v_key text := btrim(coalesce(p_key, ''));
-  v_business record;
+  v_business_id uuid;
+  v_business jsonb;
   v_site_data jsonb := '{}'::jsonb;
   v_products jsonb := '[]'::jsonb;
   v_is_uuid boolean;
@@ -48,93 +49,50 @@ BEGIN
   v_is_uuid := v_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 
   IF v_is_uuid THEN
-    SELECT
-      b.id,
-      b.owner_id,
-      b.name,
-      b.sector,
-      b.industry,
-      b.city,
-      b.address,
-      b.whatsapp_number,
-      b.working_hours,
-      b.business_type,
-      b.goals,
-      b.top_products,
-      b.target_audience,
-      b.active_modules,
-      b.theme_config,
-      b.site_slug,
-      b.custom_domain,
-      b.custom_domain_status,
-      b.created_at
-    INTO v_business
+    SELECT b.id, to_jsonb(b) - 'owner_id'
+    INTO v_business_id, v_business
     FROM businesses b
     WHERE b.id = v_key::uuid
     LIMIT 1;
   ELSE
-    SELECT
-      b.id,
-      b.owner_id,
-      b.name,
-      b.sector,
-      b.industry,
-      b.city,
-      b.address,
-      b.whatsapp_number,
-      b.working_hours,
-      b.business_type,
-      b.goals,
-      b.top_products,
-      b.target_audience,
-      b.active_modules,
-      b.theme_config,
-      b.site_slug,
-      b.custom_domain,
-      b.custom_domain_status,
-      b.created_at
-    INTO v_business
+    SELECT b.id, to_jsonb(b) - 'owner_id'
+    INTO v_business_id, v_business
     FROM businesses b
     WHERE b.site_slug IS NOT NULL
       AND lower(b.site_slug) = lower(v_key)
     LIMIT 1;
   END IF;
 
-  IF v_business.id IS NULL THEN
+  IF v_business_id IS NULL OR v_business IS NULL THEN
     RETURN NULL;
   END IF;
 
-  SELECT coalesce(gp.mini_site_data, '{}'::jsonb)
-  INTO v_site_data
-  FROM generated_plans gp
-  WHERE gp.business_id = v_business.id
-  LIMIT 1;
+  BEGIN
+    SELECT coalesce(gp.mini_site_data, '{}'::jsonb)
+    INTO v_site_data
+    FROM generated_plans gp
+    WHERE gp.business_id = v_business_id
+    LIMIT 1;
+  EXCEPTION WHEN undefined_table OR undefined_column THEN
+    v_site_data := '{}'::jsonb;
+  END;
 
   IF v_site_data IS NULL THEN
     v_site_data := '{}'::jsonb;
   END IF;
 
-  SELECT coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'id', p.id,
-        'business_id', p.business_id,
-        'name', p.name,
-        'description', p.description,
-        'price', p.price,
-        'category', p.category
-      )
-      ORDER BY p.created_at DESC NULLS LAST
-    ),
-    '[]'::jsonb
-  )
-  INTO v_products
-  FROM products p
-  WHERE p.business_id = v_business.id;
+  BEGIN
+    SELECT coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb)
+    INTO v_products
+    FROM products p
+    WHERE p.business_id = v_business_id;
+  EXCEPTION WHEN undefined_table THEN
+    v_products := '[]'::jsonb;
+  END;
 
   RETURN jsonb_build_object(
-    'business', to_jsonb(v_business),
-    'siteData', v_site_data,
+    'business', v_business,
+    'siteData', coalesce(v_site_data, '{}'::jsonb),
     'products', coalesce(v_products, '[]'::jsonb)
   );
 END;
