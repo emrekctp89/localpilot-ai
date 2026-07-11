@@ -12,6 +12,8 @@ import { getMiniSitePublicUrl } from "@/lib/mini-site-domain";
 import { loadPublicMiniSite } from "@/lib/repositories/public-mini-site";
 import LeadForm from "./LeadForm";
 import MiniSiteDraft from "./MiniSiteDraft";
+import MiniSiteShare from "./MiniSiteShare";
+import MiniSiteStickyCta from "./MiniSiteStickyCta";
 
 async function loadMiniSiteContext(idOrSlug: string) {
   return loadPublicMiniSite(idOrSlug);
@@ -184,68 +186,78 @@ export default async function BusinessSite({
 
   const theme = colorMap[themeColor] || colorMap.blue;
 
+  const ctaLabel = siteData.cta_text || "Bize Ulaşın";
+  const locationLabel = business.city?.trim()
+    ? `${business.city} şehrinde hizmetinizde`
+    : "Yerel işletmeniz için buradayız";
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-white text-gray-900 overflow-hidden">
+    <div className="min-h-dvh overflow-x-hidden bg-gradient-to-b from-white via-gray-50 to-white pb-20 text-gray-900 sm:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       {!isMiniSitePublished(siteData) && isOwnerPreview && (
         <div className="bg-amber-500 px-4 py-3 text-center text-sm font-bold text-white">
-          Taslak önizleme — site henüz yayında değil.
+          Taslak önizleme — site henüz yayında değil. Ziyaretçiler bu sayfayı
+          görmez.
         </div>
       )}
       {/* Hero section */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden px-4">
+      <section className="relative flex min-h-[75vh] items-center justify-center overflow-hidden px-4 sm:min-h-[85vh]">
         {/* Animated Background Globs */}
         <div
-          className={`absolute top-0 -left-4 w-72 h-72 ${theme.glow} rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob`}
+          className={`absolute top-0 -left-4 h-72 w-72 rounded-full ${theme.glow} opacity-30 mix-blend-multiply blur-2xl animate-blob`}
+          aria-hidden="true"
         />
 
         <div
-          className={`absolute top-0 -right-4 w-72 h-72 ${theme.glow} rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-2000`}
+          className={`absolute top-0 -right-4 h-72 w-72 rounded-full ${theme.glow} opacity-30 mix-blend-multiply blur-2xl animate-blob animation-delay-2000`}
+          aria-hidden="true"
         />
 
         <div
-          className={`absolute -bottom-8 left-20 w-72 h-72 ${theme.glow} rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-4000`}
+          className={`absolute -bottom-8 left-20 h-72 w-72 rounded-full ${theme.glow} opacity-30 mix-blend-multiply blur-2xl animate-blob animation-delay-4000`}
+          aria-hidden="true"
         />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center mt-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-sm font-semibold mb-8 animate-fade-in-up">
+        <div className="relative z-10 mx-auto mt-12 max-w-4xl text-center sm:mt-16">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full glass-panel px-4 py-2 text-sm font-semibold animate-fade-in-up sm:mb-8">
             <span className="relative flex h-3 w-3">
               <span
-                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${theme.bg} opacity-75`}
+                className={`absolute inline-flex h-full w-full animate-ping rounded-full ${theme.bg} opacity-75`}
               />
               <span
-                className={`relative inline-flex rounded-full h-3 w-3 ${theme.bg}`}
+                className={`relative inline-flex h-3 w-3 rounded-full ${theme.bg}`}
               />
             </span>
-            {business.city} şehrinde hizmetinizde
+            {locationLabel}
           </div>
 
           <h1
-            className="text-6xl md:text-8xl font-black tracking-tighter mb-6 text-gray-900 animate-fade-in-up"
+            className="mb-4 text-4xl font-black tracking-tighter text-gray-900 animate-fade-in-up sm:mb-6 sm:text-6xl md:text-8xl"
             style={{ animationDelay: "100ms" }}
           >
-            {business.name}.
+            {business.name}
+            {business.name?.endsWith(".") ? "" : "."}
           </h1>
 
           <p
-            className="text-xl md:text-2xl font-medium text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up"
+            className="mx-auto mb-8 max-w-2xl text-lg font-medium leading-relaxed text-gray-500 animate-fade-in-up sm:mb-10 sm:text-xl md:text-2xl"
             style={{ animationDelay: "200ms" }}
           >
             {siteData.hero_slogan || "Mükemmel hizmetin yeni adresi."}
           </p>
 
           <div
-            className="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up"
+            className="flex flex-col justify-center gap-3 animate-fade-in-up sm:flex-row sm:gap-4"
             style={{ animationDelay: "300ms" }}
           >
             <a
               href="#iletisim"
-              className={`${theme.bg} text-white px-8 py-4 rounded-2xl font-bold shadow-lg ${theme.shadow} hover:scale-105 transition-transform duration-300`}
+              className={`${theme.bg} min-h-12 rounded-2xl px-8 py-3.5 font-bold text-white shadow-lg ${theme.shadow} transition-transform duration-300 hover:scale-105`}
             >
-              {siteData.cta_text || "Bize Ulaşın"}
+              {ctaLabel}
             </a>
 
             {whatsappHref && (
@@ -253,7 +265,7 @@ export default async function BusinessSite({
                 href={whatsappHref}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-white text-gray-900 border border-gray-200 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-8 py-3.5 font-bold text-gray-900 transition-colors hover:bg-gray-50"
               >
                 <svg
                   className="w-5 h-5 text-green-500"
@@ -520,22 +532,48 @@ export default async function BusinessSite({
       </main>
 
       {/* Footer — white-label: hide LocalPilot credit when custom domain is active */}
-      <footer className="border-t border-gray-200/60 bg-white/50 backdrop-blur-lg py-8 text-center mt-auto">
-        <p className="text-sm font-semibold text-gray-900 mb-1">
+      <footer className="mt-auto border-t border-gray-200/60 bg-white/50 py-8 text-center backdrop-blur-lg">
+        <p className="mb-1 text-sm font-semibold text-gray-900">
           {business.name}
         </p>
+        {business.address || business.working_hours ? (
+          <p className="mx-auto mt-1 max-w-md px-4 text-xs text-gray-500">
+            {[business.address, business.working_hours]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        ) : null}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <MiniSiteShare
+            title={business.name || "Mini site"}
+            url={canonicalUrl}
+            className={`rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold ${theme.text} transition hover:bg-gray-50`}
+          />
+          <a
+            href="#iletisim"
+            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-50"
+          >
+            İletişim
+          </a>
+        </div>
 
         {business.custom_domain_status === "active" &&
         business.custom_domain ? null : (
-          <p className="text-xs text-gray-500">
+          <p className="mt-4 text-xs text-gray-500">
             Bu dijital vitrin{" "}
             <a href="/" className={`font-bold ${theme.text} hover:underline`}>
               LocalPilot AI
             </a>{" "}
-            tarafından saniyeler içinde oluşturulmuştur.
+            ile hazırlandı.
           </p>
         )}
       </footer>
+
+      <MiniSiteStickyCta
+        ctaText={ctaLabel}
+        whatsappHref={whatsappHref || undefined}
+        themeBgClass={theme.bg}
+      />
     </div>
   );
 }

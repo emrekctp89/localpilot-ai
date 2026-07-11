@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.2 - 2026-07-11
+
+### Added
+- Mini site mobile sticky CTA (contact + WhatsApp).
+- Mini site share/copy link control in footer.
+- Draft mode page polish with clearer owner guidance.
+
+### Changed
+- Mini site hero scales better on small screens; city fallback when empty.
+- Lead notes field is optional; consent microcopy under form.
+
 ## 2.5.1 - 2026-07-11
 
 ### Fixed

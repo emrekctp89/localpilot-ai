@@ -194,9 +194,8 @@ export default function LeadForm({
           </label>
           <textarea
             id="lead-notes"
-            required
             rows={3}
-            placeholder="Nasıl yardımcı olabiliriz?"
+            placeholder="Nasıl yardımcı olabiliriz? (opsiyonel)"
             className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500 resize-none"
             value={formData.notes}
             onChange={(event) =>
@@ -204,10 +203,14 @@ export default function LeadForm({
             }
           />
         </div>
+        <p className="text-center text-xs text-white/50">
+          Göndererek işletmenin sizinle iletişime geçmesine izin vermiş
+          olursunuz.
+        </p>
         <button
           type="submit"
           disabled={status === "sending"}
-          className={`w-full text-white font-bold py-4 rounded-2xl transition shadow-lg text-lg mt-2 disabled:bg-gray-400 ${themeButtonClass}`}
+          className={`w-full text-white font-bold py-4 rounded-2xl transition shadow-lg text-lg mt-1 disabled:bg-gray-400 disabled:cursor-not-allowed ${themeButtonClass}`}
         >
           {status === "sending" ? "Gönderiliyor..." : "Gönder"}
         </button>

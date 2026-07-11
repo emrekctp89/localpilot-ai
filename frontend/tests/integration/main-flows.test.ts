@@ -50,10 +50,15 @@ describe("main flows smoke (Faz D · checklist §6)", () => {
   it("wires mini site publish and lead capture to CRM webhook", () => {
     const settingsSource = readSource("app/components/dashboard/AyarlarTab.tsx");
     const leadSource = readSource("app/site/[id]/LeadForm.tsx");
+    const sitePage = readSource("app/site/[id]/page.tsx");
     assert.match(settingsSource, /publish_status/);
     assert.match(settingsSource, /handlePublishStatusChange/);
     assert.match(leadSource, /triggerBusinessWebhooks/);
     assert.match(leadSource, /lead\.created/);
+    assert.match(leadSource, /isValidLeadPhone/);
+    assert.match(sitePage, /MiniSiteStickyCta/);
+    assert.match(sitePage, /MiniSiteShare/);
+    assert.match(sitePage, /loadPublicMiniSite|loadMiniSiteContext/);
   });
 
   it("approving a decision cycle can create a staff task", () => {

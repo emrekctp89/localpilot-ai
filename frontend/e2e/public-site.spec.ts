@@ -20,7 +20,7 @@ test.describe("Public mini site", () => {
     );
     await page.getByRole("button", { name: "Gönder" }).click();
 
-    await expect(page.getByText(/Talebiniz Alındı/i)).toBeVisible({
+    await expect(page.getByText(/Talebiniz alındı/i)).toBeVisible({
       timeout: 15_000,
     });
   });
