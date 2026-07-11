@@ -27,6 +27,7 @@ import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard
 import type { BusinessAccess, ProfileRole } from "@/lib/platform/access";
 import { resolveBusinessAccess } from "@/lib/platform/access";
 import { getBusinessMemberRecord } from "@/lib/repositories/business-access";
+import { ensureBusinessSiteSlug } from "@/lib/repositories/business-slug";
 
 export interface OnboardingDraftHandlers {
   restoreOnboardingDraft: (draft: {
@@ -67,21 +68,33 @@ export function useDashboardSession(draftHandlers: OnboardingDraftHandlers) {
 
   const hydrateBusiness = useCallback(
     async (bizData: Business, currentUserId: string, currentProfileRole: ProfileRole) => {
-      setBusiness(bizData);
-      const memberRecord = bizData.id
-        ? await getBusinessMemberRecord(bizData.id, currentUserId)
+      // Backfill readable mini-site slug when missing (owner can write).
+      const withSlug = (await ensureBusinessSiteSlug(bizData)) || bizData;
+      setBusiness(withSlug);
+      setBusinesses((current) =>
+        current.map((item) =>
+          item.id && item.id === withSlug.id ? { ...item, ...withSlug } : item,
+        ),
+      );
+      const memberRecord = withSlug.id
+        ? await getBusinessMemberRecord(withSlug.id, currentUserId)
         : null;
       setPlatformAccess(
-        resolveBusinessAccess(currentUserId, bizData, memberRecord, currentProfileRole),
+        resolveBusinessAccess(
+          currentUserId,
+          withSlug,
+          memberRecord,
+          currentProfileRole,
+        ),
       );
 
-      if (!bizData.id) return;
-      markEstablishedBusiness(currentUserId, bizData.id);
-      cacheBusinessSnapshot(currentUserId, bizData);
-      const bootstrap = await loadDashboardBootstrap(bizData.id);
+      if (!withSlug.id) return;
+      markEstablishedBusiness(currentUserId, withSlug.id);
+      cacheBusinessSnapshot(currentUserId, withSlug);
+      const bootstrap = await loadDashboardBootstrap(withSlug.id);
       if (bootstrap.plan) setPlan(bootstrap.plan);
       setSeedCampaigns(bootstrap.campaigns);
-      void stripMigratedOperationalFields(bizData.id);
+      void stripMigratedOperationalFields(withSlug.id);
     },
     [],
   );

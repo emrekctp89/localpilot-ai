@@ -41,7 +41,9 @@ def fetch_business_summary(
     try:
         business = (
             supabase_client.table("businesses")
-            .select("id, name, sector, city, created_at")
+            .select(
+                "id, name, sector, city, created_at, site_slug, custom_domain, custom_domain_status"
+            )
             .eq("id", business_id)
             .maybe_single()
             .execute()
@@ -61,12 +63,35 @@ def fetch_business_summary(
             .eq("business_id", business_id)
             .execute()
         )
+        orders = (
+            supabase_client.table("orders")
+            .select("id", count="exact")
+            .eq("business_id", business_id)
+            .execute()
+        )
+
+        site_slug = business.data.get("site_slug")
+        custom_domain = business.data.get("custom_domain")
+        custom_domain_status = business.data.get("custom_domain_status")
+        public_path = f"/site/{site_slug or business.data.get('id')}"
+        if custom_domain_status == "active" and custom_domain:
+            public_url = f"https://{custom_domain}"
+        else:
+            public_url = public_path
 
         return {
             "business": business.data,
+            "public_site": {
+                "path": public_path,
+                "url_hint": public_url,
+                "site_slug": site_slug,
+                "custom_domain": custom_domain,
+                "custom_domain_status": custom_domain_status,
+            },
             "metrics": {
                 "customers": customers.count or 0,
                 "appointments": appointments.count or 0,
+                "orders": orders.count or 0,
             },
         }
     except Exception:

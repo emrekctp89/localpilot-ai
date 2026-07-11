@@ -57,6 +57,22 @@ export function normalizeWhatsAppNumber(phone: string) {
   return digits;
 }
 
+/** Accepts common TR mobile formats: 05xx, 5xx, +905xx (10–11 national digits). */
+export function isValidLeadPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return false;
+  if (digits.startsWith("90") && digits.length === 12) {
+    return /^905[0-9]{9}$/.test(digits);
+  }
+  if (digits.startsWith("0") && digits.length === 11) {
+    return /^05[0-9]{9}$/.test(digits);
+  }
+  if (digits.length === 10) {
+    return /^5[0-9]{9}$/.test(digits);
+  }
+  return false;
+}
+
 export function buildWhatsAppDeepLink(
   phone: string,
   message?: string,

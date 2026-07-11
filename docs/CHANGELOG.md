@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.5.0 - 2026-07-11
+
+### Added
+- Auto `site_slug` ensure on dashboard load for businesses missing a slug.
+- Lead form TR mobile phone validation and normalized storage.
+- Marketing SEO: `robots.ts`, `sitemap.ts`.
+- Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`.
+- Public API business summary: `site_slug`, domain status, orders metric, `public_site` hints.
+- Migration `015` site_slug backfill (apply in Supabase if not yet).
+
+### Changed
+- Frontend version bump to `2.5.0`.
+- OzetTab mini-site opens via slug-aware public path.
+
 ## 2.4.0 - 2026-07-10
 
 ### Added

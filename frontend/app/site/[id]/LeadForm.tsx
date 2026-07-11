@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { buildLeadEmailDraft, recordLeadCapture } from "@/lib/mini-site";
+import {
+  buildLeadEmailDraft,
+  isValidLeadPhone,
+  normalizeWhatsAppNumber,
+  recordLeadCapture,
+} from "@/lib/mini-site";
 import { logAuditEvent } from "@/lib/platform/audit";
 import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 
@@ -33,14 +38,36 @@ export default function LeadForm({
     setStatus("sending");
     setErrorMessage("");
 
+    const fullName = formData.full_name.trim();
+    const phone = formData.phone.trim();
+    const notes = formData.notes.trim();
+
+    if (fullName.length < 2) {
+      setErrorMessage("Lütfen adınızı soyadınızı girin.");
+      setStatus("error");
+      return;
+    }
+
+    if (!isValidLeadPhone(phone)) {
+      setErrorMessage(
+        "Geçerli bir Türkiye cep telefonu girin (örn. 05XX XXX XX XX).",
+      );
+      setStatus("error");
+      return;
+    }
+
     const capturedAt = new Date().toISOString();
-    const leadNotes = `[Mini site lead] ${formData.notes.trim()}`;
+    const leadNotes = notes
+      ? `[Mini site lead] ${notes}`
+      : "[Mini site lead]";
+    const normalizedPhone =
+      normalizeWhatsAppNumber(phone).replace(/^90/, "0") || phone;
 
     const { error } = await supabase.from("customers").insert([
       {
         business_id: businessId,
-        full_name: formData.full_name.trim(),
-        phone: formData.phone.trim(),
+        full_name: fullName,
+        phone: normalizedPhone,
         notes: leadNotes,
         status: "Yeni Potansiyel",
         last_visit_date: capturedAt,
@@ -55,9 +82,9 @@ export default function LeadForm({
 
     const payload = {
       businessId,
-      fullName: formData.full_name.trim(),
-      phone: formData.phone.trim(),
-      notes: formData.notes.trim(),
+      fullName,
+      phone: normalizedPhone,
+      notes,
       capturedAt,
     };
 
@@ -151,12 +178,15 @@ export default function LeadForm({
               id="lead-phone"
               type="tel"
               required
+              inputMode="tel"
+              autoComplete="tel"
               placeholder="05XX XXX XX XX"
               className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
               value={formData.phone}
               onChange={(event) =>
                 setFormData({ ...formData, phone: event.target.value })
               }
+              aria-invalid={status === "error" && errorMessage.includes("telefon") ? true : undefined}
             />
           </div>
         </div>

@@ -1,8 +1,8 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `2.4.0` (Faz F — büyüme)  
-**Son güncelleme:** 10 Temmuz 2026  
-**Aktif sprint:** **Faz G** — white-label mini site (slug hazır; özel domain G.2+)
+**Güncel sürüm:** `2.5.0` (Faz G — platform + SEO/slug)  
+**Son güncelleme:** 11 Temmuz 2026  
+**Aktif sprint:** **Faz G** kapanış + production ops
 
 ---
 
@@ -220,7 +220,7 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 | **2.2.x** | Ürün derinliği + dinamik sekmeler (Faz D) | ✅ |
 | **2.3.0** | Canlı entegrasyonlar (Faz E) | ⏸️ |
 | **2.4.0** | Büyüme: plan + partner program (Faz F) | ✅ |
-| **2.5.x** | Platform ölçeği (Faz G) | Planlı |
+| **2.5.0** | Platform ölçeği + slug/SEO/security | ✅ |
 
 ---
 
@@ -270,6 +270,7 @@ Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.
 - [x] Manuel Pro → komisyon (`014` + Komisyon Yönetimi «Komisyon yaz»)
 - [x] Onboarding’de otomatik `site_slug` ataması (ai-service)
 - [x] Mevcut işletmeler için slug backfill (`015`)
+- [x] v2.5.0: ensure slug on load, lead phone validation, SEO, security headers, API summary
 
 ---
 
