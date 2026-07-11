@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.4 - 2026-07-11
+
+### Added
+- Mini site desktop section nav (Hakkımızda / Ürünler / Konum / İletişim).
+- Interactive product category filter (tabs) on public mini site.
+- Dedicated location + working hours section with maps and quick contact.
+
+### Changed
+- Product showcase extracted to `MiniSiteProducts` client component.
+
 ## 2.5.3 - 2026-07-11
 
 ### Added

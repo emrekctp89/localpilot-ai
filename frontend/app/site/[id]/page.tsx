@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import type { MiniSiteData, Product } from "@/lib/domain-types";
 import {
   buildDefaultWhatsAppMessage,
   buildLocalBusinessJsonLd,
@@ -13,6 +12,7 @@ import { getMiniSitePublicUrl } from "@/lib/mini-site-domain";
 import { loadPublicMiniSite } from "@/lib/repositories/public-mini-site";
 import LeadForm from "./LeadForm";
 import MiniSiteDraft from "./MiniSiteDraft";
+import MiniSiteProducts from "./MiniSiteProducts";
 import MiniSiteShare from "./MiniSiteShare";
 import MiniSiteStickyCta from "./MiniSiteStickyCta";
 import MiniSiteTopBar from "./MiniSiteTopBar";
@@ -86,14 +86,16 @@ export default async function BusinessSite({
   if (!isMiniSitePublished(siteData) && !isOwnerPreview) {
     return <MiniSiteDraft business={business} />;
   }
-  const activeModules = business.active_modules || [];
-  const showProducts =
-    productList.length > 0 &&
-    (activeModules.includes("menu") || productList.length > 0);
-  const featuredProducts = productList.slice(0, 3);
+  const showProducts = productList.length > 0;
   const featureItems = (siteData.features || [])
     .map((feature) => feature?.trim())
     .filter((feature): feature is string => Boolean(feature));
+  const hasAbout = Boolean(siteData.about_us?.trim());
+  const hasLocation = Boolean(
+    business.address?.trim() ||
+      business.city?.trim() ||
+      business.working_hours?.trim(),
+  );
   const canonicalUrl = getMiniSitePublicUrl(business);
   const structuredData = buildLocalBusinessJsonLd(
     business,
@@ -109,18 +111,12 @@ export default async function BusinessSite({
     ? normalizeWhatsAppNumber(business.whatsapp_number)
     : "";
   const phoneHref = phoneDigits ? `tel:+${phoneDigits}` : "";
-  const mapsHref = business.address?.trim()
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        [business.address, business.city].filter(Boolean).join(", "),
-      )}`
+  const mapsQuery = [business.address, business.city]
+    .filter(Boolean)
+    .join(", ");
+  const mapsHref = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
     : "";
-  const productCategories = Array.from(
-    new Set(
-      productList
-        .map((product) => product.category?.trim())
-        .filter((category): category is string => Boolean(category)),
-    ),
-  );
   const formatPrice = (price?: number | null) =>
     typeof price === "number"
       ? new Intl.NumberFormat("tr-TR", {
@@ -129,6 +125,13 @@ export default async function BusinessSite({
           maximumFractionDigits: 0,
         }).format(price)
       : "Fiyat al";
+
+  const navItems = [
+    ...(hasAbout ? [{ href: "#hakkimizda", label: "Hakkımızda" }] : []),
+    ...(showProducts ? [{ href: "#menu", label: "Ürünler" }] : []),
+    ...(hasLocation ? [{ href: "#konum", label: "Konum" }] : []),
+    { href: "#iletisim", label: "İletişim" },
+  ];
 
   const themeColor = business.theme_config?.primaryColor || "blue";
 
@@ -226,6 +229,7 @@ export default async function BusinessSite({
         ctaText={ctaLabel}
         themeBgClass={theme.bg}
         whatsappHref={whatsappHref || undefined}
+        navItems={navItems}
       />
 
       {/* Hero section */}
@@ -306,188 +310,154 @@ export default async function BusinessSite({
         </div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-4 pb-24 space-y-24">
+      <main className="mx-auto max-w-6xl space-y-24 px-4 pb-24">
         {/* About and feature cards */}
-        <section className="bento-grid grid-cols-1 md:grid-cols-3">
-          {siteData.about_us && (
-            <div className="md:col-span-2 glass-panel rounded-3xl p-8 md:p-12 relative overflow-hidden">
-              <div
-                className={`absolute top-0 right-0 w-32 h-32 ${theme.light} rounded-bl-full -z-10`}
-              />
+        {(hasAbout || featureItems.length > 0) && (
+          <section
+            id="hakkimizda"
+            className="bento-grid scroll-mt-24 grid-cols-1 md:grid-cols-3"
+          >
+            {hasAbout && (
+              <div className="relative overflow-hidden rounded-3xl glass-panel p-8 md:col-span-2 md:p-12">
+                <div
+                  className={`absolute top-0 right-0 -z-10 h-32 w-32 rounded-bl-full ${theme.light}`}
+                />
 
-              <h2 className="text-sm font-bold tracking-widest text-gray-400 mb-4">
-                Hakkımızda
-              </h2>
-
-              <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed">
-                {siteData.about_us}
-              </p>
-
-              {business.working_hours && (
-                <div className="mt-8 flex items-center gap-2 text-sm font-semibold text-gray-500">
-                  <span className="bg-gray-100 p-2 rounded-lg">⏰</span>
-                  {business.working_hours}
-                </div>
-              )}
-            </div>
-          )}
-
-          {featureItems.slice(0, 3).map((feature, idx) => (
-            <div
-              key={`${feature}-${idx}`}
-              className="glass-panel flex flex-col justify-center rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
-            >
-              <span
-                className={`mb-6 flex h-12 w-12 items-center justify-center rounded-full text-xl ${theme.light} ${theme.text}`}
-              >
-                {idx === 0 ? "✨" : idx === 1 ? "🛡️" : "🚀"}
-              </span>
-
-              <h3 className="text-xl font-bold text-gray-900">{feature}</h3>
-            </div>
-          ))}
-        </section>
-
-        {/* Products and services */}
-        {showProducts && (
-          <section id="menu" className="pt-12">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 mb-10">
-              <div>
-                <span
-                  className={`inline-flex px-4 py-1.5 rounded-full ${theme.light} ${theme.text} text-xs font-black uppercase tracking-widest mb-4`}
-                >
-                  {productList.length} seçenek yayında
-                </span>
-                <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">
-                  Ürünler ve Hizmetler
+                <h2 className="mb-4 text-sm font-bold tracking-widest text-gray-400">
+                  Hakkımızda
                 </h2>
-                <p className="text-gray-500 mt-3 max-w-2xl text-lg">
-                  En çok tercih edilen ürün ve hizmetleri tek yerde inceleyin.
-                  Detay için iletişim formundan ya da WhatsApp hattından
-                  ulaşabilirsiniz.
-                </p>
-              </div>
 
-              {productCategories.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {productCategories.slice(0, 5).map((category) => (
-                    <span
-                      key={category}
-                      className="rounded-full border border-gray-200 bg-white/70 px-3 py-1.5 text-xs font-bold text-gray-600"
-                    >
-                      {category}
-                    </span>
-                  ))}
-                </div>
-              )}
+                <p className="text-xl font-medium leading-relaxed text-gray-800 md:text-2xl">
+                  {siteData.about_us}
+                </p>
+
+                {business.working_hours && (
+                  <div className="mt-8 flex items-center gap-2 text-sm font-semibold text-gray-500">
+                    <span className="rounded-lg bg-gray-100 p-2">⏰</span>
+                    {business.working_hours}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {featureItems.slice(0, 3).map((feature, idx) => (
+              <div
+                key={`${feature}-${idx}`}
+                className="glass-panel flex flex-col justify-center rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
+              >
+                <span
+                  className={`mb-6 flex h-12 w-12 items-center justify-center rounded-full text-xl ${theme.light} ${theme.text}`}
+                >
+                  {idx === 0 ? "✨" : idx === 1 ? "🛡️" : "🚀"}
+                </span>
+
+                <h3 className="text-xl font-bold text-gray-900">{feature}</h3>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {showProducts && (
+          <MiniSiteProducts
+            products={productList}
+            theme={{
+              bg: theme.bg,
+              text: theme.text,
+              light: theme.light,
+              shadow: theme.shadow,
+            }}
+            formatPrice={formatPrice}
+            whatsappHref={whatsappHref || undefined}
+          />
+        )}
+
+        {hasLocation && (
+          <section id="konum" className="scroll-mt-24 pt-4">
+            <div className="mb-8">
+              <span
+                className={`mb-4 inline-flex rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-widest ${theme.light} ${theme.text}`}
+              >
+                Bizi bulun
+              </span>
+              <h2 className="text-3xl font-black tracking-tight text-gray-900 md:text-4xl">
+                Konum ve Çalışma Saatleri
+              </h2>
             </div>
 
-            {featuredProducts.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                {featuredProducts.map((product, index) => (
-                  <article
-                    key={product.id}
-                    className={`glass-panel rounded-3xl p-6 relative overflow-hidden min-h-64 flex flex-col justify-between ${
-                      index === 0 ? "md:col-span-2" : ""
-                    }`}
-                  >
-                    <div
-                      className={`absolute -right-12 -top-12 h-36 w-36 rounded-full ${theme.light}`}
-                    />
-                    <div className="relative">
-                      <div className="flex items-center justify-between gap-3 mb-5">
-                        <span
-                          className={`rounded-full ${theme.light} ${theme.text} px-3 py-1 text-xs font-black uppercase tracking-widest`}
-                        >
-                          {product.category || "Genel"}
-                        </span>
-                        <span className={`text-xl font-black ${theme.text}`}>
-                          {formatPrice(product.price)}
-                        </span>
-                      </div>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {(business.address || business.city) && (
+                <div className="glass-panel rounded-3xl p-6 md:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                    Adres
+                  </p>
+                  <p className="mt-3 text-lg font-semibold text-gray-900">
+                    {[business.address, business.city]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                  {mapsHref ? (
+                    <a
+                      href={mapsHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`mt-5 inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-bold text-white ${theme.bg}`}
+                    >
+                      Haritada aç
+                    </a>
+                  ) : null}
+                </div>
+              )}
 
-                      <h3 className="text-2xl font-black text-gray-900 leading-tight">
-                        {product.name}
-                      </h3>
-                      <p className="mt-3 text-sm leading-6 text-gray-500">
-                        {product.description ||
-                          "Bu ürün hakkında detaylı bilgi almak için bize ulaşın."}
-                      </p>
-                    </div>
+              {business.working_hours ? (
+                <div className="glass-panel flex flex-col justify-center rounded-3xl p-6">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                    Çalışma saatleri
+                  </p>
+                  <p className="mt-3 text-lg font-semibold text-gray-900">
+                    {business.working_hours}
+                  </p>
+                </div>
+              ) : null}
 
+              {phoneHref || whatsappHref ? (
+                <div className="glass-panel flex flex-col justify-center gap-3 rounded-3xl p-6 md:col-span-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                      Hızlı iletişim
+                    </p>
+                    <p className="mt-2 font-semibold text-gray-800">
+                      Arayın veya WhatsApp yazın — form da hazır.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {phoneHref ? (
+                      <a
+                        href={phoneHref}
+                        className="inline-flex min-h-11 items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-800"
+                      >
+                        📞 Ara
+                      </a>
+                    ) : null}
+                    {whatsappHref ? (
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-11 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800"
+                      >
+                        💬 WhatsApp
+                      </a>
+                    ) : null}
                     <a
                       href="#iletisim"
-                      className={`relative mt-6 inline-flex w-fit rounded-xl ${theme.bg} px-4 py-2 text-sm font-bold text-white shadow-lg ${theme.shadow}`}
+                      className={`inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-bold text-white ${theme.bg}`}
                     >
-                      Detay Al
+                      Form
                     </a>
-                  </article>
-                ))}
-              </div>
-            )}
-
-            {productList.length > featuredProducts.length && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {productList.slice(featuredProducts.length).map((product) => (
-                  <article
-                    key={product.id}
-                    className="group glass-panel rounded-2xl p-5 flex gap-4 items-start hover:border-gray-300 transition-colors"
-                  >
-                    <div
-                      className={`mt-1 h-11 w-11 rounded-2xl ${theme.light} ${theme.text} flex items-center justify-center font-black shrink-0`}
-                    >
-                      {product.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-gray-400">
-                            {product.category || "Genel"}
-                          </p>
-                          <h3 className="font-bold text-lg text-gray-900 group-hover:text-gray-600 transition-colors">
-                            {product.name}
-                          </h3>
-                        </div>
-                        <span
-                          className={`font-black text-lg ${theme.text} whitespace-nowrap`}
-                        >
-                          {formatPrice(product.price)}
-                        </span>
-                      </div>
-
-                      {product.description && (
-                        <p className="text-sm text-gray-500 mt-2 line-clamp-2">
-                          {product.description}
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-
-            {productList.length === 0 && (
-              <div className="glass-panel rounded-3xl p-8 md:p-10 text-center">
-                <div
-                  className={`mx-auto mb-5 h-14 w-14 rounded-2xl ${theme.light} ${theme.text} flex items-center justify-center text-2xl font-black`}
-                >
-                  +
+                  </div>
                 </div>
-                <h3 className="text-2xl font-black text-gray-900">
-                  Ürün ve hizmet listesi yakında
-                </h3>
-                <p className="mx-auto mt-3 max-w-xl text-gray-500">
-                  En güncel ürünler, hizmetler ve fiyat bilgileri için bize
-                  ulaşın. Ekibimiz size hızlıca dönüş yapar.
-                </p>
-                <a
-                  href="#iletisim"
-                  className={`mt-6 inline-flex rounded-xl ${theme.bg} px-5 py-3 text-sm font-bold text-white shadow-lg ${theme.shadow}`}
-                >
-                  Bilgi Al
-                </a>
-              </div>
-            )}
+              ) : null}
+            </div>
           </section>
         )}
 
