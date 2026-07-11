@@ -100,10 +100,12 @@ export default function CrmTab({ business }: CrmTabProps) {
       setCustomers(data);
     }
     setLoading(false);
-  }, [business?.id]);
+  }, [business]);
 
   useEffect(() => {
-    void fetchCustomers();
+    Promise.resolve().then(() => {
+      void fetchCustomers();
+    });
   }, [fetchCustomers]);
 
   useEffect(() => {
@@ -343,8 +345,10 @@ export default function CrmTab({ business }: CrmTabProps) {
     : "";
 
   useEffect(() => {
-    setFollowUpDraft(savedFollowUpDate);
-    setReminderSaveStatus("idle");
+    Promise.resolve().then(() => {
+      setFollowUpDraft(savedFollowUpDate);
+      setReminderSaveStatus("idle");
+    });
   }, [selectedCustomer?.id, savedFollowUpDate]);
 
   const commitFollowUpDate = async (

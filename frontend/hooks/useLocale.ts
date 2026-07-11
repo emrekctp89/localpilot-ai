@@ -9,10 +9,13 @@ export function useLocale() {
   const [locale, setLocaleState] = useState<Locale>("tr");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "tr" || stored === "en") {
-      setLocaleState(stored);
-    }
+    const initLocale = async () => {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored === "tr" || stored === "en") {
+        setLocaleState(stored);
+      }
+    };
+    void initLocale();
   }, []);
 
   const setLocale = useCallback((next: Locale) => {

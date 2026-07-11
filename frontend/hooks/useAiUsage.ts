@@ -29,7 +29,7 @@ export function useAiUsage(isPro: boolean, enabled = true) {
 
   useEffect(() => {
     if (!enabled) return;
-    void refresh();
+    Promise.resolve().then(() => refresh());
   }, [enabled, isPro, refresh]);
 
   const canUseAi =

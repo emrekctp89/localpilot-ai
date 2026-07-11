@@ -15,15 +15,15 @@ export function useActivationMetrics(business: Business | null) {
 
   useEffect(() => {
     if (!business?.id) {
-      setMetrics(null);
+      Promise.resolve().then(() => setMetrics(null));
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
-    setError("");
 
     const loadMetrics = async () => {
+      setLoading(true);
+      setError("");
       try {
         const signals = await loadActivationMetricSignals(
           business.id!,

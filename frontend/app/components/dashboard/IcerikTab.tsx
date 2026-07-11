@@ -25,45 +25,6 @@ interface IcerikTabProps {
   business: Business;
 }
 
-const normalizeSocialPosts = (items: unknown[]): SocialPost[] =>
-  items.reduce<SocialPost[]>((posts, item, index) => {
-      const record = item as Record<string, unknown>;
-      const text = String(
-        record.text || record.caption || record.content || "",
-      ).trim();
-      if (!text) return posts;
-
-      posts.push({
-        id: (record.id as string | number | undefined) || `post-${index}`,
-        platform: String(record.platform || "Instagram"),
-        type: String(
-          record.type ||
-            (record.day ? `${record.day}. Gün` : "") ||
-            "Gönderi",
-        ),
-        text,
-        image_prompt: record.image_prompt
-          ? String(record.image_prompt)
-          : undefined,
-        created_at: record.created_at ? String(record.created_at) : undefined,
-      });
-      return posts;
-    }, []);
-
-const normalizeWhatsappTemplates = (items: unknown[]): WhatsappTemplate[] =>
-  items.reduce<WhatsappTemplate[]>((templates, item, index) => {
-      const record = item as Record<string, unknown>;
-      const text = String(record.text || record.message || "").trim();
-      if (!text) return templates;
-
-      templates.push({
-        id: (record.id as string | number | undefined) || `wa-${index}`,
-        name: String(record.name || record.scenario || "WhatsApp Şablonu"),
-        text,
-        created_at: record.created_at ? String(record.created_at) : undefined,
-      });
-      return templates;
-    }, []);
 
 const formatHistoryDate = (date?: string) =>
   date

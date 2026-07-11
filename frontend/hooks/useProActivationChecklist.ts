@@ -39,7 +39,9 @@ export function useProActivationChecklist({
 
   useEffect(() => {
     if (!storageKey || typeof window === "undefined") return;
-    setDismissed(window.localStorage.getItem(storageKey) === "1");
+    Promise.resolve().then(() =>
+      setDismissed(window.localStorage.getItem(storageKey) === "1")
+    );
   }, [storageKey]);
 
   useEffect(() => {

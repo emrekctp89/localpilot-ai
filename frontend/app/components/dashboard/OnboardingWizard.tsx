@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { buildDraftOnboardingRate } from "@/lib/activation-metrics";
 import { resolveSectorPackFromIndustry } from "@/lib/sector-packs";
+import { generateOnboardingOptions, type OnboardingOptionsResult } from "@/lib/ai-client";
 
 export interface OnboardingData {
   name: string;
@@ -11,12 +12,18 @@ export interface OnboardingData {
   working_hours: string;
   business_type: string;
   goals: string[];
-  top_products: string;
-  target_audience: string; // Not: Array yerine string kullanılıyor gibi, kod buna göre uyarlandı
+  top_products: string[];
+  target_audience: string[];
   contact_points: string[];
-  unique_selling_point: string;
+  unique_selling_point: string[];
   brand_tone: string;
   color_preference: string;
+  business_description: string;
+  main_problem: string;
+  price_level: string;
+  current_digital_status: string[];
+  desired_outputs: string[];
+  ai_options: OnboardingOptionsResult | null;
 }
 
 interface OnboardingWizardProps {
@@ -105,59 +112,49 @@ export default function OnboardingWizard({
   setupError,
 }: OnboardingWizardProps) {
   const [attemptedSteps, setAttemptedSteps] = useState<number[]>([]);
+  const [isGeneratingOptions, setIsGeneratingOptions] = useState(false);
 
   const toggleArrayItem = (
-    field: "goals" | "contact_points", // target_audience string olduğu için buradan çıkarıldı. string ise string manipülasyonu yapmalı, array ise array. Aşağıda target_audience için ayrı mantık kurdum.
+    field:
+      | "goals"
+      | "contact_points"
+      | "current_digital_status"
+      | "desired_outputs"
+      | "unique_selling_point",
     value: string,
   ) => {
-    const currentArray = data[field] as string[];
+    const currentArray = (data[field] as string[] | undefined) || [];
+    const maxItems = field === "goals" ? 3 : 5;
     if (currentArray.includes(value)) {
       setData({
         ...data,
         [field]: currentArray.filter((item) => item !== value),
       });
-    } else {
-      if (currentArray.length < 3) {
-        setData({ ...data, [field]: [...currentArray, value] });
-      }
+    } else if (currentArray.length < maxItems) {
+      setData({ ...data, [field]: [...currentArray, value] });
     }
   };
 
-  // Target audience string ise virgülle ayırarak işliyoruz (veya array ise array olarak işleriz. Arayüzde çoklu seçim gibi görünüyor, bu yüzden array'miş gibi davranıp string'e çevirmek daha sağlıklı olabilir. Mevcut veri yapınız string).
   const toggleTargetAudience = (value: string) => {
-    // Eğer target_audience hali hazırda bir array ise (Backend bazen array atabiliyor) onu güvenle işleyelim
-    const currentArr = Array.isArray(data.target_audience)
-      ? data.target_audience
-      : data.target_audience
-        ? data.target_audience.split(", ")
-        : [];
-
-    let newArr;
-    if (currentArr.includes(value)) {
-      newArr = currentArr.filter((item) => item !== value);
-    } else {
-      newArr = [...currentArr, value];
-    }
-
-    // Backend'in beklediği gibi string olarak (virgülle ayrılmış) kaydedelim
-    setData({ ...data, target_audience: newArr.join(", ") });
+    const currentArr = data.target_audience || [];
+    const newArr = currentArr.includes(value)
+      ? currentArr.filter((item) => item !== value)
+      : currentArr.length < 5
+        ? [...currentArr, value]
+        : currentArr;
+    // Array tutulur; API'ye gönderirken useOnboarding virgülle string'e çevirir.
+    setData({ ...data, target_audience: newArr });
   };
 
-  // Seçili mi kontrolü (string veya array ihtimaline karşı)
-  const isAudienceSelected = (aud: string) => {
-    const currentArr = Array.isArray(data.target_audience)
-      ? data.target_audience
-      : data.target_audience
-        ? data.target_audience.split(", ")
-        : [];
-    return currentArr.includes(aud);
-  };
+  const isAudienceSelected = (aud: string) =>
+    (data.target_audience || []).includes(aud);
 
   const getStepErrors = (): Record<string, string> => {
     if (step === 1) {
       return {
         name: !data.name.trim() ? "İşletme adını yazın." : "",
         industry: !data.industry ? "Sektörünüzü seçin." : "",
+        business_type: !data.business_type ? "İşletme modelinizi seçin." : "",
         city: !data.city.trim() ? "Şehrinizi yazın." : "",
       };
     }
@@ -173,27 +170,24 @@ export default function OnboardingWizard({
 
     if (step === 3) {
       return {
-        business_type: !data.business_type
-          ? "İşletme modelinizi seçin."
-          : "",
         goals: data.goals.length === 0 ? "En az bir hedef seçin." : "",
-        top_products: !data.top_products.trim()
-          ? "Öne çıkan ürün veya hizmetlerinizi yazın."
+        top_products: (data.top_products || []).filter((p) => p.trim()).length === 0
+          ? "En az bir öne çıkan ürün veya hizmet yazın."
           : "",
       };
     }
 
     if (step === 4) {
       return {
-        target_audience: !data.target_audience
+        target_audience: (data.target_audience || []).length === 0
           ? "En az bir müşteri kitlesi seçin."
           : "",
         contact_points:
           data.contact_points.length === 0
             ? "En az bir iletişim kanalı seçin."
             : "",
-        unique_selling_point: !data.unique_selling_point.trim()
-          ? "İşletmenizi özel yapan özelliği yazın."
+        unique_selling_point: (data.unique_selling_point || []).length === 0
+          ? "İşletmenizi özel yapan en az bir özellik seçin."
           : "",
       };
     }
@@ -216,11 +210,46 @@ export default function OnboardingWizard({
   const missingFields = Object.values(stepErrors).filter(Boolean);
   const showErrors = attemptedSteps.includes(step);
 
-  const handleContinue = (nextStep: number) => {
+  const handleContinue = async (nextStep: number) => {
     setAttemptedSteps((current) =>
       current.includes(step) ? current : [...current, step],
     );
-    if (missingFields.length === 0) setStep(nextStep);
+    if (missingFields.length > 0) return;
+
+    if (step === 1 && nextStep === 2) {
+      const hasCachedOptions =
+        (data.ai_options?.goals_options?.length || 0) > 0 ||
+        (data.ai_options?.target_audience_options?.length || 0) > 0;
+
+      // Cache hits when options already exist (cleared on industry/type change below).
+      if (!hasCachedOptions) {
+        setIsGeneratingOptions(true);
+        try {
+          const aiOptions = await generateOnboardingOptions({
+            industry: data.industry,
+            business_type: data.business_type,
+          });
+          setData({
+            ...data,
+            ai_options: {
+              goals_options: aiOptions.goals_options || [],
+              top_products_placeholders:
+                aiOptions.top_products_placeholders || [],
+              target_audience_options: aiOptions.target_audience_options || [],
+              unique_selling_point_options:
+                aiOptions.unique_selling_point_options || [],
+            },
+          });
+        } catch (error) {
+          console.error("AI seçenekleri üretilemedi:", error);
+          // Fallback: static lists in steps 3–4 still work
+        } finally {
+          setIsGeneratingOptions(false);
+        }
+      }
+    }
+
+    setStep(nextStep);
   };
 
   const handleComplete = () => {
@@ -236,23 +265,28 @@ export default function OnboardingWizard({
       : "border-gray-200 focus:border-blue-500";
 
   return (
-    <div className="lp-card mx-auto mt-6 max-w-2xl animate-fade-in-up p-6 sm:mt-10 sm:p-8">
-      <div className="text-center mb-8">
-        <span className="text-4xl block mb-4">🚀</span>
+    <div className="relative lp-card mx-auto mt-6 max-w-2xl animate-fade-in-up p-6 sm:mt-10 sm:p-8">
+      <div className="mb-8 text-center">
+        <span className="mb-4 block text-4xl">🚀</span>
         <h1 className="text-2xl font-bold text-gray-900">
           LocalPilot&apos;a Hoş Geldiniz
         </h1>
-        <p className="text-gray-500 mt-2">
+        <p className="mt-2 text-gray-500">
           İşletmenizin yapay zeka beynini beslemek için detayları alalım.
         </p>
         {/* İlerleme Çubuğu */}
-        <div className="flex justify-center gap-2 mt-4">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div
-              key={s}
-              className={`h-2 w-12 rounded-full ${step >= s ? "bg-blue-600" : "bg-gray-200"}`}
-            ></div>
-          ))}
+        <div className="mx-auto mt-4 flex max-w-md justify-center gap-2">
+          {["Temel", "Konum", "Hedef", "Değer", "Marka"].map((label, idx) => {
+            const s = idx + 1;
+            return (
+              <div key={s} className="flex flex-col items-center flex-1">
+                <div
+                  className={`h-2 w-full rounded-full transition-all duration-300 ${step >= s ? "bg-blue-600 shadow-sm shadow-blue-500/50" : "bg-gray-200"}`}
+                ></div>
+                <span className={`text-[10px] font-bold mt-1.5 transition-colors ${step >= s ? "text-blue-700" : "text-gray-400"}`}>{label}</span>
+              </div>
+            );
+          })}
         </div>
         <p className="mt-3 text-xs font-medium text-gray-400">
           İlerlemeniz bu cihazda otomatik olarak kaydedilir.
@@ -282,7 +316,20 @@ export default function OnboardingWizard({
         )}
       </div>
 
-      {/* ADIM 1: TEMEL BİLGİLER */}
+      {isGeneratingOptions && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl bg-white/85 backdrop-blur-sm animate-fade-in">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <p className="mt-4 px-4 text-center font-bold text-blue-800">
+            Yapay zeka sektörünüze özel seçenekler hazırlıyor…
+            <br />
+            <span className="text-sm font-normal text-blue-600">
+              (Birkaç saniye sürebilir)
+            </span>
+          </p>
+        </div>
+      )}
+
+            {/* ADIM 1: TEMEL BİLGİLER */}
       {step === 1 && (
         <div className="space-y-5 animate-fade-in-up">
           <div>
@@ -309,7 +356,17 @@ export default function OnboardingWizard({
               aria-invalid={showErrors && Boolean(stepErrors.industry)}
               className={`w-full border-2 rounded-xl p-3 focus:ring-0 outline-none transition text-lg text-black bg-white ${errorClass("industry")}`}
               value={data.industry}
-              onChange={(e) => setData({ ...data, industry: e.target.value })}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  industry: e.target.value,
+                  // Sektör değişince AI chip listesini yenile
+                  ai_options: null,
+                  goals: [],
+                  target_audience: [],
+                  unique_selling_point: [],
+                })
+              }
             >
               <option value="" disabled>
                 Lütfen ana sektörünüzü seçin...
@@ -369,6 +426,60 @@ export default function OnboardingWizard({
             />
             <FieldError field="city" errors={stepErrors} visible={showErrors} />
           </div>
+          <div>
+            <label className="lp-label">
+              İşletme Modeliniz Nedir?
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "urun", label: "📦 Üretim/Ürün" },
+                { id: "hizmet", label: "🤝 Sadece Hizmet" },
+                { id: "ikisi", label: "⚖️ Üretim + Hizmet" },
+              ].map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() =>
+                    setData({
+                      ...data,
+                      business_type: type.id,
+                      ai_options:
+                        data.business_type === type.id ? data.ai_options : null,
+                      goals: data.business_type === type.id ? data.goals : [],
+                      target_audience:
+                        data.business_type === type.id
+                          ? data.target_audience
+                          : [],
+                      unique_selling_point:
+                        data.business_type === type.id
+                          ? data.unique_selling_point
+                          : [],
+                    })
+                  }
+                  className={`p-3 border-2 rounded-xl text-center text-sm font-bold transition ${data.business_type === type.id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600 hover:border-blue-300"}`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+            <FieldError
+              field="business_type"
+              errors={stepErrors}
+              visible={showErrors}
+            />
+          </div>
+          <div>
+            <label className="lp-label">
+              İşletmenizin Hikayesi / Kısa Açıklaması <span className="text-xs text-gray-400 font-normal">(Opsiyonel)</span>
+            </label>
+            <textarea
+              placeholder="Örn: 2010'dan beri bölgenin en büyük yedek parça üreticisiyiz..."
+              rows={3}
+              className={`w-full border-2 rounded-xl p-3 focus:ring-0 outline-none transition text-sm text-black border-gray-200 focus:border-blue-500`}
+              value={data.business_description}
+              onChange={(e) => setData({ ...data, business_description: e.target.value })}
+            />
+          </div>
           <button
             onClick={() => handleContinue(2)}
             className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition text-lg mt-2"
@@ -422,18 +533,79 @@ export default function OnboardingWizard({
             />
           </div>
           <div>
-            <label className="lp-label">
-              Çalışma Saatleriniz
-            </label>
-            <input
-              type="text"
-              placeholder="Örn: Haftaiçi 08:00 - 18:00, Cumartesi 08:00 - 13:00"
-              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-blue-500 focus:ring-0 outline-none transition text-lg text-black"
-              value={data.working_hours}
-              onChange={(e) =>
-                setData({ ...data, working_hours: e.target.value })
-              }
-            />
+            <label className="lp-label">Çalışma Saatleriniz</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+              {[
+                "Hafta İçi (09:00 - 18:00)",
+                "7/24 Kesintisiz Hizmet",
+                "Hafta Sonu da Açık",
+              ].map((hours) => (
+                <button
+                  key={hours}
+                  onClick={() => setData({ ...data, working_hours: hours })}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${
+                    data.working_hours === hours
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-200 text-gray-700 hover:border-blue-300"
+                  }`}
+                >
+                  {data.working_hours === hours ? "✅ " : "⬜ "}
+                  {hours}
+                </button>
+              ))}
+              <button
+                onClick={() =>
+                  setData({
+                    ...data,
+                    working_hours: [
+                      "Hafta İçi (09:00 - 18:00)",
+                      "7/24 Kesintisiz Hizmet",
+                      "Hafta Sonu da Açık",
+                      "",
+                    ].includes(data.working_hours)
+                      ? "Özel (Örn: Sadece sabahları)"
+                      : "",
+                  })
+                }
+                className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${
+                  ![
+                    "Hafta İçi (09:00 - 18:00)",
+                    "7/24 Kesintisiz Hizmet",
+                    "Hafta Sonu da Açık",
+                    "",
+                  ].includes(data.working_hours)
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-gray-200 text-gray-700 hover:border-blue-300"
+                }`}
+              >
+                {![
+                  "Hafta İçi (09:00 - 18:00)",
+                  "7/24 Kesintisiz Hizmet",
+                  "Hafta Sonu da Açık",
+                  "",
+                ].includes(data.working_hours)
+                  ? "✅ "
+                  : "⬜ "}
+                ⚙️ Diğer (Özel saatler)
+              </button>
+            </div>
+            {![
+              "Hafta İçi (09:00 - 18:00)",
+              "7/24 Kesintisiz Hizmet",
+              "Hafta Sonu da Açık",
+              "",
+            ].includes(data.working_hours) && (
+              <input
+                type="text"
+                autoFocus
+                placeholder="Örn: Haftaiçi 08:00 - 18:00, Cumartesi 08:00 - 13:00"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-blue-500 focus:ring-0 outline-none transition text-sm text-black animate-fade-in-up"
+                value={data.working_hours}
+                onChange={(e) =>
+                  setData({ ...data, working_hours: e.target.value })
+                }
+              />
+            )}
           </div>
           <div className="flex gap-3 mt-2">
             <button
@@ -456,31 +628,6 @@ export default function OnboardingWizard({
       {step === 3 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <label className="lp-label">
-              İşletme Modeliniz Nedir?
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: "urun", label: "📦 Üretim/Ürün" },
-                { id: "hizmet", label: "🤝 Sadece Hizmet" },
-                { id: "ikisi", label: "⚖️ Üretim + Hizmet" },
-              ].map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => setData({ ...data, business_type: type.id })}
-                  className={`p-3 border-2 rounded-xl text-center text-sm font-bold transition ${data.business_type === type.id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600 hover:border-blue-300"}`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-            <FieldError
-              field="business_type"
-              errors={stepErrors}
-              visible={showErrors}
-            />
-          </div>
-          <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
               En Büyük Hedefleriniz?{" "}
               <span className="text-xs font-normal text-gray-500">
@@ -488,14 +635,14 @@ export default function OnboardingWizard({
               </span>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {[
+              {(data.ai_options?.goals_options || [
                 "Daha fazla B2B / Kurumsal Müşteri",
                 "Üretim Kapasitesini Doldurmak",
                 "Tekrarlayan Siparişler Almak",
                 "Marka Bilinirliğini Artırmak",
                 "Müşteri Taleplerini Hızlı Yanıtlamak",
                 "Stok / Üretim Takibi Yapmak",
-              ].map((goal) => (
+              ]).map((goal) => (
                 <button
                   key={goal}
                   onClick={() => toggleArrayItem("goals", goal)}
@@ -512,21 +659,63 @@ export default function OnboardingWizard({
             <label className="lp-label">
               En Popüler 3 Ürün / Hizmetiniz Nedir?
             </label>
-            <textarea
-              placeholder="Örn: 1. Sac Kalıbı, 2. Yedek Parça İmalatı, 3. 3D Modelleme"
-              rows={2}
-              aria-invalid={showErrors && Boolean(stepErrors.top_products)}
-              className={`w-full border-2 rounded-xl p-3 focus:ring-0 outline-none transition text-sm text-black ${errorClass("top_products")}`}
-              value={data.top_products}
-              onChange={(e) =>
-                setData({ ...data, top_products: e.target.value })
-              }
-            />
+            <div className="space-y-2">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full text-xs font-bold">
+                    {index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={
+                      data.ai_options?.top_products_placeholders?.[index] ||
+                      (index === 0
+                        ? "Örn: Sac Kalıbı"
+                        : index === 1
+                          ? "Örn: Yedek Parça İmalatı"
+                          : "Örn: 3D Modelleme (Opsiyonel)")
+                    }
+                    aria-invalid={showErrors && Boolean(stepErrors.top_products)}
+                    className={`flex-1 border-2 rounded-xl p-2.5 focus:ring-0 outline-none transition text-sm text-black ${errorClass("top_products")}`}
+                    value={data.top_products?.[index] || ""}
+                    onChange={(e) => {
+                      const newProducts = [...(data.top_products || ["", "", ""])];
+                      newProducts[index] = e.target.value;
+                      setData({ ...data, top_products: newProducts });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
             <FieldError
               field="top_products"
               errors={stepErrors}
               visible={showErrors}
             />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              İşinizde Yaşadığınız En Büyük Zorluk Nedir? <span className="text-xs text-gray-400 font-normal">(Opsiyonel)</span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[
+                "Müşteri Bulamıyoruz",
+                "Operasyonel Yük Çok Fazla",
+                "Rakiplerden Sıyrılamıyoruz",
+                "Marka Bilinirliğimiz Düşük",
+                "Dijitalde Var Olamıyoruz",
+                "Satışları Kapatmakta Zorlanıyoruz"
+              ].map((problem) => (
+                <button
+                  key={problem}
+                  onClick={() => setData({ ...data, main_problem: problem })}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${data.main_problem === problem ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-700 hover:border-blue-300"}`}
+                >
+                  {data.main_problem === problem ? "✅ " : "⬜ "}
+                  {problem}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex gap-3">
             <button
@@ -557,14 +746,14 @@ export default function OnboardingWizard({
             </label>
 
             <div className="grid grid-cols-2 gap-2">
-              {[
+              {(data.ai_options?.target_audience_options || [
                 "Ana Sanayi / Fabrikalar",
                 "KOBİ'ler ve Atölyeler",
                 "Otomotiv Sektörü",
                 "Beyaz Eşya Sektörü",
                 "Toptancılar / Distribütörler",
                 "Son Tüketiciler (B2C)",
-              ].map((aud) => (
+              ]).map((aud) => (
                 <button
                   key={aud}
                   onClick={() => toggleTargetAudience(aud)}
@@ -621,24 +810,56 @@ export default function OnboardingWizard({
             <label className="lp-label">
               İşletmenizi Özel Yapan Şey Ne? (Neden Siz?)
             </label>
-            <textarea
-              placeholder="Örn: Yüksek hassasiyetli CNC işleme, zamanında teslimat garantisi, özel tasarım kalıp imalatı..."
-              rows={2}
-              aria-invalid={
-                showErrors && Boolean(stepErrors.unique_selling_point)
-              }
-              className={`w-full border-2 rounded-xl p-3 focus:ring-0 outline-none transition text-sm text-black ${errorClass("unique_selling_point")}`}
-              value={data.unique_selling_point}
-              onChange={(e) =>
-                setData({ ...data, unique_selling_point: e.target.value })
-              }
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {(data.ai_options?.unique_selling_point_options || [
+                "🚀 Hızlı Teslimat / Servis",
+                "💰 Uygun ve Rekabetçi Fiyat",
+                "⭐ Yüksek Kalite / Premium",
+                "🛠️ Özel Üretim / Tasarım",
+                "🤝 Güler Yüzlü & Güvenilir Hizmet",
+                "🛡️ Garantili Satış / Hizmet",
+              ]).map((usp) => (
+                <button
+                  key={usp}
+                  onClick={() => toggleArrayItem("unique_selling_point", usp)}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${
+                    (data.unique_selling_point || []).includes(usp)
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-200 text-gray-700 hover:border-blue-300"
+                  }`}
+                >
+                  {(data.unique_selling_point || []).includes(usp) ? "✅ " : "⬜ "}
+                  {usp}
+                </button>
+              ))}
+            </div>
             <FieldError
               field="unique_selling_point"
               errors={stepErrors}
               visible={showErrors}
             />
           </div>
+          <div>
+            <label className="lp-label">
+              Fiyatlandırma Segmentiniz Nasıl? <span className="text-xs text-gray-400 font-normal">(Opsiyonel)</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "ekonomik", label: "🪙 Ekonomik / Uygun Fiyatlı" },
+                { id: "orta", label: "⚖️ Orta Segment" },
+                { id: "premium", label: "💎 Premium / Lüks" },
+              ].map((level) => (
+                <button
+                  key={level.id}
+                  onClick={() => setData({ ...data, price_level: level.id })}
+                  className={`p-3 border-2 rounded-xl text-center text-sm font-bold transition ${data.price_level === level.id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600 hover:border-blue-300"}`}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex gap-3">
             <button
               onClick={() => setStep(3)}
@@ -660,6 +881,51 @@ export default function OnboardingWizard({
       {step === 5 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Mevcut Dijital Durumunuz Nasıl? <span className="text-xs font-normal text-gray-500">(Çoklu Seçim)</span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+              {[
+                "Aktif Web Sitemiz Var",
+                "Sadece Sosyal Medya Kullanıyoruz",
+                "E-Ticaret / Pazar Yeri Satışı Yapıyoruz",
+                "Google Haritalarda Varız",
+                "Dijitalde Neredeyse Hiç Yokuz",
+              ].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => toggleArrayItem("current_digital_status", status)}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${(data.current_digital_status || []).includes(status) ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-700 hover:border-blue-300"}`}
+                >
+                  {(data.current_digital_status || []).includes(status) ? "✅ " : "⬜ "}
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              LocalPilot AI&apos;dan En Büyük Beklentiniz? <span className="text-xs font-normal text-gray-500">(Çoklu Seçim)</span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+              {[
+                "Daha Fazla Yeni Müşteri Bulmak",
+                "İçerik ve Sosyal Medya Yönetimi",
+                "Randevu ve Takvim Otomasyonu",
+                "Müşteri İletişimini Hızlandırmak",
+                "İşletmeyi Dijitalleştirmek",
+                "Satışları Düzenli Takip Etmek"
+              ].map((output) => (
+                <button
+                  key={output}
+                  onClick={() => toggleArrayItem("desired_outputs", output)}
+                  className={`p-3 border-2 rounded-xl text-left text-sm font-medium transition ${(data.desired_outputs || []).includes(output) ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-700 hover:border-blue-300"}`}
+                >
+                  {(data.desired_outputs || []).includes(output) ? "✅ " : "⬜ "}
+                  {output}
+                </button>
+              ))}
+            </div>
+
             <label className="lp-label">
               Markanızın Tonu Nasıl?
             </label>

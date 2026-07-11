@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.7 - 2026-07-12
+
+### Added
+- Richer onboarding: story, main problem, price level, digital status, desired outputs.
+- Sector-aware AI chip options via `POST /generate-onboarding-options` (goals, audience, USP, product placeholders).
+- Onboarding draft normalize for array fields + cached AI options.
+
+### Changed
+- Business model selection moved to step 1; step labels Temel → Konum → Hedef → Değer → Marka.
+- Setup AI no longer returns `active_modules` (tabs from `getVisibleTabs` / business_type).
+- Goals multi-select capped at 3; setup payload strips UI-only `ai_options`.
+
+### Fixed
+- Target audience stored as string[] (was incorrectly joined to string mid-wizard).
+- Onboarding options setData typing; safe AI response sanitize on backend.
+
 ## 2.5.6 - 2026-07-11
 
 ### Added

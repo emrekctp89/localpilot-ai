@@ -139,6 +139,20 @@ export async function fetchGoogleProfileSuggestions(input: {
   return postJson("/integration/google-profile-suggestions", input);
 }
 
+export interface OnboardingOptionsResult {
+  goals_options: string[];
+  top_products_placeholders: string[];
+  target_audience_options: string[];
+  unique_selling_point_options: string[];
+}
+
+export async function generateOnboardingOptions(input: {
+  industry: string;
+  business_type: string;
+}): Promise<OnboardingOptionsResult> {
+  return postJson("/generate-onboarding-options", input);
+}
+
 export async function generateCampaigns(input: {
   business_name: string;
   sector: string;

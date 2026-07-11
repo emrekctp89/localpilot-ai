@@ -20,7 +20,7 @@ export default function PricingCards({ plans }: PricingCardsProps) {
     useState<BillingInterval>("monthly");
 
   useEffect(() => {
-    setBillingInterval(readBillingInterval());
+    Promise.resolve().then(() => setBillingInterval(readBillingInterval()));
   }, []);
 
   const handleBillingChange = (interval: BillingInterval) => {

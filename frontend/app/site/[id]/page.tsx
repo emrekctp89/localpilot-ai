@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 import {
   buildDefaultWhatsAppMessage,
@@ -604,9 +605,9 @@ export default async function BusinessSite({
         business.custom_domain ? null : (
           <p className="mt-4 text-xs text-gray-500">
             Bu dijital vitrin{" "}
-            <a href="/" className={`font-bold ${theme.text} hover:underline`}>
+            <Link href="/" className={`font-bold ${theme.text} hover:underline`}>
               LocalPilot AI
-            </a>{" "}
+            </Link>{" "}
             ile hazırlandı.
           </p>
         )}

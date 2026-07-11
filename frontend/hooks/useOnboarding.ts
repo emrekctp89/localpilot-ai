@@ -17,13 +17,124 @@ export const DEFAULT_ONBOARDING_DATA: OnboardingData = {
   working_hours: "",
   business_type: "",
   goals: [],
-  top_products: "",
-  target_audience: "",
+  top_products: ["", "", ""],
+  target_audience: [],
   contact_points: [],
-  unique_selling_point: "",
+  unique_selling_point: [],
   brand_tone: "",
   color_preference: "ai",
+  business_description: "",
+  main_problem: "",
+  price_level: "",
+  current_digital_status: [],
+  desired_outputs: [],
+  ai_options: null,
 };
+
+/** Normalize draft / partial data after schema change (string → string[]). */
+export function normalizeOnboardingData(
+  partial?: Partial<OnboardingData> | Record<string, unknown> | null,
+): OnboardingData {
+  const raw = (partial || {}) as Record<string, unknown>;
+
+  const asStringArray = (value: unknown, padTo = 0): string[] => {
+    if (Array.isArray(value)) {
+      const items = value.map((item) => String(item ?? ""));
+      if (padTo > 0) {
+        while (items.length < padTo) items.push("");
+        return items.slice(0, Math.max(padTo, items.length));
+      }
+      return items;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const items = value
+        .split(/,|\n/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      if (padTo > 0) {
+        while (items.length < padTo) items.push("");
+        return items.slice(0, Math.max(padTo, items.length));
+      }
+      return items;
+    }
+    return padTo > 0 ? Array.from({ length: padTo }, () => "") : [];
+  };
+
+  return {
+    ...DEFAULT_ONBOARDING_DATA,
+    name: typeof raw.name === "string" ? raw.name : DEFAULT_ONBOARDING_DATA.name,
+    industry:
+      typeof raw.industry === "string"
+        ? raw.industry
+        : DEFAULT_ONBOARDING_DATA.industry,
+    city: typeof raw.city === "string" ? raw.city : DEFAULT_ONBOARDING_DATA.city,
+    address:
+      typeof raw.address === "string"
+        ? raw.address
+        : DEFAULT_ONBOARDING_DATA.address,
+    whatsapp_number:
+      typeof raw.whatsapp_number === "string"
+        ? raw.whatsapp_number
+        : DEFAULT_ONBOARDING_DATA.whatsapp_number,
+    working_hours:
+      typeof raw.working_hours === "string"
+        ? raw.working_hours
+        : DEFAULT_ONBOARDING_DATA.working_hours,
+    business_type:
+      typeof raw.business_type === "string"
+        ? raw.business_type
+        : DEFAULT_ONBOARDING_DATA.business_type,
+    goals: asStringArray(raw.goals),
+    top_products: asStringArray(raw.top_products, 3),
+    target_audience: asStringArray(raw.target_audience),
+    contact_points: asStringArray(raw.contact_points),
+    unique_selling_point: asStringArray(raw.unique_selling_point),
+    brand_tone:
+      typeof raw.brand_tone === "string"
+        ? raw.brand_tone
+        : DEFAULT_ONBOARDING_DATA.brand_tone,
+    color_preference:
+      typeof raw.color_preference === "string"
+        ? raw.color_preference
+        : DEFAULT_ONBOARDING_DATA.color_preference,
+    business_description:
+      typeof raw.business_description === "string"
+        ? raw.business_description
+        : DEFAULT_ONBOARDING_DATA.business_description,
+    main_problem:
+      typeof raw.main_problem === "string"
+        ? raw.main_problem
+        : DEFAULT_ONBOARDING_DATA.main_problem,
+    price_level:
+      typeof raw.price_level === "string"
+        ? raw.price_level
+        : DEFAULT_ONBOARDING_DATA.price_level,
+    current_digital_status: asStringArray(raw.current_digital_status),
+    desired_outputs: asStringArray(raw.desired_outputs),
+    ai_options:
+      raw.ai_options &&
+      typeof raw.ai_options === "object" &&
+      !Array.isArray(raw.ai_options)
+        ? {
+            goals_options: asStringArray(
+              (raw.ai_options as Record<string, unknown>).goals_options,
+            ),
+            top_products_placeholders: asStringArray(
+              (raw.ai_options as Record<string, unknown>)
+                .top_products_placeholders,
+            ),
+            target_audience_options: asStringArray(
+              (raw.ai_options as Record<string, unknown>)
+                .target_audience_options,
+            ),
+            unique_selling_point_options: asStringArray(
+              (raw.ai_options as Record<string, unknown>)
+                .unique_selling_point_options,
+            ),
+          }
+        : DEFAULT_ONBOARDING_DATA.ai_options,
+  };
+}
 
 export function createOnboardingDraftHandlers(
   setOnboardingStep: (step: number) => void,
@@ -37,10 +148,7 @@ export function createOnboardingDraftHandlers(
       data?: Partial<OnboardingData>;
     }) => {
       if (draft.data) {
-        setOnboardingData({
-          ...DEFAULT_ONBOARDING_DATA,
-          ...draft.data,
-        });
+        setOnboardingData(normalizeOnboardingData(draft.data));
       }
       if (draft.step && draft.step >= 1 && draft.step <= 5) {
         setOnboardingStep(draft.step);
@@ -68,7 +176,6 @@ interface UseOnboardingSetupOptions {
 }
 
 export function useOnboardingSetup({
-  business,
   onboardingData,
   onboardingStorageKey,
   onSetupComplete,
@@ -90,9 +197,30 @@ export function useOnboardingSetup({
         return;
       }
 
+      // ai_options sadece wizard UI için — setup API'ye gönderme
+      const { ai_options: _aiOptions, ...setupFields } = onboardingData;
+
       const data = await setupBusiness({
         owner_id: session.user.id,
-        ...onboardingData,
+        ...setupFields,
+        // API string alanları — wizard array tutar
+        top_products: (onboardingData.top_products || [])
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .join(", "),
+        target_audience: (onboardingData.target_audience || [])
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .join(", "),
+        unique_selling_point: (onboardingData.unique_selling_point || [])
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .join(", "),
+        current_digital_status: onboardingData.current_digital_status || [],
+        desired_outputs: onboardingData.desired_outputs || [],
+        business_description: onboardingData.business_description || "",
+        main_problem: onboardingData.main_problem || "",
+        price_level: onboardingData.price_level || "",
       });
 
       const nextBusiness = data.business as unknown as Business;

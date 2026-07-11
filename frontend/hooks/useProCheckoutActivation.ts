@@ -28,18 +28,20 @@ export function useProCheckoutActivation({
     if (!paymentReturn || !ready) return;
 
     if (paymentReturn === "cancel") {
-      setBillingMessage("Ödeme işlemi iptal edildi. Hesabınızda değişiklik yok.");
-      onHandled?.();
+      Promise.resolve().then(() => {
+        setBillingMessage("Ödeme işlemi iptal edildi. Hesabınızda değişiklik yok.");
+        onHandled?.();
+      });
       return;
     }
 
     let cancelled = false;
     let lastError = "";
-    setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
-    setActivationError("");
-    setIsActivating(true);
 
     const tryActivate = async () => {
+      setBillingMessage("Ödeme tamamlandı. Pro üyeliğiniz etkinleştiriliyor...");
+      setActivationError("");
+      setIsActivating(true);
       try {
         const confirmed = await confirmProCheckout({
           session_id: checkoutSessionId,

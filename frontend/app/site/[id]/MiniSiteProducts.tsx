@@ -82,7 +82,7 @@ export default function MiniSiteProducts({
 
     // Prefer clean hash navigation; LeadForm reads sessionStorage.
     event.preventDefault();
-    window.location.hash = "iletisim";
+    window.location.assign("#iletisim");
   };
 
   return (

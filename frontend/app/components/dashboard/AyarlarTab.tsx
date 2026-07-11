@@ -143,7 +143,9 @@ export default function AyarlarTab({
     useState<BillingInterval>("monthly");
 
   useEffect(() => {
-    setBillingInterval(readBillingInterval());
+    Promise.resolve().then(() => {
+      setBillingInterval(readBillingInterval());
+    });
   }, []);
 
   const handleBillingIntervalChange = (interval: BillingInterval) => {
@@ -190,12 +192,18 @@ export default function AyarlarTab({
   useEffect(() => {
     const savedSlug = business.site_slug?.trim() || "";
     if (savedSlug) {
-      setSiteSlugInput(savedSlug);
-      setSlugTouched(true);
+      Promise.resolve().then(() => {
+        setSiteSlugInput(savedSlug);
+        setSlugTouched(true);
+      });
     } else if (!slugTouched) {
-      setSiteSlugInput(suggestSiteSlugFromName(business.name) || "");
+      Promise.resolve().then(() => {
+        setSiteSlugInput(suggestSiteSlugFromName(business.name) || "");
+      });
     }
-    setCustomDomainInput(business.custom_domain?.trim() || "");
+    Promise.resolve().then(() => {
+      setCustomDomainInput(business.custom_domain?.trim() || "");
+    });
   }, [
     business.site_slug,
     business.custom_domain,
@@ -236,7 +244,9 @@ export default function AyarlarTab({
 
   useEffect(() => {
     if (!plan?.mini_site_data) return;
-    setSiteData(normalizeSiteFormData(plan.mini_site_data));
+    Promise.resolve().then(() => {
+      setSiteData(normalizeSiteFormData(plan.mini_site_data));
+    });
   }, [plan?.mini_site_data]);
 
   const inputClass =

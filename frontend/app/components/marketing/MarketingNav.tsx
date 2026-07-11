@@ -33,12 +33,12 @@ export default function MarketingNav({ currentPath = "/" }: MarketingNavProps) {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex" aria-label="Pazarlama">
-          <a href="/#ozellikler" className={linkClass("/")}>
+          <Link href="/#ozellikler" className={linkClass("/")}>
             Özellikler
-          </a>
-          <a href="/#sektorler" className={linkClass("/")}>
+          </Link>
+          <Link href="/#sektorler" className={linkClass("/")}>
             Sektörler
-          </a>
+          </Link>
           <Link href="/fiyatlandirma" className={linkClass("/fiyatlandirma")}>
             Fiyatlandırma
           </Link>

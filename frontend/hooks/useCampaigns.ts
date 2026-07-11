@@ -65,7 +65,7 @@ export function useCampaigns({
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
   useEffect(() => {
-    setCampaigns(seedCampaigns);
+    Promise.resolve().then(() => setCampaigns(seedCampaigns));
   }, [seedCampaigns]);
 
   const [isGeneratingCampaigns, setIsGeneratingCampaigns] = useState(false);

@@ -20,12 +20,12 @@ export default function MarketingFooter() {
         </div>
 
         <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-slate-600">
-          <a href="/#ozellikler" className="hover:text-indigo-700">
+          <Link href="/#ozellikler" className="hover:text-indigo-700">
             Özellikler
-          </a>
-          <a href="/#sektorler" className="hover:text-indigo-700">
+          </Link>
+          <Link href="/#sektorler" className="hover:text-indigo-700">
             Sektörler
-          </a>
+          </Link>
           <Link href="/fiyatlandirma" className="hover:text-indigo-700">
             Fiyatlandırma
           </Link>

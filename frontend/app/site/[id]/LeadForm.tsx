@@ -193,6 +193,7 @@ export default function LeadForm({
               id="lead-full-name"
               type="text"
               required
+              autoComplete="name"
               className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
               placeholder="Adınız Soyadınız"
               value={formData.full_name}
@@ -210,6 +211,8 @@ export default function LeadForm({
               type="tel"
               required
               name="phone"
+              autoComplete="tel"
+              inputMode="tel"
               placeholder="05XX XXX XX XX"
               className="w-full bg-white/5 border border-white/10 text-gray-900 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-white/50 focus:bg-white outline-none transition placeholder-gray-500"
               value={formData.phone}

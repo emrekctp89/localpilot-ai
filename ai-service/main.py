@@ -349,13 +349,11 @@ Sen LocalPilot AI'ın işletme büyüme danışmanı, dijital pazarlama strateji
 
 Görevin sadece metin yazmak değil:
 1. İşletmeyi analiz etmek
-2. Hangi panel modüllerinin açılacağını seçmek
-3. Her modülün neden açıldığını açıklamak
-4. Mini site içeriği üretmek
-5. WhatsApp hazır cevap şablonları üretmek
-6. 7 günlük sosyal medya planı üretmek
-7. 3 kampanya fikri üretmek
-8. İşletme sahibine uygulanabilir 7 günlük aksiyon planı vermek
+2. Mini site içeriği üretmek
+3. WhatsApp hazır cevap şablonları üretmek
+4. 7 günlük sosyal medya planı üretmek
+5. 3 kampanya fikri üretmek
+6. İşletme sahibine uygulanabilir 7 günlük aksiyon planı vermek
 
 KURALLAR:
 - Çıktın kesinlikle valid JSON olmalı. Markdown kullanma.
@@ -367,8 +365,6 @@ KURALLAR:
 - social_media_calendar tam 7 gün olmalı.
 - whatsapp_templates en az 5 şablon olmalı.
 - campaigns tam 3 kampanya olmalı.
-- active_modules değerleri sadece şu havuzdan seçilmeli:
-  ["ozet", "mini_site", "whatsapp", "sosyal_medya", "kampanya", "crm", "randevu", "menu", "yorum_analizi", "kasa", "gorevler"]
 
 JSON ŞEMASI:
 {
@@ -377,11 +373,6 @@ JSON ŞEMASI:
     "main_growth_opportunity": "En büyük büyüme fırsatı.",
     "biggest_risk": "Dikkat edilmesi gereken ana risk.",
     "ideal_first_focus": "İlk odaklanması gereken konu."
-  },
-  "active_modules": ["ozet", "mini_site", "whatsapp", "kampanya", "sosyal_medya"],
-  "module_reasons": {
-    "mini_site": "Bu modül neden açıldı?",
-    "whatsapp": "Bu modül neden açıldı?"
   },
   "theme_config": {
     "primaryColor": "blue | green | purple | orange | red | pink | black",
@@ -486,9 +477,68 @@ class AiFeedbackRequest(BaseModel):
     context: Dict[str, Any] = Field(default_factory=dict)
 
 
+class GenerateOnboardingOptionsRequest(BaseModel):
+    industry: str
+    business_type: str
+
+
+class GenerateOnboardingOptionsResponse(BaseModel):
+    goals_options: List[str]
+    top_products_placeholders: List[str]
+    target_audience_options: List[str]
+    unique_selling_point_options: List[str]
+
+
 # ------------------------------------------------------------
 # ENDPOINTS
 # ------------------------------------------------------------
+@app.post("/generate-onboarding-options", response_model=GenerateOnboardingOptionsResponse)
+async def generate_onboarding_options(req: GenerateOnboardingOptionsRequest):
+    try:
+        system_instruction = """
+        Sen LocalPilot AI platformunun onboarding uzmanısın.
+        Kullanıcı işletme bilgilerini (sektör ve işletme türü) verdiğinde, onboarding formunu doldurmasını kolaylaştırmak için sektöre özel şık ve mantıklı seçenekler üret.
+
+        Çıktın kesinlikle JSON formatında olmalı. Markdown yok.
+        {
+          "goals_options": ["...", "..."] // tam 6 kısa hedef (Türkçe),
+          "top_products_placeholders": ["Örn: ...", "Örn: ...", "Örn: ..."] // tam 3,
+          "target_audience_options": ["..."] // tam 6 müşteri kitlesi,
+          "unique_selling_point_options": ["🚀 ...", "💎 ..."] // tam 6, emoji ile başlayabilir
+        }
+        """
+        user_prompt = (
+            f"Sektör: {req.industry}\n"
+            f"İşletme Türü/Modeli: {req.business_type}\n"
+            "Lütfen bu işletmeye özel onboarding form seçenekleri üret."
+        )
+
+        data = generate_ai_json(system_instruction, user_prompt, temperature=0.7) or {}
+
+        def as_str_list(value, limit: int) -> list:
+            if not isinstance(value, list):
+                return []
+            items = [str(item).strip() for item in value if str(item).strip()]
+            return items[:limit]
+
+        return GenerateOnboardingOptionsResponse(
+            goals_options=as_str_list(data.get("goals_options"), 8),
+            top_products_placeholders=as_str_list(
+                data.get("top_products_placeholders"), 3
+            ),
+            target_audience_options=as_str_list(
+                data.get("target_audience_options"), 8
+            ),
+            unique_selling_point_options=as_str_list(
+                data.get("unique_selling_point_options"), 8
+            ),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Onboarding options generation error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/generate-plan")
 async def generate_plan(business: BusinessInput):
     try:
@@ -497,7 +547,6 @@ async def generate_plan(business: BusinessInput):
         Verilen işletmeye göre aktif modülleri, tema ayarını ve mini site içeriğini üret.
         Çıktın kesinlikle JSON olmalı.
         {
-          "active_modules": ["ozet", "mini_site", "whatsapp", "kampanya"],
           "theme_config": {"primaryColor": "blue", "template": "service_local"},
           "mini_site_data": {
             "hero_slogan": "...",
@@ -1091,14 +1140,10 @@ async def setup_business(data: BusinessSetup):
         print(f"🚨 SETUP AI HATASI: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Kurulum Hatası: {str(e)}")
 
-    # AI bazen eksik alan döndürürse güvenli fallbackler
-    active_modules = ai_decision.get("active_modules") or [
-        "ozet",
-        "mini_site",
-        "whatsapp",
-        "kampanya",
-        "sosyal_medya",
-    ]
+    # Dinamik sekme mimarisine geçildiği için active_modules artık AI tarafından üretilmiyor.
+    # Boş liste olarak ayarlanır, frontend kendi hesaplar.
+    active_modules = []
+    
     theme_config = ai_decision.get("theme_config") or {
         "primaryColor": normalize_color(data.color_preference),
         "template": "service_local",

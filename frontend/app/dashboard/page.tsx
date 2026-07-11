@@ -147,7 +147,7 @@ export default function Dashboard() {
       visibleTabIds.length > 0 &&
       !visibleTabIds.includes(activeTab)
     ) {
-      setActiveTab(visibleTabIds[0]);
+      Promise.resolve().then(() => setActiveTab(visibleTabIds[0]));
     }
   }, [visibleTabIds, activeTab]);
 
@@ -179,9 +179,11 @@ export default function Dashboard() {
     const payment = readPaymentReturn();
     if (!payment) return;
 
-    setPaymentReturn(payment);
-    setCheckoutSessionId(readCheckoutSessionId());
-    setActiveTab("ayarlar");
+    Promise.resolve().then(() => {
+      setPaymentReturn(payment);
+      setCheckoutSessionId(readCheckoutSessionId());
+      setActiveTab("ayarlar");
+    });
   }, []);
 
   useEffect(() => {
@@ -192,7 +194,7 @@ export default function Dashboard() {
 
     if (googleOAuth === "connected") {
       showToast("Google İşletme Profili bağlandı.", "success");
-      setActiveTab("google_business");
+      Promise.resolve().then(() => setActiveTab("google_business"));
     } else {
       showToast("Google bağlantısı tamamlanamadı.", "error");
     }
