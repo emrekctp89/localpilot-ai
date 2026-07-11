@@ -32,7 +32,16 @@ describe("RLS and migration integrity (Faz B)", () => {
       "013_resolve_mini_site_domain.sql",
       "014_manual_pro_commission.sql",
       "015_backfill_site_slugs.sql",
+      "016_public_mini_site_read.sql",
     ]);
+  });
+
+  it("defines public mini-site resolve RPC for anonymous visitors", () => {
+    const sql = readMigration("016_public_mini_site_read.sql");
+    assert.match(sql, /resolve_public_mini_site/);
+    assert.match(sql, /business_exists/);
+    assert.match(sql, /SECURITY DEFINER/);
+    assert.match(sql, /customers_public_insert/);
   });
 
   it("backfills site_slug with TR-aware normalizer", () => {

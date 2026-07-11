@@ -136,6 +136,7 @@ describe("mini site domain (Faz G white-label)", () => {
 
   it("wires site page resolve, middleware, verify API and Ayarlar domain UI", () => {
     const pageSource = readSource("app/site/[id]/page.tsx");
+    const publicRepo = readSource("lib/repositories/public-mini-site.ts");
     const settingsSource = readSource("app/components/dashboard/AyarlarTab.tsx");
     const middlewareSource = readSource("middleware.ts");
     const verifySource = readSource("app/api/custom-domain/verify/route.ts");
@@ -147,10 +148,13 @@ describe("mini site domain (Faz G white-label)", () => {
       join(root, "../supabase/migrations/013_resolve_mini_site_domain.sql"),
       "utf8",
     );
+    const migration016 = readFileSync(
+      join(root, "../supabase/migrations/016_public_mini_site_read.sql"),
+      "utf8",
+    );
 
-    assert.match(pageSource, /loadBusinessByIdOrSlug/);
-    assert.match(pageSource, /looksLikeUuid/);
-    assert.match(pageSource, /site_slug/);
+    assert.match(pageSource, /loadPublicMiniSite|loadMiniSiteContext/);
+    assert.match(publicRepo, /resolve_public_mini_site/);
     assert.match(pageSource, /custom_domain_status === \"active\"/);
     assert.match(settingsSource, /siteSlugInput/);
     assert.match(settingsSource, /customDomainInput/);
@@ -165,5 +169,6 @@ describe("mini site domain (Faz G white-label)", () => {
     assert.match(migration012, /site_slug/);
     assert.match(migration012, /custom_domain_status/);
     assert.match(migration013, /resolve_mini_site_by_domain/);
+    assert.match(migration016, /resolve_public_mini_site/);
   });
 });

@@ -177,3 +177,17 @@ SELECT 'fn_lp_backfill_business_site_slugs',
          JOIN pg_namespace n ON n.oid = p.pronamespace
          WHERE n.nspname = 'public' AND p.proname = 'lp_backfill_business_site_slugs'
        );
+
+-- 016 public mini-site read
+SELECT 'fn_resolve_public_mini_site',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'resolve_public_mini_site'
+       );
+SELECT 'fn_business_exists',
+       EXISTS (
+         SELECT 1 FROM pg_proc p
+         JOIN pg_namespace n ON n.oid = p.pronamespace
+         WHERE n.nspname = 'public' AND p.proname = 'business_exists'
+       );

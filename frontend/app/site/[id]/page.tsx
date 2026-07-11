@@ -1,4 +1,3 @@
-import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import type { MiniSiteData, Product } from "@/lib/domain-types";
@@ -9,67 +8,13 @@ import {
   buildWhatsAppDeepLink,
   isMiniSitePublished,
 } from "@/lib/mini-site";
-import {
-  getMiniSitePublicUrl,
-  looksLikeUuid,
-  normalizeSiteSlug,
-} from "@/lib/mini-site-domain";
-import type { Business } from "@/lib/domain-types";
+import { getMiniSitePublicUrl } from "@/lib/mini-site-domain";
+import { loadPublicMiniSite } from "@/lib/repositories/public-mini-site";
 import LeadForm from "./LeadForm";
 import MiniSiteDraft from "./MiniSiteDraft";
 
-async function loadBusinessByIdOrSlug(idOrSlug: string) {
-  const key = idOrSlug.trim();
-  if (!key) return null;
-
-  if (looksLikeUuid(key)) {
-    const { data } = await supabase
-      .from("businesses")
-      .select("*")
-      .eq("id", key)
-      .maybeSingle();
-    return (data as Business | null) ?? null;
-  }
-
-  const slug = normalizeSiteSlug(key);
-  if (!slug) return null;
-
-  const { data } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("site_slug", slug)
-    .maybeSingle();
-  return (data as Business | null) ?? null;
-}
-
 async function loadMiniSiteContext(idOrSlug: string) {
-  const business = await loadBusinessByIdOrSlug(idOrSlug);
-  if (!business?.id) {
-    return {
-      business: null as Business | null,
-      siteData: {} as MiniSiteData,
-      products: [] as Product[],
-    };
-  }
-
-  const businessId = business.id;
-
-  const { data: plan } = await supabase
-    .from("generated_plans")
-    .select("mini_site_data")
-    .eq("business_id", businessId)
-    .single();
-
-  const { data: products } = await supabase
-    .from("products")
-    .select("*")
-    .eq("business_id", businessId);
-
-  return {
-    business,
-    siteData: (plan?.mini_site_data || {}) as MiniSiteData,
-    products: (products || []) as Product[],
-  };
+  return loadPublicMiniSite(idOrSlug);
 }
 
 export async function generateMetadata({

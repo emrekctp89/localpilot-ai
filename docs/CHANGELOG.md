@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.1 - 2026-07-11
+
+### Fixed
+- Public mini site 404 for anonymous visitors: RLS blocked `businesses` SELECT.
+- Migration `016`: `resolve_public_mini_site` + `business_exists` (SECURITY DEFINER).
+- Lead insert policy no longer requires readable `businesses` rows under RLS.
+
 ## 2.5.0 - 2026-07-11
 
 ### Added
