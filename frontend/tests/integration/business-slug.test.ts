@@ -52,6 +52,42 @@ describe("business slug ensure + lead phone (v2.5)", () => {
     assert.match(link, /^https:\/\/wa\.me\/905321234567\?text=/);
   });
 
+  it("resolves WhatsApp CTA without duplicate buttons", async () => {
+    const {
+      isWhatsAppCtaLabel,
+      resolveMiniSiteCtaActions,
+      splitAboutParagraphs,
+    } = await import("../../lib/mini-site");
+
+    assert.equal(isWhatsAppCtaLabel("WhatsApp Yaz"), true);
+    assert.equal(isWhatsAppCtaLabel("Tıkla-Yaz"), true);
+    assert.equal(isWhatsAppCtaLabel("Bize Ulaşın"), false);
+    assert.equal(isWhatsAppCtaLabel("Randevu Al"), false);
+
+    const waPrimary = resolveMiniSiteCtaActions({
+      ctaText: "WhatsApp",
+      whatsappHref: "https://wa.me/905321234567",
+    });
+    assert.equal(waPrimary.primary.isWhatsApp, true);
+    assert.equal(waPrimary.primary.href, "https://wa.me/905321234567");
+    assert.equal(waPrimary.secondaryWhatsAppHref, null);
+
+    const formPrimary = resolveMiniSiteCtaActions({
+      ctaText: "Randevu Al",
+      whatsappHref: "https://wa.me/905321234567",
+    });
+    assert.equal(formPrimary.primary.href, "#iletisim");
+    assert.equal(
+      formPrimary.secondaryWhatsAppHref,
+      "https://wa.me/905321234567",
+    );
+
+    assert.deepEqual(splitAboutParagraphs("Birinci.\n\nİkinci."), [
+      "Birinci.",
+      "İkinci.",
+    ]);
+  });
+
   it("wires ensureBusinessSiteSlug into dashboard session", () => {
     const session = readSource("hooks/useDashboardSession.ts");
     const repo = readSource("lib/repositories/business-slug.ts");

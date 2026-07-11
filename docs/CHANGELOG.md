@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.6 - 2026-07-11
+
+### Added
+- Dedicated About + “Neden bizi seçmeliler” public sections (`MiniSiteAbout`).
+- Multi-paragraph about text (blank-line split).
+- Smart CTA routing: WhatsApp-labeled CTA opens WA and hides duplicate WA button.
+
+### Changed
+- Hero / top bar / sticky bar share `resolveMiniSiteCtaActions`.
+- Ayarlar help copy clarifies Form CTA vs WhatsApp CTA.
+
 ## 2.5.5 - 2026-07-11
 
 ### Added

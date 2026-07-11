@@ -1146,13 +1146,13 @@ export default function AyarlarTab({
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            Hakkımızda Yazısı
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <label className="mb-2 block text-sm font-bold text-gray-700">
+            Hakkımızda yazısı
           </label>
 
           <textarea
-            rows={4}
+            rows={5}
             className={`${inputClass} resize-none leading-relaxed`}
             value={siteData.about_us || ""}
             onChange={(e) =>
@@ -1161,24 +1161,45 @@ export default function AyarlarTab({
                 about_us: e.target.value,
               })
             }
-            placeholder="İşletmenizi anlatan kısa bir yazı girin..."
+            placeholder={
+              "İşletmenizi anlatan 1–3 kısa paragraf…\n\nİkinci paragraf için boş satır bırakın."
+            }
           />
+          <p className="mt-1.5 text-xs text-gray-400">
+            Boş satırla ayırdığınız paragraflar mini sitede ayrı bloklar
+            halinde görünür.
+          </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-sm font-bold text-gray-700 mb-3">
-            Neden Sizi Seçmeliler? (3 Özellik)
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <label className="mb-1 block text-sm font-bold text-gray-700">
+            Neden sizi seçmeliler? (3 özellik)
           </label>
+          <p className="mb-3 text-xs text-gray-500">
+            Her satır mini sitede ayrı bir kart olur — kısa ve net tutun
+            (ör. «Aynı gün teslimat»).
+          </p>
 
           <div className="space-y-3">
             {[0, 1, 2].map((index) => (
               <div key={index} className="flex items-center gap-2">
-                <span className="text-xl">✅</span>
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-black text-gray-500 ring-1 ring-gray-200"
+                  aria-hidden="true"
+                >
+                  0{index + 1}
+                </span>
 
                 <input
                   type="text"
-                  placeholder={`${index + 1}. Özellik (Örn: Hızlı Teslimat)`}
-                  className="flex-1 border border-gray-300 rounded-md p-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-gray-800 outline-none transition"
+                  placeholder={
+                    index === 0
+                      ? "Örn: 15 yıllık tecrübe"
+                      : index === 1
+                        ? "Örn: Hijyen garantisi"
+                        : "Örn: Aynı gün randevu"
+                  }
+                  className="flex-1 rounded-md border border-gray-300 bg-white p-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2 focus:ring-gray-800"
                   value={siteData.features?.[index] || ""}
                   onChange={(e) => handleFeatureChange(index, e.target.value)}
                 />
@@ -1228,9 +1249,9 @@ export default function AyarlarTab({
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            WhatsApp Tıkla-Yaz Mesajı
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <label className="mb-2 block text-sm font-bold text-gray-700">
+            WhatsApp tıkla-yaz mesajı
           </label>
           <textarea
             rows={2}
@@ -1244,19 +1265,20 @@ export default function AyarlarTab({
             }
             placeholder="Örn: Merhaba, fiyat ve randevu bilgisi almak istiyorum."
           />
-          <p className="text-xs text-gray-400 mt-1">
-            Mini sitedeki WhatsApp butonu bu metinle derin link açar.
+          <p className="mt-1 text-xs text-gray-400">
+            WhatsApp butonları bu metinle açılır (işletme WhatsApp numarası
+            kayıtlı olmalı).
           </p>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            Aksiyon Butonu Yazısı (CTA)
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <label className="mb-2 block text-sm font-bold text-gray-700">
+            Aksiyon butonu yazısı (CTA)
           </label>
 
           <input
             type="text"
-            className={`${inputClass} md:w-1/3`}
+            className={`${inputClass} md:w-1/2`}
             value={siteData.cta_text || ""}
             onChange={(e) =>
               setSiteData({
@@ -1264,8 +1286,17 @@ export default function AyarlarTab({
                 cta_text: e.target.value,
               })
             }
-            placeholder="Örn: Bize Ulaşın, Randevu Al"
+            placeholder="Örn: Bize Ulaşın · Randevu Al · WhatsApp"
           />
+          <p className="mt-1.5 text-xs text-gray-500">
+            <strong className="font-semibold text-gray-700">Form:</strong>{" "}
+            «Bize Ulaşın», «Randevu Al» → iletişim formuna gider; yanında ayrı
+            WhatsApp butonu kalır.
+            <br />
+            <strong className="font-semibold text-gray-700">WhatsApp:</strong>{" "}
+            CTA metninde «WhatsApp», «WA», «Tıkla-Yaz» geçiyorsa ana buton
+            doğrudan WhatsApp açar — ikinci WhatsApp kopyası gösterilmez.
+          </p>
         </div>
 
         <div className="flex items-center gap-4 pt-4 border-t border-gray-200">

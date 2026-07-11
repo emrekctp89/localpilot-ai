@@ -7,10 +7,13 @@ import {
   buildWhatsAppDeepLink,
   isMiniSitePublished,
   normalizeWhatsAppNumber,
+  resolveMiniSiteCtaActions,
+  splitAboutParagraphs,
 } from "@/lib/mini-site";
 import { getMiniSitePublicUrl } from "@/lib/mini-site-domain";
 import { loadPublicMiniSite } from "@/lib/repositories/public-mini-site";
 import LeadForm from "./LeadForm";
+import MiniSiteAbout from "./MiniSiteAbout";
 import MiniSiteDraft from "./MiniSiteDraft";
 import MiniSiteProducts from "./MiniSiteProducts";
 import MiniSiteShare from "./MiniSiteShare";
@@ -90,7 +93,9 @@ export default async function BusinessSite({
   const featureItems = (siteData.features || [])
     .map((feature) => feature?.trim())
     .filter((feature): feature is string => Boolean(feature));
-  const hasAbout = Boolean(siteData.about_us?.trim());
+  const aboutParagraphs = splitAboutParagraphs(siteData.about_us);
+  const hasAbout = aboutParagraphs.length > 0;
+  const hasFeatures = featureItems.length > 0;
   const hasTestimonials = (siteData.testimonials?.length || 0) > 0;
   const hasLocation = Boolean(
     business.address?.trim() ||
@@ -108,6 +113,10 @@ export default async function BusinessSite({
   const whatsappHref = business.whatsapp_number
     ? buildWhatsAppDeepLink(business.whatsapp_number, whatsappMessage)
     : "";
+  const ctaActions = resolveMiniSiteCtaActions({
+    ctaText: siteData.cta_text,
+    whatsappHref,
+  });
   const phoneDigits = business.whatsapp_number
     ? normalizeWhatsAppNumber(business.whatsapp_number)
     : "";
@@ -129,6 +138,7 @@ export default async function BusinessSite({
 
   const navItems = [
     ...(hasAbout ? [{ href: "#hakkimizda", label: "Hakkımızda" }] : []),
+    ...(hasFeatures ? [{ href: "#neden-biz", label: "Neden biz" }] : []),
     ...(showProducts ? [{ href: "#menu", label: "Ürünler" }] : []),
     ...(hasTestimonials
       ? [{ href: "#yorumlar", label: "Yorumlar" }]
@@ -210,7 +220,7 @@ export default async function BusinessSite({
 
   const theme = colorMap[themeColor] || colorMap.blue;
 
-  const ctaLabel = siteData.cta_text || "Bize Ulaşın";
+  const ctaLabel = ctaActions.primary.label;
   const locationLabel = business.city?.trim()
     ? `${business.city} şehrinde hizmetinizde`
     : "Yerel işletmeniz için buradayız";
@@ -231,8 +241,11 @@ export default async function BusinessSite({
       <MiniSiteTopBar
         businessName={business.name || "İşletme"}
         ctaText={ctaLabel}
+        ctaHref={ctaActions.primary.href}
+        ctaExternal={ctaActions.primary.external}
+        ctaIsWhatsApp={ctaActions.primary.isWhatsApp}
         themeBgClass={theme.bg}
-        whatsappHref={whatsappHref || undefined}
+        secondaryWhatsAppHref={ctaActions.secondaryWhatsAppHref}
         navItems={navItems}
       />
 
@@ -287,79 +300,69 @@ export default async function BusinessSite({
             style={{ animationDelay: "300ms" }}
           >
             <a
-              href="#iletisim"
-              className={`${theme.bg} min-h-12 rounded-2xl px-8 py-3.5 font-bold text-white shadow-lg ${theme.shadow} transition-transform duration-300 hover:scale-105`}
+              href={ctaActions.primary.href}
+              {...(ctaActions.primary.external
+                ? { target: "_blank", rel: "noreferrer" }
+                : {})}
+              className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl px-8 py-3.5 font-bold text-white shadow-lg transition-transform duration-300 hover:scale-105 ${
+                ctaActions.primary.isWhatsApp
+                  ? `bg-emerald-600 shadow-emerald-500/30`
+                  : `${theme.bg} ${theme.shadow}`
+              }`}
             >
+              {ctaActions.primary.isWhatsApp ? (
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.305-.88-.653-1.473-1.46-1.646-1.758-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.347-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.876 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.356.194 1.861.118.574-.086 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                </svg>
+              ) : null}
               {ctaLabel}
             </a>
 
-            {whatsappHref && (
+            {ctaActions.secondaryWhatsAppHref ? (
               <a
-                href={whatsappHref}
+                href={ctaActions.secondaryWhatsAppHref}
                 target="_blank"
                 rel="noreferrer"
                 className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-8 py-3.5 font-bold text-gray-900 transition-colors hover:bg-gray-50"
               >
                 <svg
-                  className="w-5 h-5 text-green-500"
+                  className="h-5 w-5 text-green-500"
                   fill="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.305-.88-.653-1.473-1.46-1.646-1.758-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.347-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.876 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.356.194 1.861.118.574-.086 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
                 </svg>
                 WhatsApp Hattı
               </a>
-            )}
+            ) : ctaActions.primary.isWhatsApp ? (
+              <a
+                href={ctaActions.formHref}
+                className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-8 py-3.5 font-bold text-gray-900 transition-colors hover:bg-gray-50"
+              >
+                İletişim formu
+              </a>
+            ) : null}
           </div>
         </div>
       </section>
 
       <main className="mx-auto max-w-6xl space-y-24 px-4 pb-24">
-        {/* About and feature cards */}
-        {(hasAbout || featureItems.length > 0) && (
-          <section
-            id="hakkimizda"
-            className="bento-grid scroll-mt-24 grid-cols-1 md:grid-cols-3"
-          >
-            {hasAbout && (
-              <div className="relative overflow-hidden rounded-3xl glass-panel p-8 md:col-span-2 md:p-12">
-                <div
-                  className={`absolute top-0 right-0 -z-10 h-32 w-32 rounded-bl-full ${theme.light}`}
-                />
-
-                <h2 className="mb-4 text-sm font-bold tracking-widest text-gray-400">
-                  Hakkımızda
-                </h2>
-
-                <p className="text-xl font-medium leading-relaxed text-gray-800 md:text-2xl">
-                  {siteData.about_us}
-                </p>
-
-                {business.working_hours && (
-                  <div className="mt-8 flex items-center gap-2 text-sm font-semibold text-gray-500">
-                    <span className="rounded-lg bg-gray-100 p-2">⏰</span>
-                    {business.working_hours}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {featureItems.slice(0, 3).map((feature, idx) => (
-              <div
-                key={`${feature}-${idx}`}
-                className="glass-panel flex flex-col justify-center rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
-              >
-                <span
-                  className={`mb-6 flex h-12 w-12 items-center justify-center rounded-full text-xl ${theme.light} ${theme.text}`}
-                >
-                  {idx === 0 ? "✨" : idx === 1 ? "🛡️" : "🚀"}
-                </span>
-
-                <h3 className="text-xl font-bold text-gray-900">{feature}</h3>
-              </div>
-            ))}
-          </section>
-        )}
+        <MiniSiteAbout
+          aboutParagraphs={aboutParagraphs}
+          features={featureItems}
+          workingHours={business.working_hours}
+          theme={{
+            bg: theme.bg,
+            text: theme.text,
+            light: theme.light,
+          }}
+        />
 
         {showProducts && (
           <MiniSiteProducts
@@ -611,7 +614,11 @@ export default async function BusinessSite({
 
       <MiniSiteStickyCta
         ctaText={ctaLabel}
-        whatsappHref={whatsappHref || undefined}
+        ctaHref={ctaActions.primary.href}
+        ctaExternal={ctaActions.primary.external}
+        ctaIsWhatsApp={ctaActions.primary.isWhatsApp}
+        secondaryWhatsAppHref={ctaActions.secondaryWhatsAppHref}
+        formHref={ctaActions.formHref}
         themeBgClass={theme.bg}
       />
     </div>

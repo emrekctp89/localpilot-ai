@@ -6,16 +6,22 @@ interface NavItem {
 interface MiniSiteTopBarProps {
   businessName: string;
   ctaText: string;
+  ctaHref: string;
+  ctaExternal?: boolean;
+  ctaIsWhatsApp?: boolean;
   themeBgClass: string;
-  whatsappHref?: string;
+  secondaryWhatsAppHref?: string | null;
   navItems?: NavItem[];
 }
 
 export default function MiniSiteTopBar({
   businessName,
   ctaText,
+  ctaHref,
+  ctaExternal = false,
+  ctaIsWhatsApp = false,
   themeBgClass,
-  whatsappHref,
+  secondaryWhatsAppHref,
   navItems = [],
 }: MiniSiteTopBarProps) {
   return (
@@ -43,9 +49,9 @@ export default function MiniSiteTopBar({
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {whatsappHref ? (
+          {secondaryWhatsAppHref ? (
             <a
-              href={whatsappHref}
+              href={secondaryWhatsAppHref}
               target="_blank"
               rel="noreferrer"
               className="hidden min-h-10 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 sm:inline-flex"
@@ -54,9 +60,21 @@ export default function MiniSiteTopBar({
             </a>
           ) : null}
           <a
-            href="#iletisim"
-            className={`inline-flex min-h-10 items-center rounded-full px-4 py-2 text-xs font-bold text-white sm:text-sm ${themeBgClass}`}
+            href={ctaHref}
+            {...(ctaExternal
+              ? { target: "_blank", rel: "noreferrer" }
+              : {})}
+            className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white sm:text-sm ${
+              ctaIsWhatsApp
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : themeBgClass
+            }`}
           >
+            {ctaIsWhatsApp ? (
+              <span aria-hidden="true" className="text-sm">
+                💬
+              </span>
+            ) : null}
             {ctaText}
           </a>
         </div>

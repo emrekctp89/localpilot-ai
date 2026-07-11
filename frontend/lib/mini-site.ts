@@ -98,6 +98,87 @@ export function buildDefaultWhatsAppMessage(
   return `Merhaba ${business.name || "işletme"}${location}, bilgi almak istiyorum.`;
 }
 
+/**
+ * True when CTA label clearly targets WhatsApp (avoid duplicate WA buttons).
+ * Matches common TR labels: WhatsApp, WA, Tıkla-Yaz, Mesaj at, …
+ */
+export function isWhatsAppCtaLabel(label?: string | null): boolean {
+  const raw = (label || "").trim().toLowerCase();
+  if (!raw) return false;
+
+  if (raw.includes("whatsapp") || raw.includes("whats app")) return true;
+  if (raw === "wa" || raw.startsWith("wa ") || raw.endsWith(" wa")) return true;
+  if (/\bwp\b/.test(raw)) return true;
+  if (raw.includes("tıkla-yaz") || raw.includes("tikla-yaz")) return true;
+  if (raw.includes("tıkla yaz") || raw.includes("tikla yaz")) return true;
+  if (raw.includes("mesaj at") || raw.includes("mesaj yaz")) return true;
+  if (raw.includes("yazın") && raw.includes("whats")) return true;
+  return false;
+}
+
+export interface MiniSiteCtaActions {
+  primary: {
+    href: string;
+    label: string;
+    external: boolean;
+    isWhatsApp: boolean;
+  };
+  /** Secondary WhatsApp chip/button — null when primary already is WhatsApp. */
+  secondaryWhatsAppHref: string | null;
+  formHref: string;
+}
+
+/** Resolve hero/top/sticky CTAs so WhatsApp CTA does not double up. */
+export function resolveMiniSiteCtaActions(options: {
+  ctaText?: string | null;
+  whatsappHref?: string | null;
+  formHref?: string;
+}): MiniSiteCtaActions {
+  const label = options.ctaText?.trim() || "Bize Ulaşın";
+  const formHref = options.formHref || "#iletisim";
+  const whatsappHref = options.whatsappHref?.trim() || "";
+  const ctaIsWhatsApp = Boolean(whatsappHref && isWhatsAppCtaLabel(label));
+
+  if (ctaIsWhatsApp) {
+    return {
+      primary: {
+        href: whatsappHref,
+        label,
+        external: true,
+        isWhatsApp: true,
+      },
+      secondaryWhatsAppHref: null,
+      formHref,
+    };
+  }
+
+  return {
+    primary: {
+      href: formHref,
+      label,
+      external: false,
+      isWhatsApp: false,
+    },
+    secondaryWhatsAppHref: whatsappHref || null,
+    formHref,
+  };
+}
+
+/** Split about text into paragraphs (blank-line or single newline). */
+export function splitAboutParagraphs(about?: string | null): string[] {
+  const text = about?.trim() || "";
+  if (!text) return [];
+  const byBlank = text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (byBlank.length > 1) return byBlank;
+  return text
+    .split(/\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
 /** Prefill WhatsApp when visitor inquires about a specific product/service. */
 export function buildProductInquiryWhatsAppMessage(
   business: Pick<Business, "name" | "city">,
