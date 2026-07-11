@@ -581,7 +581,9 @@ test("marketing site exposes landing, sector demos and pricing page", async () =
 
   assert.match(landingSource, /MARKETING_VALUE_PROPS/);
   assert.match(landingSource, /SectorDemoShowcase/);
-  assert.match(landingSource, /İşletmenizi yönetin, AI ile büyütün/);
+  assert.match(landingSource, /İşletmenizi yönetin/);
+  assert.match(landingSource, /AI ile büyütün/);
+  assert.match(landingSource, /lp-page|lp-btn-primary/);
   assert.doesNotMatch(landingSource, /redirect\(/);
   assert.match(pricingSource, /PricingCards/);
   assert.match(marketingLibSource, /SECTOR_DEMOS/);
