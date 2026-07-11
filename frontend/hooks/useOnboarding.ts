@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { setupBusiness } from "@/lib/ai-client";
+import { setupBusiness, predictTabs } from "@/lib/ai-client";
 import { getCampaignsFromPlan } from "@/lib/plan-utils";
 import type { OnboardingData } from "@/app/components/dashboard/OnboardingWizard";
 import type { Business, Campaign, GeneratedPlan } from "@/lib/domain-types";
@@ -200,6 +200,19 @@ export function useOnboardingSetup({
       // ai_options sadece wizard UI için — setup API'ye gönderme
       const { ai_options: _aiOptions, ...setupFields } = onboardingData;
 
+      // ML Sekme Tahmini - Hata olursa boş array döner
+      let predicted_tabs: string[] = [];
+      try {
+        const mlResult = await predictTabs({
+          industry: onboardingData.industry,
+          business_type: onboardingData.business_type,
+          goals: onboardingData.goals,
+        });
+        predicted_tabs = mlResult.predicted_tabs || [];
+      } catch (err) {
+        console.error("ML Prediction error:", err);
+      }
+
       const data = await setupBusiness({
         owner_id: session.user.id,
         ...setupFields,
@@ -221,6 +234,8 @@ export function useOnboardingSetup({
         business_description: onboardingData.business_description || "",
         main_problem: onboardingData.main_problem || "",
         price_level: onboardingData.price_level || "",
+        // ML tahminini son yaz — spread üzerine basmasın
+        active_modules: predicted_tabs,
       });
 
       const nextBusiness = data.business as unknown as Business;

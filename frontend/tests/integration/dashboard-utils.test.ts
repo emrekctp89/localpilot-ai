@@ -51,4 +51,19 @@ describe("dashboard utils integration", () => {
     assert.ok(siparisIndex >= 0);
     assert.ok(crmIndex < siparisIndex);
   });
+
+  it("prefers active_modules (ML) over business_type heuristics", () => {
+    const tabs = getVisibleTabs({
+      business_type: "hizmet",
+      active_modules: ["menu", "siparis", "kasa"],
+      goals: ["x"],
+      address: "Ankara",
+    });
+    assert.ok(tabs.includes("menu"));
+    assert.ok(tabs.includes("siparis"));
+    assert.ok(tabs.includes("kasa"));
+    assert.ok(tabs.includes("ozet"));
+    // ML listesinde yoksa randevu eklenmez (heuristic devre dışı)
+    assert.equal(tabs.includes("randevu"), false);
+  });
 });

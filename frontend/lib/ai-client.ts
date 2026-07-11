@@ -139,6 +139,34 @@ export async function fetchGoogleProfileSuggestions(input: {
   return postJson("/integration/google-profile-suggestions", input);
 }
 
+export interface MagicFillResult {
+  name: string;
+  industry: string;
+  business_type: string;
+  city: string;
+  address: string;
+  whatsapp_number: string;
+  working_hours: string;
+  business_description: string;
+  top_products: string[];
+}
+
+export async function magicFill(input: { url: string }): Promise<MagicFillResult> {
+  return postJson("/magic-fill", input);
+}
+
+export interface PredictTabsResult {
+  predicted_tabs: string[];
+}
+
+export async function predictTabs(input: {
+  industry: string;
+  business_type: string;
+  goals: string[];
+}): Promise<PredictTabsResult> {
+  return postJson("/predict-tabs", input);
+}
+
 export interface OnboardingOptionsResult {
   goals_options: string[];
   top_products_placeholders: string[];

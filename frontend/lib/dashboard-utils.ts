@@ -51,11 +51,15 @@ function sortTabIds(tabIds: Iterable<string>): string[] {
   return DASHBOARD_TAB_ORDER.filter((tabId) => set.has(tabId));
 }
 
+const KNOWN_TAB_IDS = new Set<string>(DASHBOARD_TAB_ORDER);
+
 function tabsFromActiveModules(activeModules: string[]): string[] {
   const tabs = new Set<string>(CORE_TABS);
   for (const moduleId of activeModules) {
-    const mapped = MODULE_TO_TAB[moduleId];
-    if (mapped) tabs.add(mapped);
+    const mapped = MODULE_TO_TAB[moduleId] || moduleId;
+    if (mapped && KNOWN_TAB_IDS.has(mapped)) {
+      tabs.add(mapped);
+    }
   }
   return sortTabIds(tabs);
 }
@@ -63,16 +67,18 @@ function tabsFromActiveModules(activeModules: string[]): string[] {
 export function getVisibleTabs(business: Business | null): string[] {
   if (!business) return [];
 
+  // ML / setup ile gelen active_modules varsa öncelik ver (core sekmeler her zaman dahil)
+  const modules = (business.active_modules || []).filter(Boolean);
+  if (modules.length > 0) {
+    return tabsFromActiveModules(modules);
+  }
+
   const visibleTabs = new Set<string>(CORE_TABS);
   const type = (business.business_type || "").trim();
   const isUrun = type === "urun" || type === "ikisi";
   const isHizmet = type === "hizmet" || type === "ikisi";
 
   if (!type) {
-    const modules = business.active_modules || [];
-    if (modules.length > 0) {
-      return tabsFromActiveModules(modules);
-    }
     for (const tabId of DEFAULT_OPERATIONAL_TABS) {
       visibleTabs.add(tabId);
     }

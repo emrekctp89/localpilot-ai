@@ -7,3 +7,5 @@ supabase
 stripe
 numpy
 scikit-learn
+requests
+beautifulsoup4

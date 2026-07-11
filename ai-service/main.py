@@ -14,6 +14,12 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from datetime import datetime
 from collections import defaultdict
+import ipaddress
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+
+from tab_predictor import tab_predictor_model
 
 from middleware.ai_usage import (
     build_pro_usage_snapshot,
@@ -339,6 +345,7 @@ class BusinessSetup(BaseModel):
     price_level: Optional[str] = ""
     current_digital_status: List[str] = Field(default_factory=list)
     desired_outputs: List[str] = Field(default_factory=list)
+    active_modules: List[str] = Field(default_factory=list)
 
 
 # ------------------------------------------------------------
@@ -489,6 +496,32 @@ class GenerateOnboardingOptionsResponse(BaseModel):
     unique_selling_point_options: List[str]
 
 
+class MagicFillRequest(BaseModel):
+    url: str
+
+
+class MagicFillResponse(BaseModel):
+    name: str = ""
+    industry: str = ""
+    business_type: str = ""
+    city: str = ""
+    address: str = ""
+    whatsapp_number: str = ""
+    working_hours: str = ""
+    business_description: str = ""
+    top_products: List[str] = Field(default_factory=list)
+
+
+class PredictTabsRequest(BaseModel):
+    industry: str
+    business_type: str
+    goals: List[str] = Field(default_factory=list)
+
+
+class PredictTabsResponse(BaseModel):
+    predicted_tabs: List[str]
+
+
 # ------------------------------------------------------------
 # ENDPOINTS
 # ------------------------------------------------------------
@@ -538,6 +571,162 @@ async def generate_onboarding_options(req: GenerateOnboardingOptionsRequest):
     except Exception as e:
         print("Onboarding options generation error:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _is_public_http_url(url: str) -> bool:
+    """Block localhost / private IPs for magic-fill SSRF hardening."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = (parsed.hostname or "").lower()
+        if not host or host in {"localhost", "metadata.google.internal"}:
+            return False
+        if host.endswith(".local") or host.endswith(".internal"):
+            return False
+        try:
+            ip = ipaddress.ip_address(host)
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+            ):
+                return False
+        except ValueError:
+            # Hostname (not literal IP) — allow DNS resolution by requests
+            pass
+        return True
+    except Exception:
+        return False
+
+
+@app.post("/magic-fill", response_model=MagicFillResponse)
+async def magic_fill(req: MagicFillRequest):
+    try:
+        url = (req.url or "").strip()
+        if not url.startswith("http"):
+            url = "https://" + url
+
+        if not _is_public_http_url(url):
+            raise HTTPException(
+                status_code=400,
+                detail="Geçerli bir herkese açık web adresi girin.",
+            )
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (compatible; LocalPilotBot/1.0; +https://localpilot.ai)"
+            )
+        }
+        response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+        response.raise_for_status()
+
+        # After redirects, re-check final host
+        if not _is_public_http_url(response.url):
+            raise HTTPException(
+                status_code=400,
+                detail="Hedef adres güvenli değil.",
+            )
+
+        soup = BeautifulSoup(response.content, "html.parser")
+        for element in soup(["script", "style", "meta", "noscript"]):
+            element.extract()
+
+        text = soup.get_text(separator=" ")
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (
+            phrase.strip() for line in lines for phrase in line.split("  ")
+        )
+        visible_text = "\n".join(chunk for chunk in chunks if chunk)
+        visible_text = visible_text[:3000]
+
+        system_instruction = """
+        Sen LocalPilot AI platformunun veri çıkarım uzmanısın.
+        Aşağıda bir işletmenin web sitesinden kazınmış (scraping) ham metin bulunuyor.
+        Bu metinden yararlanarak işletmenin temel bilgilerini çıkar ve sadece JSON formatında dön.
+        Bulamadığın bilgileri boş bırak (string için "") veya boş dizi ([]) yap.
+
+        business_type sadece: "urun" | "hizmet" | "ikisi"
+        industry mümkünse net sektör adı (Türkçe).
+
+        Çıktı Formatı:
+        {
+          "name": "İşletme Adı",
+          "industry": "Sektör",
+          "business_type": "urun",
+          "city": "Şehir",
+          "address": "Tam adres",
+          "whatsapp_number": "Telefon",
+          "working_hours": "Çalışma saatleri",
+          "business_description": "1-2 cümle özet",
+          "top_products": ["ürün/hizmet 1", "ürün/hizmet 2", "ürün/hizmet 3"]
+        }
+        """
+
+        user_prompt = (
+            f"Web sitesi içeriği:\n{visible_text}\n\nLütfen JSON olarak doldur."
+        )
+
+        data = generate_ai_json(system_instruction, user_prompt, temperature=0.5) or {}
+
+        products = data.get("top_products") or []
+        if not isinstance(products, list):
+            products = []
+        products = [str(p).strip() for p in products if str(p).strip()][:3]
+
+        business_type = str(data.get("business_type") or "").strip().lower()
+        if business_type not in {"urun", "hizmet", "ikisi"}:
+            business_type = ""
+
+        return MagicFillResponse(
+            name=str(data.get("name") or "").strip(),
+            industry=str(data.get("industry") or "").strip(),
+            business_type=business_type,
+            city=str(data.get("city") or "").strip(),
+            address=str(data.get("address") or "").strip(),
+            whatsapp_number=str(data.get("whatsapp_number") or "").strip(),
+            working_hours=str(data.get("working_hours") or "").strip(),
+            business_description=str(data.get("business_description") or "").strip(),
+            top_products=products,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Magic fill error:", e)
+        raise HTTPException(
+            status_code=500,
+            detail="Web sitesi okunamadı veya bilgiler çıkarılamadı.",
+        )
+
+
+@app.post("/predict-tabs", response_model=PredictTabsResponse)
+async def predict_tabs(req: PredictTabsRequest):
+    try:
+        tabs = tab_predictor_model.predict(
+            req.industry, req.business_type, req.goals
+        )
+        allowed = {
+            "is_akisi",
+            "icerik",
+            "crm",
+            "randevu",
+            "siparis",
+            "menu",
+            "kasa",
+            "google_business",
+            "personel",
+            "gorevler",
+        }
+        cleaned = [t for t in (tabs or []) if t in allowed]
+        return PredictTabsResponse(predicted_tabs=cleaned)
+    except Exception as e:
+        print("ML prediction error:", e)
+        raise HTTPException(
+            status_code=500, detail="Sekme tahmini sırasında hata oluştu."
+        )
+
 
 @app.post("/generate-plan")
 async def generate_plan(business: BusinessInput):
@@ -1141,8 +1330,8 @@ async def setup_business(data: BusinessSetup):
         raise HTTPException(status_code=500, detail=f"Kurulum Hatası: {str(e)}")
 
     # Dinamik sekme mimarisine geçildiği için active_modules artık AI tarafından üretilmiyor.
-    # Boş liste olarak ayarlanır, frontend kendi hesaplar.
-    active_modules = []
+    # Bunun yerine ML tahmin modeli tarafından üretilen veriler frontend üzerinden aktarılır.
+    active_modules = data.active_modules if data.active_modules else []
     
     theme_config = ai_decision.get("theme_config") or {
         "primaryColor": normalize_color(data.color_preference),

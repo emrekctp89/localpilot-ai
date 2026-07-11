@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { buildDraftOnboardingRate } from "@/lib/activation-metrics";
 import { resolveSectorPackFromIndustry } from "@/lib/sector-packs";
-import { generateOnboardingOptions, type OnboardingOptionsResult } from "@/lib/ai-client";
+import { generateOnboardingOptions, magicFill, type OnboardingOptionsResult } from "@/lib/ai-client";
 
 export interface OnboardingData {
   name: string;
@@ -113,6 +113,48 @@ export default function OnboardingWizard({
 }: OnboardingWizardProps) {
   const [attemptedSteps, setAttemptedSteps] = useState<number[]>([]);
   const [isGeneratingOptions, setIsGeneratingOptions] = useState(false);
+  const [magicUrl, setMagicUrl] = useState("");
+  const [isMagicFilling, setIsMagicFilling] = useState(false);
+
+  const handleMagicFill = async () => {
+    if (!magicUrl.trim()) return;
+    setIsMagicFilling(true);
+    try {
+      const res = await magicFill({ url: magicUrl.trim() });
+      const products =
+        res.top_products && res.top_products.length > 0
+          ? [
+              res.top_products[0] || "",
+              res.top_products[1] || "",
+              res.top_products[2] || "",
+            ]
+          : data.top_products;
+
+      // setData is (data) => void — not React setState; spread current data.
+      setData({
+        ...data,
+        name: res.name || data.name,
+        industry: res.industry || data.industry,
+        business_type: res.business_type || data.business_type,
+        city: res.city || data.city,
+        address: res.address || data.address,
+        whatsapp_number: res.whatsapp_number || data.whatsapp_number,
+        working_hours: res.working_hours || data.working_hours,
+        business_description:
+          res.business_description || data.business_description,
+        top_products: products,
+        // Sektör değiştiyse chip cache'i düşür
+        ai_options:
+          res.industry && res.industry !== data.industry
+            ? null
+            : data.ai_options,
+      });
+    } catch (e) {
+      console.error("Magic fill error:", e);
+    } finally {
+      setIsMagicFilling(false);
+    }
+  };
 
   const toggleArrayItem = (
     field:
@@ -332,6 +374,44 @@ export default function OnboardingWizard({
             {/* ADIM 1: TEMEL BİLGİLER */}
       {step === 1 && (
         <div className="space-y-5 animate-fade-in-up">
+          {/* Sihirli Doldurma */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+            <label className="block text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+              <span>✨ Sihirli Doldurma (Web Siteniz)</span>
+              <span className="text-xs font-normal bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Yapay Zeka</span>
+            </label>
+            <p className="text-xs text-indigo-700 mb-3">
+              Web sitenizin veya sosyal medya hesabınızın linkini girin, formu sizin yerinize dolduralım.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://www.ornek.com"
+                className="flex-1 border-2 border-indigo-200 rounded-lg p-2.5 focus:ring-0 focus:border-indigo-500 outline-none transition text-sm text-black bg-white"
+                value={magicUrl}
+                onChange={(e) => setMagicUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleMagicFill();
+                  }
+                }}
+              />
+              <button
+                onClick={handleMagicFill}
+                disabled={isMagicFilling || !magicUrl}
+                className="bg-indigo-600 text-white font-bold px-4 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+              >
+                {isMagicFilling ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  "Doldur ➔"
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="border-t border-gray-100 my-2"></div>
+          
           <div>
             <label className="lp-label">
               İşletmenizin Adı

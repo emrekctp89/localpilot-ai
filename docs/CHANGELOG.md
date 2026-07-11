@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.8 - 2026-07-12
+
+### Added
+- Onboarding **Sihirli Doldurma**: website scrape + AI (`POST /magic-fill`).
+- ML tab prediction for new businesses (`POST /predict-tabs`, `tab_predictor.py`).
+- Setup accepts `active_modules` from frontend ML result.
+
+### Changed
+- `getVisibleTabs` prioritizes non-empty `active_modules` (ML) over type heuristics.
+- Docker image includes `tab_predictor.py`; requirements: `requests`, `beautifulsoup4`.
+
+### Fixed
+- Magic-fill SSRF basics, text join bug, response sanitize.
+- Magic-fill `setData` typing (not React setState).
+- Predict-tabs allowlist of known module/tab ids.
+
 ## 2.5.7 - 2026-07-12
 
 ### Added

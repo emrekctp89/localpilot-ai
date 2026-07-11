@@ -16,6 +16,7 @@ COPY main.py .
 COPY ai_cache.py .
 COPY prompt_context.py .
 COPY site_slug.py .
+COPY tab_predictor.py .
 COPY middleware ./middleware
 COPY integrations ./integrations
 
