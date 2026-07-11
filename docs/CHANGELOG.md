@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.5 - 2026-07-11
+
+### Added
+- Product-specific WhatsApp inquiry messages (name + optional price).
+- Lead form auto-fills notes when visitor taps product “Detay Al”.
+- Testimonials section id + top-nav “Yorumlar” when present.
+- Ayarlar mini-site readiness checklist (slogan, about, features, WA, slug, CTA).
+- Richer live theme preview card with publish badge and open path.
+
+### Changed
+- Product list cards also expose Detay Al / WhatsApp actions.
+
 ## 2.5.4 - 2026-07-11
 
 ### Added

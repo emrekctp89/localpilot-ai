@@ -21,6 +21,37 @@ describe("business slug ensure + lead phone (v2.5)", () => {
     assert.equal(normalizeWhatsAppNumber("05321234567"), "905321234567");
   });
 
+  it("builds product inquiry WhatsApp and interest notes", async () => {
+    const {
+      buildProductInquiryWhatsAppMessage,
+      buildProductInterestNote,
+      buildWhatsAppDeepLink,
+    } = await import("../../lib/mini-site");
+
+    const message = buildProductInquiryWhatsAppMessage(
+      { name: "Demo Kuaför", city: "İstanbul" },
+      { name: "Saç Kesimi", price: 350, category: "Hizmet" },
+    );
+    assert.match(message, /Saç Kesimi/);
+    assert.match(message, /bilgi almak/i);
+
+    const withPrefill = buildProductInquiryWhatsAppMessage(
+      { name: "Demo" },
+      { name: "Manikür" },
+      { whatsapp_prefill_message: "Merhaba, randevu istiyorum." },
+    );
+    assert.match(withPrefill, /Merhaba, randevu istiyorum/);
+    assert.match(withPrefill, /Manikür/);
+
+    assert.equal(
+      buildProductInterestNote({ name: "Boya", category: "Hizmet" }),
+      "İlgilendiğim: Boya (Hizmet)",
+    );
+
+    const link = buildWhatsAppDeepLink("05321234567", message);
+    assert.match(link, /^https:\/\/wa\.me\/905321234567\?text=/);
+  });
+
   it("wires ensureBusinessSiteSlug into dashboard session", () => {
     const session = readSource("hooks/useDashboardSession.ts");
     const repo = readSource("lib/repositories/business-slug.ts");

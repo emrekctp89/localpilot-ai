@@ -738,6 +738,74 @@ export default function AyarlarTab({
                 ? "Mini siteniz herkese açık. Linki paylaşabilir veya önizleyebilirsiniz."
                 : "Site taslak modda. Ziyaretçiler göremez; önizleme için kaydedip önizleme butonunu kullanın."}
             </p>
+            {(() => {
+              const readiness = [
+                {
+                  ok: Boolean(siteData.hero_slogan?.trim()),
+                  label: "Slogan",
+                },
+                {
+                  ok: Boolean(siteData.about_us?.trim()),
+                  label: "Hakkımızda",
+                },
+                {
+                  ok: (siteData.features || []).some((f) => f?.trim()),
+                  label: "Özellikler",
+                },
+                {
+                  ok: Boolean(business?.whatsapp_number?.trim()),
+                  label: "WhatsApp no",
+                },
+                {
+                  ok: Boolean(
+                    (siteSlugInput.trim() && slugPreview.ok) ||
+                      business?.site_slug?.trim(),
+                  ),
+                  label: "Kısa link",
+                },
+                {
+                  ok: Boolean(siteData.cta_text?.trim()),
+                  label: "CTA metni",
+                },
+              ];
+              const readyCount = readiness.filter((item) => item.ok).length;
+              return (
+                <div className="mt-4 rounded-xl border border-emerald-100 bg-white/80 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
+                      Vitrin hazırlığı
+                    </p>
+                    <p className="text-xs font-bold text-gray-600">
+                      {readyCount}/{readiness.length}
+                    </p>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      style={{
+                        width: `${Math.round(
+                          (readyCount / readiness.length) * 100,
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {readiness.map((item) => (
+                      <li
+                        key={item.label}
+                        className={`rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                          item.ok
+                            ? "bg-emerald-50 text-emerald-800"
+                            : "bg-gray-50 text-gray-500"
+                        }`}
+                      >
+                        {item.ok ? "✓" : "○"} {item.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -979,34 +1047,77 @@ export default function AyarlarTab({
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-3">
-                Bu renk mini sitenin ana butonlarini, vurgularini ve dashboard
-                pariltisini etkiler.
+              <p className="mt-3 text-xs text-gray-400">
+                Bu renk mini sitenin ana butonlarını, vurgularını ve dashboard
+                parıltısını etkiler.
               </p>
             </div>
 
             <div
               className={`lg:w-80 rounded-2xl border ${activeTheme.border} ${activeTheme.light} p-4`}
             >
-              <div className="rounded-xl bg-white p-4 shadow-sm border border-white">
-                <div
-                  className={`mb-4 h-2 w-20 rounded-full ${activeTheme.bg}`}
-                />
+              <div className="rounded-xl border border-white bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div
+                    className={`h-2 w-16 rounded-full ${activeTheme.bg}`}
+                  />
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${
+                      isPublished
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {isPublished ? "Yayında" : "Taslak"}
+                  </span>
+                </div>
                 <p className="text-xs font-black uppercase tracking-widest text-gray-400">
-                  Mini Site Onizleme
+                  Mini site önizleme
                 </p>
                 <h3 className="mt-2 text-lg font-black text-gray-900">
                   {business?.name || "Mini Site"}
                 </h3>
-                <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                <p className="mt-1 line-clamp-2 text-sm text-gray-500">
                   {siteData.hero_slogan || "Mükemmel hizmetin yeni adresi."}
                 </p>
-                <button
-                  type="button"
-                  className={`mt-4 rounded-xl px-4 py-2 text-sm font-bold text-white ${activeTheme.bg}`}
-                >
-                  {siteData.cta_text || "Bize Ulasin"}
-                </button>
+                {(siteData.features || []).filter((f) => f?.trim()).length >
+                0 ? (
+                  <ul className="mt-3 space-y-1">
+                    {(siteData.features || [])
+                      .filter((f) => f?.trim())
+                      .slice(0, 2)
+                      .map((feature) => (
+                        <li
+                          key={feature}
+                          className="truncate text-xs font-semibold text-gray-600"
+                        >
+                          ✓ {feature}
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={`rounded-xl px-4 py-2 text-sm font-bold text-white ${activeTheme.bg}`}
+                  >
+                    {siteData.cta_text || "Bize Ulaşın"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenPublicSite}
+                    disabled={!business?.id}
+                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Canlı aç
+                  </button>
+                </div>
+                {publicPath ? (
+                  <p className="mt-3 truncate font-mono text-[11px] text-gray-400">
+                    {publicPath}
+                    {!isPublished ? "?preview=1" : ""}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

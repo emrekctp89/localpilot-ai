@@ -98,6 +98,44 @@ export function buildDefaultWhatsAppMessage(
   return `Merhaba ${business.name || "işletme"}${location}, bilgi almak istiyorum.`;
 }
 
+/** Prefill WhatsApp when visitor inquires about a specific product/service. */
+export function buildProductInquiryWhatsAppMessage(
+  business: Pick<Business, "name" | "city">,
+  product: Pick<Product, "name" | "price" | "category">,
+  siteData?: MiniSiteData | null,
+) {
+  const productName = product.name?.trim() || "ürün/hizmet";
+  const priceNote =
+    typeof product.price === "number"
+      ? ` (${new Intl.NumberFormat("tr-TR", {
+          style: "currency",
+          currency: "TRY",
+          maximumFractionDigits: 0,
+        }).format(product.price)})`
+      : "";
+  const interest = `"${productName}"${priceNote}`;
+
+  const base = siteData?.whatsapp_prefill_message?.trim();
+  if (base) {
+    return `${base}\n\nİlgilendiğim: ${interest}`;
+  }
+
+  const location = business.city ? ` (${business.city})` : "";
+  return `Merhaba ${business.name || "işletme"}${location}, ${interest} hakkında bilgi almak istiyorum.`;
+}
+
+/** Contact form note when arriving from a product CTA. */
+export function buildProductInterestNote(
+  product: Pick<Product, "name" | "category">,
+) {
+  const name = product.name?.trim();
+  if (!name) return "";
+  const category = product.category?.trim();
+  return category
+    ? `İlgilendiğim: ${name} (${category})`
+    : `İlgilendiğim: ${name}`;
+}
+
 export function buildMiniSiteSeo(
   business: Business,
   siteData?: MiniSiteData | null,

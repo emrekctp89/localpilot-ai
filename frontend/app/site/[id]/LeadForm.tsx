@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   buildLeadEmailDraft,
@@ -11,10 +11,26 @@ import {
 import { logAuditEvent } from "@/lib/platform/audit";
 import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 
+const PRODUCT_INTEREST_KEY = "localpilot:product-interest";
+
 interface LeadFormProps {
   businessId: string;
   businessName?: string;
   themeButtonClass?: string;
+}
+
+function readProductInterest(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const stored = sessionStorage.getItem(PRODUCT_INTEREST_KEY)?.trim() || "";
+    if (stored) {
+      sessionStorage.removeItem(PRODUCT_INTEREST_KEY);
+      return stored;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return "";
 }
 
 export default function LeadForm({
@@ -32,6 +48,21 @@ export default function LeadForm({
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [emailDraft, setEmailDraft] = useState("");
+
+  useEffect(() => {
+    const applyInterest = () => {
+      const interest = readProductInterest();
+      if (!interest) return;
+      setFormData((current) => {
+        if (current.notes.trim()) return current;
+        return { ...current, notes: interest };
+      });
+    };
+
+    applyInterest();
+    window.addEventListener("hashchange", applyInterest);
+    return () => window.removeEventListener("hashchange", applyInterest);
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

@@ -91,6 +91,7 @@ export default async function BusinessSite({
     .map((feature) => feature?.trim())
     .filter((feature): feature is string => Boolean(feature));
   const hasAbout = Boolean(siteData.about_us?.trim());
+  const hasTestimonials = (siteData.testimonials?.length || 0) > 0;
   const hasLocation = Boolean(
     business.address?.trim() ||
       business.city?.trim() ||
@@ -129,6 +130,9 @@ export default async function BusinessSite({
   const navItems = [
     ...(hasAbout ? [{ href: "#hakkimizda", label: "Hakkımızda" }] : []),
     ...(showProducts ? [{ href: "#menu", label: "Ürünler" }] : []),
+    ...(hasTestimonials
+      ? [{ href: "#yorumlar", label: "Yorumlar" }]
+      : []),
     ...(hasLocation ? [{ href: "#konum", label: "Konum" }] : []),
     { href: "#iletisim", label: "İletişim" },
   ];
@@ -360,6 +364,12 @@ export default async function BusinessSite({
         {showProducts && (
           <MiniSiteProducts
             products={productList}
+            business={{
+              name: business.name,
+              city: business.city,
+              whatsapp_number: business.whatsapp_number,
+            }}
+            siteData={siteData}
             theme={{
               bg: theme.bg,
               text: theme.text,
@@ -367,7 +377,6 @@ export default async function BusinessSite({
               shadow: theme.shadow,
             }}
             formatPrice={formatPrice}
-            whatsappHref={whatsappHref || undefined}
           />
         )}
 
@@ -462,14 +471,14 @@ export default async function BusinessSite({
         )}
 
         {/* Testimonials */}
-        {siteData.testimonials && siteData.testimonials.length > 0 && (
-          <section className="pt-12">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight mb-10">
+        {hasTestimonials && (
+          <section id="yorumlar" className="scroll-mt-24 pt-12">
+            <h2 className="mb-10 text-3xl font-black tracking-tight text-gray-900">
               Müşteri Deneyimleri
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {siteData.testimonials.map((testi, idx) => (
+              {(siteData.testimonials || []).map((testi, idx) => (
                 <div key={idx} className="glass-panel rounded-3xl p-8 relative">
                   <div
                     className={`text-6xl absolute top-4 right-6 opacity-10 ${theme.text} font-serif`}

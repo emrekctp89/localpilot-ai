@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Product } from "@/lib/domain-types";
+import { useMemo, useState, type MouseEvent } from "react";
+import type { Business, MiniSiteData, Product } from "@/lib/domain-types";
+import {
+  buildProductInquiryWhatsAppMessage,
+  buildProductInterestNote,
+  buildWhatsAppDeepLink,
+} from "@/lib/mini-site";
 
 interface MiniSiteProductsProps {
   products: Product[];
+  business: Pick<Business, "name" | "city" | "whatsapp_number">;
+  siteData?: MiniSiteData | null;
   theme: {
     bg: string;
     text: string;
@@ -12,14 +19,14 @@ interface MiniSiteProductsProps {
     shadow: string;
   };
   formatPrice: (price?: number | null) => string;
-  whatsappHref?: string;
 }
 
 export default function MiniSiteProducts({
   products,
+  business,
+  siteData,
   theme,
   formatPrice,
-  whatsappHref,
 }: MiniSiteProductsProps) {
   const categories = useMemo(
     () =>
@@ -44,6 +51,39 @@ export default function MiniSiteProducts({
 
   const featured = filtered.slice(0, 3);
   const rest = filtered.slice(3);
+
+  const productWhatsAppHref = (product: Product) => {
+    if (!business.whatsapp_number) return "";
+    return buildWhatsAppDeepLink(
+      business.whatsapp_number,
+      buildProductInquiryWhatsAppMessage(business, product, siteData),
+    );
+  };
+
+  const productContactHref = (product: Product) => {
+    const note = buildProductInterestNote(product);
+    if (!note) return "#iletisim";
+    return `#iletisim?interest=${encodeURIComponent(note)}`;
+  };
+
+  const handleContactClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    product: Product,
+  ) => {
+    const note = buildProductInterestNote(product);
+    if (!note || typeof window === "undefined") return;
+
+    // Store for LeadForm (hash query is not always parsed by browsers).
+    try {
+      sessionStorage.setItem("localpilot:product-interest", note);
+    } catch {
+      // private mode — ignore
+    }
+
+    // Prefer clean hash navigation; LeadForm reads sessionStorage.
+    event.preventDefault();
+    window.location.hash = "iletisim";
+  };
 
   return (
     <section id="menu" className="scroll-mt-24 pt-12">
@@ -129,97 +169,126 @@ export default function MiniSiteProducts({
         <>
           {featured.length > 0 && (
             <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-3">
-              {featured.map((product, index) => (
-                <article
-                  key={product.id}
-                  className={`glass-panel relative flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl p-6 ${
-                    index === 0 ? "md:col-span-2" : ""
-                  }`}
-                >
-                  <div
-                    className={`absolute -right-12 -top-12 h-36 w-36 rounded-full ${theme.light}`}
-                  />
-                  <div className="relative">
-                    <div className="mb-5 flex items-center justify-between gap-3">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${theme.light} ${theme.text}`}
-                      >
-                        {product.category || "Genel"}
-                      </span>
-                      <span className={`text-xl font-black ${theme.text}`}>
-                        {formatPrice(product.price)}
-                      </span>
+              {featured.map((product, index) => {
+                const waHref = productWhatsAppHref(product);
+                return (
+                  <article
+                    key={product.id}
+                    className={`glass-panel relative flex min-h-64 flex-col justify-between overflow-hidden rounded-3xl p-6 ${
+                      index === 0 ? "md:col-span-2" : ""
+                    }`}
+                  >
+                    <div
+                      className={`absolute -right-12 -top-12 h-36 w-36 rounded-full ${theme.light}`}
+                    />
+                    <div className="relative">
+                      <div className="mb-5 flex items-center justify-between gap-3">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-widest ${theme.light} ${theme.text}`}
+                        >
+                          {product.category || "Genel"}
+                        </span>
+                        <span className={`text-xl font-black ${theme.text}`}>
+                          {formatPrice(product.price)}
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl font-black leading-tight text-gray-900">
+                        {product.name}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-gray-500">
+                        {product.description ||
+                          "Bu ürün hakkında detaylı bilgi almak için bize ulaşın."}
+                      </p>
                     </div>
 
-                    <h3 className="text-2xl font-black leading-tight text-gray-900">
-                      {product.name}
-                    </h3>
-                    <p className="mt-3 text-sm leading-6 text-gray-500">
-                      {product.description ||
-                        "Bu ürün hakkında detaylı bilgi almak için bize ulaşın."}
-                    </p>
-                  </div>
-
-                  <div className="relative mt-6 flex flex-wrap gap-2">
-                    <a
-                      href="#iletisim"
-                      className={`inline-flex w-fit rounded-xl px-4 py-2 text-sm font-bold text-white shadow-lg ${theme.bg} ${theme.shadow}`}
-                    >
-                      Detay Al
-                    </a>
-                    {whatsappHref ? (
+                    <div className="relative mt-6 flex flex-wrap gap-2">
                       <a
-                        href={whatsappHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex w-fit rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800"
+                        href={productContactHref(product)}
+                        onClick={(event) => handleContactClick(event, product)}
+                        className={`inline-flex w-fit rounded-xl px-4 py-2 text-sm font-bold text-white shadow-lg ${theme.bg} ${theme.shadow}`}
                       >
-                        WhatsApp
+                        Detay Al
                       </a>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+                      {waHref ? (
+                        <a
+                          href={waHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex w-fit rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800"
+                        >
+                          WhatsApp
+                        </a>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
 
           {rest.length > 0 && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {rest.map((product) => (
-                <article
-                  key={product.id}
-                  className="group glass-panel flex items-start gap-4 rounded-2xl p-5 transition-colors hover:border-gray-300"
-                >
-                  <div
-                    className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black ${theme.light} ${theme.text}`}
+              {rest.map((product) => {
+                const waHref = productWhatsAppHref(product);
+                return (
+                  <article
+                    key={product.id}
+                    className="group glass-panel flex items-start gap-4 rounded-2xl p-5 transition-colors hover:border-gray-300"
                   >
-                    {product.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold text-gray-400">
-                          {product.category || "Genel"}
-                        </p>
-                        <h3 className="text-lg font-bold text-gray-900 transition-colors group-hover:text-gray-600">
-                          {product.name}
-                        </h3>
-                      </div>
-                      <span
-                        className={`whitespace-nowrap text-lg font-black ${theme.text}`}
-                      >
-                        {formatPrice(product.price)}
-                      </span>
+                    <div
+                      className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-black ${theme.light} ${theme.text}`}
+                    >
+                      {product.name.slice(0, 1).toLocaleUpperCase("tr-TR")}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold text-gray-400">
+                            {product.category || "Genel"}
+                          </p>
+                          <h3 className="text-lg font-bold text-gray-900 transition-colors group-hover:text-gray-600">
+                            {product.name}
+                          </h3>
+                        </div>
+                        <span
+                          className={`whitespace-nowrap text-lg font-black ${theme.text}`}
+                        >
+                          {formatPrice(product.price)}
+                        </span>
+                      </div>
 
-                    {product.description ? (
-                      <p className="mt-2 line-clamp-2 text-sm text-gray-500">
-                        {product.description}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
+                      {product.description ? (
+                        <p className="mt-2 line-clamp-2 text-sm text-gray-500">
+                          {product.description}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <a
+                          href={productContactHref(product)}
+                          onClick={(event) =>
+                            handleContactClick(event, product)
+                          }
+                          className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold text-white ${theme.bg}`}
+                        >
+                          Detay Al
+                        </a>
+                        {waHref ? (
+                          <a
+                            href={waHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800"
+                          >
+                            WhatsApp
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </>
