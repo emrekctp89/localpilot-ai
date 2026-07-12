@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.2 - 2026-07-12
+
+### Fixed
+- Auth `fetch Invalid value`: sanitize `NEXT_PUBLIC_SUPABASE_URL` / `ANON_KEY` (trim, first line only) so multi-line Vercel paste does not break Authorization headers.
+- Auth page shows clear config error when Supabase env is missing/corrupt.
+
 ## 2.6.1 - 2026-07-12
 
 ### Added

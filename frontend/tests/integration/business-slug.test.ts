@@ -12,6 +12,20 @@ function readSource(relativePath: string) {
 }
 
 describe("business slug ensure + lead phone (v2.5)", () => {
+  it("sanitizes supabase env values (newlines / multi-paste)", async () => {
+    const { sanitizeEnvValue, sanitizeSupabaseUrl } = await import(
+      "../../lib/supabase-env"
+    );
+    const key =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSJ9.sig";
+    assert.equal(sanitizeEnvValue(`  ${key}\n${key}\n${key}  `), key);
+    assert.equal(
+      sanitizeSupabaseUrl("https://abc.supabase.co/"),
+      "https://abc.supabase.co",
+    );
+    assert.equal(sanitizeSupabaseUrl("not a url"), "");
+  });
+
   it("validates common TR mobile formats", () => {
     assert.equal(isValidLeadPhone("0532 123 45 67"), true);
     assert.equal(isValidLeadPhone("5321234567"), true);

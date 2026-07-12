@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { attributeReferralCode } from "@/lib/repositories/partner-program";
 import {
   clearStoredReferralCode,
@@ -30,6 +30,12 @@ export default function AuthPage() {
 
   const handleGoogleLogin = async () => {
     setErrorMessage("");
+    if (!isSupabaseConfigured()) {
+      setErrorMessage(
+        "Supabase yapılandırması eksik veya bozuk (Vercel env). NEXT_PUBLIC_SUPABASE_URL ve ANON_KEY tek satır olmalı.",
+      );
+      return;
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -51,6 +57,14 @@ export default function AuthPage() {
     setErrorMessage("");
     setInfoMessage("");
 
+    if (!isSupabaseConfigured()) {
+      setErrorMessage(
+        "Supabase yapılandırması eksik veya bozuk. Vercel → Environment Variables: NEXT_PUBLIC_SUPABASE_ANON_KEY tek satır JWT olmalı (kopyala-yapıştır tekrarı / satır sonu olmasın).",
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -67,9 +81,16 @@ export default function AuthPage() {
         setIsLogin(true);
       }
     } catch (error: unknown) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Bilinmeyen hata",
-      );
+      const message =
+        error instanceof Error ? error.message : "Bilinmeyen hata";
+      // Browser: fetch Invalid value → genelde header'da newline (bozuk env key)
+      if (/invalid value|failed to execute 'fetch'/i.test(message)) {
+        setErrorMessage(
+          "Bağlantı hatası: Supabase anahtarı geçersiz karakter içeriyor olabilir. Vercel env'de NEXT_PUBLIC_SUPABASE_ANON_KEY'i tek satır olarak yeniden kaydedin ve Redeploy yapın.",
+        );
+      } else {
+        setErrorMessage(message);
+      }
     } finally {
       setLoading(false);
     }

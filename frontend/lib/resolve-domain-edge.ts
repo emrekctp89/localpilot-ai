@@ -1,4 +1,5 @@
 import { normalizeCustomDomain } from "@/lib/mini-site-domain";
+import { getSanitizedSupabaseConfig } from "@/lib/supabase-env";
 
 /**
  * Resolve active custom domain → business id via Supabase RPC (edge-safe fetch).
@@ -9,8 +10,7 @@ export async function resolveBusinessIdByCustomDomain(
   const domain = normalizeCustomDomain(host);
   if (!domain) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, anonKey } = getSanitizedSupabaseConfig();
   if (!supabaseUrl || !anonKey) return null;
 
   try {
