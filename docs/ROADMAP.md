@@ -95,7 +95,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Mini site lead → CRM deep link + WhatsApp “ara” | P1 |
 | Vercel `VERCEL_TOKEN` / domain canlı doğrulama | P2 ops |
 | Stripe Price ID env | P2 ops |
-| Faz E Meta/Google env | P2 |
+| Faz E Meta/Google env (Render OAuth + Vercel AI URL) | P2 — şu an `google_oauth: false` |
 | Sentry | P3 |
 | İki hesaplı RLS manuel | P3 |
 
