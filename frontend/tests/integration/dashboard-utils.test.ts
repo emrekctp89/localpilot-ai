@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getVisibleTabs } from "../../lib/dashboard-utils";
+import {
+  CORE_TABS,
+  UNIVERSAL_TABS,
+  getVisibleTabs,
+} from "../../lib/dashboard-utils";
 import type { Business } from "../../lib/domain-types";
 
 describe("dashboard utils integration", () => {
@@ -29,6 +33,7 @@ describe("dashboard utils integration", () => {
     assert.ok(tabs.includes("randevu"));
     assert.ok(tabs.includes("crm"));
     assert.ok(tabs.includes("icerik"));
+    assert.ok(tabs.includes("kasa"));
     assert.ok(tabs.includes("google_business"));
   });
 
@@ -52,18 +57,33 @@ describe("dashboard utils integration", () => {
     assert.ok(crmIndex < siparisIndex);
   });
 
-  it("prefers active_modules (ML) over business_type heuristics", () => {
+  it("keeps universal tabs even when ML omits them", () => {
     const tabs = getVisibleTabs({
       business_type: "hizmet",
-      active_modules: ["menu", "siparis", "kasa"],
+      active_modules: ["menu", "siparis"],
       goals: ["x"],
       address: "Ankara",
     });
     assert.ok(tabs.includes("menu"));
     assert.ok(tabs.includes("siparis"));
-    assert.ok(tabs.includes("kasa"));
-    assert.ok(tabs.includes("ozet"));
-    // ML listesinde yoksa randevu eklenmez (heuristic devre dışı)
+    // UNIVERSAL — ML listesinde yoksa bile
+    for (const tab of UNIVERSAL_TABS) {
+      assert.ok(tabs.includes(tab), `missing universal tab: ${tab}`);
+    }
+    for (const tab of CORE_TABS) {
+      assert.ok(tabs.includes(tab), `missing core tab: ${tab}`);
+    }
+    // Modele özel ama ML'de yok → eklenmez
     assert.equal(tabs.includes("randevu"), false);
+  });
+
+  it("always shows kasa/crm/icerik/is_akisi for urun and hizmet", () => {
+    for (const business_type of ["urun", "hizmet"] as const) {
+      const tabs = getVisibleTabs({ business_type });
+      assert.ok(tabs.includes("kasa"), `${business_type}: kasa`);
+      assert.ok(tabs.includes("crm"), `${business_type}: crm`);
+      assert.ok(tabs.includes("icerik"), `${business_type}: icerik`);
+      assert.ok(tabs.includes("is_akisi"), `${business_type}: is_akisi`);
+    }
   });
 });

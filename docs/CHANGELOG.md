@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.10 - 2026-07-12
+
+### Changed
+- Dashboard **universal tabs** always visible: Kasa (finans), CRM, İçerik, İş Akışı — all business models + ML path.
+- Model-specific only: Ürün → Sipariş/Menü; Hizmet → Randevu/Personel (+ Google when address).
+
 ## 2.5.9 - 2026-07-12
 
 ### Added

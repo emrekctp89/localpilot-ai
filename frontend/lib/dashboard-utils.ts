@@ -18,7 +18,29 @@ export const DASHBOARD_TAB_ORDER = [
   "platform",
 ] as const;
 
-const CORE_TABS = ["ozet", "karar", "ayarlar", "platform", "araclar"] as const;
+/** Panel iskeleti — her hesapta (özet, karar, ayarlar…). */
+export const CORE_TABS = [
+  "ozet",
+  "karar",
+  "ayarlar",
+  "platform",
+  "araclar",
+] as const;
+
+/**
+ * Tüm işletme modellerinde sabit operasyon sekmeleri.
+ * ML / active_modules bunları gizleyemez.
+ * - kasa: finans
+ * - crm: müşteri
+ * - icerik: WA / sosyal / kampanya
+ * - is_akisi: iş akışı
+ */
+export const UNIVERSAL_TABS = [
+  "kasa",
+  "crm",
+  "icerik",
+  "is_akisi",
+] as const;
 
 const MODULE_TO_TAB: Record<string, string> = {
   is_akisi: "is_akisi",
@@ -42,6 +64,7 @@ const DEFAULT_OPERATIONAL_TABS = [
   "crm",
   "randevu",
   "siparis",
+  "kasa",
   "personel",
   "google_business",
 ] as const;
@@ -53,27 +76,37 @@ function sortTabIds(tabIds: Iterable<string>): string[] {
 
 const KNOWN_TAB_IDS = new Set<string>(DASHBOARD_TAB_ORDER);
 
+function withAlwaysOnTabs(tabs: Iterable<string>): string[] {
+  const merged = new Set<string>([
+    ...CORE_TABS,
+    ...UNIVERSAL_TABS,
+    ...tabs,
+  ]);
+  return sortTabIds(merged);
+}
+
 function tabsFromActiveModules(activeModules: string[]): string[] {
-  const tabs = new Set<string>(CORE_TABS);
+  const tabs = new Set<string>();
   for (const moduleId of activeModules) {
     const mapped = MODULE_TO_TAB[moduleId] || moduleId;
     if (mapped && KNOWN_TAB_IDS.has(mapped)) {
       tabs.add(mapped);
     }
   }
-  return sortTabIds(tabs);
+  // CORE + UNIVERSAL her zaman (ML listesinde olmasa bile)
+  return withAlwaysOnTabs(tabs);
 }
 
 export function getVisibleTabs(business: Business | null): string[] {
   if (!business) return [];
 
-  // ML / setup ile gelen active_modules varsa öncelik ver (core sekmeler her zaman dahil)
+  // ML / setup ile gelen active_modules — model sekmelerini ekler; universal sabit kalır
   const modules = (business.active_modules || []).filter(Boolean);
   if (modules.length > 0) {
     return tabsFromActiveModules(modules);
   }
 
-  const visibleTabs = new Set<string>(CORE_TABS);
+  const visibleTabs = new Set<string>();
   const type = (business.business_type || "").trim();
   const isUrun = type === "urun" || type === "ikisi";
   const isHizmet = type === "hizmet" || type === "ikisi";
@@ -82,37 +115,28 @@ export function getVisibleTabs(business: Business | null): string[] {
     for (const tabId of DEFAULT_OPERATIONAL_TABS) {
       visibleTabs.add(tabId);
     }
-    return sortTabIds(visibleTabs);
+    return withAlwaysOnTabs(visibleTabs);
   }
 
+  // Modele özel sekmeler
   if (isUrun) {
     visibleTabs.add("siparis");
-    visibleTabs.add("kasa");
-    visibleTabs.add("is_akisi");
-    visibleTabs.add("crm");
     visibleTabs.add("menu");
   }
 
   if (isHizmet) {
     visibleTabs.add("randevu");
-    visibleTabs.add("crm");
     visibleTabs.add("personel");
-    visibleTabs.add("is_akisi");
-    visibleTabs.add("kasa");
   }
 
   if ((business.top_products || "").trim().length > 0) {
     visibleTabs.add("menu");
   }
 
-  const goals = business.goals || [];
-  if (goals.length > 0) {
-    visibleTabs.add("icerik");
-  }
-
   if ((business.address || "").trim().length > 0) {
     visibleTabs.add("google_business");
   }
 
-  return sortTabIds(visibleTabs);
+  // goals artık icerik için şart değil — UNIVERSAL_TABS'ta sabit
+  return withAlwaysOnTabs(visibleTabs);
 }
