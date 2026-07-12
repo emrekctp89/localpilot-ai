@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.6.0 - 2026-07-12
+
+### Added
+- **Faz H** roadmap: owner notifications for mini-site leads and site updates.
+- Migration `017_business_notifications.sql` + `notify_business_lead` RPC (public lead → owner).
+- Dashboard **notification bell** (30s poll, mark read, jump to CRM/Ayarlar).
+- Lead form writes owner notification; Ayarlar save/publish/draft creates in-app alerts.
+
 ## 2.5.10 - 2026-07-12
 
 ### Changed

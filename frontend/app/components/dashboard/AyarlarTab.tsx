@@ -10,6 +10,7 @@ import type {
   MiniSitePublishStatus,
 } from "@/lib/domain-types";
 import { isMiniSitePublished } from "@/lib/mini-site";
+import { createBusinessNotification } from "@/lib/repositories/business-notifications";
 import {
   customDomainStatusLabel,
   getCustomDomainDnsInstructions,
@@ -412,6 +413,47 @@ export default function AyarlarTab({
 
       if (setPlan) {
         setPlan({ ...plan, mini_site_data: cleanSiteData });
+      }
+
+      // Owner notification: mini site content / publish change
+      if (business?.id) {
+        const prevStatus = plan?.mini_site_data?.publish_status;
+        const nextStatus = cleanSiteData.publish_status as
+          | "draft"
+          | "published"
+          | undefined;
+        const becamePublished =
+          nextStatus === "published" && prevStatus !== "published";
+        const becameDraft =
+          nextStatus === "draft" && prevStatus !== "draft";
+
+        if (becamePublished) {
+          void createBusinessNotification({
+            businessId: business.id,
+            type: "mini_site.published",
+            title: "Mini site yayında",
+            body: "Vitrin herkese açık olarak yayınlandı.",
+            metadata: { publish_status: "published" },
+          });
+        } else if (becameDraft) {
+          void createBusinessNotification({
+            businessId: business.id,
+            type: "mini_site.draft",
+            title: "Mini site taslağa alındı",
+            body: "Ziyaretçiler vitrini göremez; önizleme hâlâ çalışır.",
+            metadata: { publish_status: "draft" },
+          });
+        } else {
+          void createBusinessNotification({
+            businessId: business.id,
+            type: "mini_site.updated",
+            title: "Mini site güncellendi",
+            body: "Slogan, içerik veya tema ayarları kaydedildi.",
+            metadata: {
+              publish_status: nextStatus || "published",
+            },
+          });
+        }
       }
 
       setSaveMessage(

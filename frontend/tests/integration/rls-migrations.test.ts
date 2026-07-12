@@ -12,7 +12,7 @@ function readMigration(name: string) {
 }
 
 describe("RLS and migration integrity (Faz B)", () => {
-  it("ships migrations 001 through 016 in order", () => {
+  it("ships migrations 001 through 017 in order", () => {
     const files = readdirSync(migrationsDir)
       .filter((file) => file.endsWith(".sql"))
       .sort();
@@ -33,7 +33,16 @@ describe("RLS and migration integrity (Faz B)", () => {
       "014_manual_pro_commission.sql",
       "015_backfill_site_slugs.sql",
       "016_public_mini_site_read.sql",
+      "017_business_notifications.sql",
     ]);
+  });
+
+  it("defines business notifications table and public lead RPC", () => {
+    const sql = readMigration("017_business_notifications.sql");
+    assert.match(sql, /business_notifications/);
+    assert.match(sql, /notify_business_lead/);
+    assert.match(sql, /lead\.created/);
+    assert.match(sql, /SECURITY DEFINER/);
   });
 
   it("defines public mini-site resolve RPC for anonymous visitors", () => {

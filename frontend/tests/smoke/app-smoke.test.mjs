@@ -400,6 +400,7 @@ test("mini site lead flow, seo, and publish status are wired", async () => {
   assert.match(sitePageSource, /<LeadForm/);
   assert.match(sitePageSource, /MiniSiteDraft/);
   assert.match(leadFormSource, /recordLeadCapture/);
+  assert.match(leadFormSource, /notifyBusinessLead/);
   assert.match(leadFormSource, /buildLeadEmailDraft/);
   assert.match(leadFormSource, /Yeni Potansiyel/);
   assert.match(settingsSource, /publish_status/);
@@ -407,10 +408,18 @@ test("mini site lead flow, seo, and publish status are wired", async () => {
   assert.match(settingsSource, /whatsapp_prefill_message/);
   assert.match(settingsSource, /Yayına Al/);
   assert.match(settingsSource, /Taslağa Al/);
+  assert.match(settingsSource, /createBusinessNotification/);
   assert.match(miniSiteSource, /buildWhatsAppDeepLink/);
   assert.match(miniSiteSource, /buildLocalBusinessJsonLd/);
   assert.match(crmSource, /LEAD_CAPTURE_EVENT/);
   assert.match(crmSource, /mini site lead/);
+
+  const [bellSource, dashSource] = await Promise.all([
+    readSource("app/components/dashboard/NotificationBell.tsx"),
+    readSource("app/dashboard/page.tsx"),
+  ]);
+  assert.match(bellSource, /listBusinessNotifications/);
+  assert.match(dashSource, /NotificationBell/);
 });
 
 test("every rendered dashboard tab has a matching view", async () => {

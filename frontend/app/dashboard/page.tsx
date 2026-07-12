@@ -17,6 +17,7 @@ import {
 import OnboardingWizard from "../components/dashboard/OnboardingWizard";
 import type { OnboardingData } from "../components/dashboard/OnboardingWizard";
 import TabMenu from "../components/dashboard/TabMenu";
+import NotificationBell from "../components/dashboard/NotificationBell";
 import CrmTab from "../components/dashboard/CrmTab";
 import RandevuTab from "../components/dashboard/RandevuTab";
 import SiparisTab from "../components/dashboard/SiparisTab";
@@ -420,6 +421,11 @@ export default function Dashboard() {
               activeBusinessId={session.business?.id}
               onSwitch={session.switchBusiness}
               label={t("platform.businessSwitcher")}
+            />
+            <NotificationBell
+              businessId={session.business?.id}
+              onOpenCrm={() => setActiveTab("crm")}
+              onOpenSettings={() => setActiveTab("ayarlar")}
             />
             <button
               type="button"

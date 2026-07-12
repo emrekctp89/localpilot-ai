@@ -10,6 +10,7 @@ import {
 } from "@/lib/mini-site";
 import { logAuditEvent } from "@/lib/platform/audit";
 import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
+import { notifyBusinessLead } from "@/lib/repositories/business-notifications";
 
 const PRODUCT_INTEREST_KEY = "localpilot:product-interest";
 
@@ -120,6 +121,12 @@ export default function LeadForm({
     };
 
     recordLeadCapture(payload);
+    void notifyBusinessLead({
+      businessId,
+      fullName,
+      phone: normalizedPhone,
+      notes,
+    });
     void logAuditEvent({
       businessId,
       action: "lead.created",
