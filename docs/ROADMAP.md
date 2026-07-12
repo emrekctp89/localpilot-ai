@@ -17,9 +17,11 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Konu | Karar |
 |------|--------|
 | **Pro üyelik** | Manuel + checkout kodda; Stripe Price ID opsiyonel |
-| **Canlı Meta/Google OAuth** | Ertelendi — `wa.me` + Google checklist |
+| **Canlı Google OAuth** | **Ertelendi** — gerçek public domain + Google Cloud OAuth client sonra. Şimdilik: checklist auto-seed, kopyalanabilir metinler, Haritalar / Profil Yöneticisi linkleri |
+| **Canlı WhatsApp Cloud** | Ertelendi — `wa.me` fallback |
 | **Partner komisyonu** | Ajans %20 · Referans %10 · panelden onay |
 | **Aktif faz** | **Faz H** (Faz G kod kapandı) |
+| **Public launch** | Henüz değil — preview domain (`*.vercel.app` / Render) geliştirme için yeterli |
 | **Production** | Vercel `localpilot-ai-1b2h-phi` · Render `localpilot-ai-1eea` |
 
 ---
@@ -43,7 +45,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | **2.6.0** | **Faz H** — panel bildirimleri (lead / site) | 🔄 aktif |
 | **2.6.x** | Bildirim polish, e-posta/WhatsApp opsiyonel | planlı |
 | **2.7.0** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
-| **2.8.0** | Faz E canlı entegrasyonlar (credential) | ⏸️ |
+| **2.8.0** | Faz E canlı Google/Meta (gerçek domain + credential) | ⏸️ domain sonrası |
 
 ---
 
@@ -95,7 +97,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Mini site lead → CRM deep link + WhatsApp “ara” | P1 |
 | Vercel `VERCEL_TOKEN` / domain canlı doğrulama | P2 ops |
 | Stripe Price ID env | P2 ops |
-| Faz E Meta/Google env (Render OAuth + Vercel AI URL) | P2 — şu an `google_oauth: false` |
+| Faz E Google OAuth (gerçek domain + Cloud Console + Render env) | P2 — **bilinçli ertelendi** (public hazır değil) |
 | Sentry | P3 |
 | İki hesaplı RLS manuel | P3 |
 

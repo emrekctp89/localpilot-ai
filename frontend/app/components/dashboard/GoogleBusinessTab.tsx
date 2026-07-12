@@ -305,8 +305,8 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
           web sitesi verilerinizden yaklaşık{" "}
           <strong>{autoSeededCount}</strong> Google adımı işaretlendi (iletişim,
           kategori, açıklama, ürün, yorum linki). Kalan adımlar için aşağıdaki
-          kopyalanabilir önerileri kullanın. Canlı Google yazma için OAuth
-          bağlantısı gerekir.
+          kopyalanabilir önerileri kullanın. Google hesabına otomatik yazma,
+          public domain sonrası OAuth ile eklenecek.
         </div>
       ) : null}
 
@@ -333,18 +333,16 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
             <p className="mt-2 text-sm text-amber-900">
               {integrationStatus.detail}
             </p>
-            {googleRemoteStatus?.configured === false ? (
-              <p className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-xs font-medium text-amber-950">
-                Canlı OAuth kapalı (<code className="font-mono">google_oauth:
-                false</code> on /health). Render ai-service env:
-                <code className="mx-1 font-mono">GOOGLE_OAUTH_CLIENT_ID</code>,
-                <code className="mx-1 font-mono">GOOGLE_OAUTH_CLIENT_SECRET</code>,
-                <code className="mx-1 font-mono">GOOGLE_OAUTH_REDIRECT_URI</code>
-                ={" "}
-                <code className="break-all font-mono text-[10px]">
-                  https://localpilot-ai-1eea.onrender.com/integration/google/oauth/callback
-                </code>
-                . Google Cloud Console’da aynı redirect URI’yi ekleyin.
+            {googleRemoteStatus?.configured === false ||
+            googleRemoteStatus == null ? (
+              <p className="mt-3 rounded-lg border border-slate-200 bg-white/90 px-3 py-2 text-xs font-medium leading-relaxed text-slate-700">
+                <strong className="font-bold text-slate-900">
+                  Geliştirme modu:
+                </strong>{" "}
+                Canlı Google hesabı bağlama (OAuth) bilerek kapalı — gerçek
+                public domain ve Google Cloud OAuth client public launch
+                öncesi açılacak. Şimdilik checklist, kopyala metinleri ve
+                Haritalar / Profil Yöneticisi linkleri kullanılabilir.
               </p>
             ) : null}
             {suggestionError ? (
@@ -357,7 +355,11 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
-            {googleRemoteStatus?.status !== "connected" && (
+            {googleRemoteStatus?.status === "connected" ? (
+              <span className="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+                Google bağlı
+              </span>
+            ) : googleRemoteStatus?.configured ? (
               <button
                 type="button"
                 onClick={() => void handleConnectGoogle()}
@@ -366,12 +368,21 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
               >
                 {connectingGoogle ? "Yönlendiriliyor..." : "Google'a Bağlan"}
               </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Gerçek public domain ve OAuth env sonrası aktif olacak"
+                className="cursor-not-allowed rounded-xl border border-amber-200 bg-white/60 px-4 py-2 text-sm font-bold text-amber-800/70"
+              >
+                Bağlan (domain sonrası)
+              </button>
             )}
             <a
               href={getGoogleBusinessManagerUrl()}
               target="_blank"
               rel="noreferrer"
-              className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-amber-800 border border-amber-200 hover:bg-amber-100"
+              className="rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100"
             >
               Profil Yöneticisi
             </a>

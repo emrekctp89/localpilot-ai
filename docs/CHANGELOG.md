@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.4 - 2026-07-12
+
+### Changed
+- Google OAuth **consciously deferred** until real public domain (product not launch-ready).
+- Google tab: “Geliştirme modu” copy; Connect disabled as “Bağlan (domain sonrası)” when OAuth env off.
+- Manual path emphasized: checklist seed, copy suggestions, Maps + Business Manager links.
+
 ## 2.6.3 - 2026-07-12
 
 ### Fixed

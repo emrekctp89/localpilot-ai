@@ -88,9 +88,9 @@ export function getGoogleBusinessIntegrationStatus(
   return {
     provider: "google_business",
     status: "ready",
-    label: "Manuel + OAuth hazırlık",
+    label: "Manuel hazırlık modu",
     detail:
-      "Canlı profil önerileri işletme verinizden üretilir. OAuth ile yazma için Bağlan düğmesini kullanın.",
+      "Profil adımları ve kopyalanabilir metinler işletme verinizden üretilir. Canlı Google hesabına yazma (OAuth), gerçek public domain sonrası açılacak.",
   };
 }
 
