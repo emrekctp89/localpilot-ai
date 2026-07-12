@@ -114,6 +114,84 @@ export function getGoogleBusinessManagerUrl() {
   return "https://business.google.com/";
 }
 
+/**
+ * Gerçek web sitesi / onboarding verisinden Google checklist maddelerini çıkar.
+ * OAuth olmadan da “dolu” sayılacak hazırlık adımları.
+ */
+export function inferGoogleChecklistFromBusiness(
+  business: Pick<
+    Business,
+    | "name"
+    | "city"
+    | "address"
+    | "whatsapp_number"
+    | "working_hours"
+    | "industry"
+    | "sector"
+    | "top_products"
+  >,
+  options?: {
+    aboutUs?: string | null;
+    businessDescription?: string | null;
+    currentDigitalStatus?: string[] | null;
+    hasWebsite?: boolean;
+  },
+): string[] {
+  const completed = new Set<string>();
+  const address = business.address?.trim() || "";
+  const phone = business.whatsapp_number?.trim() || "";
+  const hours = business.working_hours?.trim() || "";
+  const industry = (business.industry || business.sector || "").trim();
+  const about = (
+    options?.aboutUs ||
+    options?.businessDescription ||
+    ""
+  ).trim();
+  const products = (business.top_products || "").trim();
+  const digital = options?.currentDigitalStatus || [];
+  const onGoogleMaps = digital.some((item) =>
+    /google|harita|maps/i.test(item || ""),
+  );
+
+  // İletişim üçlüsü (adres + telefon + saat) → contact-complete
+  const contactScore = [address, phone, hours].filter(Boolean).length;
+  if (contactScore >= 2) {
+    completed.add("contact-complete");
+  }
+
+  if (industry) {
+    completed.add("category-selected");
+  }
+
+  if (about.length >= 40) {
+    completed.add("description-written");
+  }
+
+  if (products.length >= 3) {
+    completed.add("products-added");
+  }
+
+  // Haritalar araması mümkün → yorum linki hazırlık metni üretilebilir
+  if (business.name?.trim() && (business.city?.trim() || address)) {
+    completed.add("review-link-ready");
+  }
+
+  // Kullanıcı «Google’da varız» veya gerçek site ile geldiyse profil sahipliği adımına hazır
+  if (onGoogleMaps || options?.hasWebsite) {
+    completed.add("profile-claimed");
+  }
+
+  return Array.from(completed);
+}
+
+/** Merge inferred + existing without duplicates. */
+export function mergeGoogleChecklistIds(
+  existing: string[] | undefined,
+  inferred: string[],
+): string[] {
+  return Array.from(new Set([...(existing || []), ...inferred]));
+}
+
 export function buildGoogleProfileSuggestions(
   business: Business,
   checklist: GoogleBusinessChecklist,
@@ -150,7 +228,15 @@ export function buildGoogleProfileSuggestions(
           "En az 5 fotoğraf yükleyin: dış cephe, iç mekan, ekip, ürün/hizmet ve müşteri deneyimi.";
         break;
       case "products-added":
-        suggestedText = `Öne çıkan hizmetlerinizi listeleyin. İşletme: ${business.name}.`;
+        suggestedText = business.top_products?.trim()
+          ? `Google ürün/hizmet listesi için öneri:\n${business.top_products
+              .split(/,|\n/)
+              .map((p) => p.trim())
+              .filter(Boolean)
+              .slice(0, 8)
+              .map((p, i) => `${i + 1}. ${p}`)
+              .join("\n")}`
+          : `Öne çıkan hizmetlerinizi listeleyin. İşletme: ${business.name}.`;
         break;
       case "review-link-ready":
         suggestedText = buildReviewRequestSuggestion(business);

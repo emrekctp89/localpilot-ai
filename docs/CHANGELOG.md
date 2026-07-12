@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.1 - 2026-07-12
+
+### Added
+- Google Business checklist **auto-seed** from real onboarding/website fields (contact, category, description, products, review link, profile-claimed when Google Maps / site).
+- Setup seeds `google_checklists` and ensures `google_business` module when location/phone present.
+- Google tab banner explaining automatic fill; richer product suggestion from `top_products`.
+
 ## 2.6.0 - 2026-07-12
 
 ### Added

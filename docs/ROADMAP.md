@@ -79,9 +79,11 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 ### H.4 Sonraki (2.6.x)
 - [x] 30 sn poll (zil)
+- [x] Google checklist auto-seed (gerçek site / onboarding verisi)
 - [ ] Realtime (Supabase channel)
 - [ ] E-posta / WhatsApp owner notify (opsiyonel Pro)
 - [ ] Bildirim tercihleri (Ayarlar)
+- [ ] Google Places API canlı profil (credential)
 
 ---
 

@@ -133,7 +133,12 @@ export function getVisibleTabs(business: Business | null): string[] {
     visibleTabs.add("menu");
   }
 
-  if ((business.address || "").trim().length > 0) {
+  // Gerçek işletme konumu / iletişim → Google profil sekmesi
+  if (
+    (business.address || "").trim().length > 0 ||
+    ((business.city || "").trim().length > 0 &&
+      (business.whatsapp_number || "").trim().length > 0)
+  ) {
     visibleTabs.add("google_business");
   }
 

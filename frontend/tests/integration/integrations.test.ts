@@ -19,6 +19,34 @@ describe("integrations layer", () => {
     working_hours: "09:00-19:00",
   };
 
+  it("infers google checklist from real business website fields", async () => {
+    const { inferGoogleChecklistFromBusiness } = await import(
+      "../../lib/integrations/google-business"
+    );
+    const ids = inferGoogleChecklistFromBusiness(
+      {
+        name: "Demo Kuaför",
+        city: "İstanbul",
+        address: "Kadıköy Mah. 1",
+        whatsapp_number: "05551234567",
+        working_hours: "09:00-19:00",
+        industry: "Kuaför & Güzellik Salonu",
+        top_products: "Saç kesimi, Boya, Bakım",
+      },
+      {
+        aboutUs: "2010'dan beri Kadıköy'de profesyonel saç ve güzellik hizmeti sunuyoruz.",
+        currentDigitalStatus: ["Google Haritalarda Varız"],
+        hasWebsite: true,
+      },
+    );
+    assert.ok(ids.includes("contact-complete"));
+    assert.ok(ids.includes("category-selected"));
+    assert.ok(ids.includes("description-written"));
+    assert.ok(ids.includes("products-added"));
+    assert.ok(ids.includes("review-link-ready"));
+    assert.ok(ids.includes("profile-claimed"));
+  });
+
   it("builds google profile suggestions for pending checklist items", () => {
     const suggestions = buildGoogleProfileSuggestions(business, {
       completedItemIds: ["profile-claimed"],

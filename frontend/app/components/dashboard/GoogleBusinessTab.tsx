@@ -16,6 +16,8 @@ import {
   canApplyGoogleSuggestionRemotely,
   getGoogleBusinessIntegrationStatus,
   getGoogleBusinessManagerUrl,
+  inferGoogleChecklistFromBusiness,
+  mergeGoogleChecklistIds,
   mergeGoogleProfileSuggestions,
 } from "@/lib/integrations";
 import { loadGoogleChecklist, saveGoogleChecklist } from "@/lib/repositories";
@@ -66,13 +68,37 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
         loadGoogleChecklist(business.id),
         fetchIntegrationStatus(business.id).catch(() => null),
       ]);
-      setChecklist(storedChecklist);
+
+      // Gerçek site / panel verisinden eksik checklist maddelerini otomatik tamamla
+      const inferred = inferGoogleChecklistFromBusiness(business, {
+        hasWebsite: Boolean(
+          business.address || business.city || business.whatsapp_number,
+        ),
+      });
+      const mergedIds = mergeGoogleChecklistIds(
+        storedChecklist.completedItemIds,
+        inferred,
+      );
+      const needsSeed =
+        mergedIds.length > (storedChecklist.completedItemIds?.length || 0);
+
+      if (needsSeed) {
+        const seeded: GoogleBusinessChecklist = {
+          completedItemIds: mergedIds,
+          updatedAt: new Date().toISOString(),
+        };
+        setChecklist(seeded);
+        void saveGoogleChecklist(business.id, seeded);
+      } else {
+        setChecklist(storedChecklist);
+      }
+
       setGoogleRemoteStatus(integrationStatus?.google ?? null);
       setLoading(false);
     };
 
-    loadChecklist();
-  }, [business.id]);
+    void loadChecklist();
+  }, [business.id, business.address, business.city, business.whatsapp_number, business.working_hours, business.industry, business.sector, business.top_products, business.name]);
 
   const persistChecklist = async (nextChecklist: GoogleBusinessChecklist) => {
     if (!business.id) return false;
@@ -112,6 +138,15 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
     CHECKLIST_ITEMS.some((item) => item[0] === id),
   ).length;
   const progress = Math.round((completedCount / CHECKLIST_ITEMS.length) * 100);
+  const autoSeededCount = useMemo(
+    () =>
+      inferGoogleChecklistFromBusiness(business, {
+        hasWebsite: Boolean(
+          business.address || business.city || business.whatsapp_number,
+        ),
+      }).length,
+    [business],
+  );
   const localSuggestions = useMemo(
     () => buildGoogleProfileSuggestions(business, checklist),
     [business, checklist],
@@ -243,6 +278,17 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
           </div>
         </div>
       </section>
+
+      {autoSeededCount > 0 ? (
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <strong className="font-bold">Otomatik doldurma:</strong> Onboarding /
+          web sitesi verilerinizden yaklaşık{" "}
+          <strong>{autoSeededCount}</strong> Google adımı işaretlendi (iletişim,
+          kategori, açıklama, ürün, yorum linki). Kalan adımlar için aşağıdaki
+          kopyalanabilir önerileri kullanın. Canlı Google yazma için OAuth
+          bağlantısı gerekir.
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white px-5 py-4 shadow-sm">
         <p className="text-sm text-gray-600">

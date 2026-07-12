@@ -1293,6 +1293,53 @@ async def analyze_churn(data: ChurnRequest):
         raise HTTPException(status_code=500, detail=f"Churn analizi oluşturulamadı: {str(e)}")
 
  
+def _infer_google_checklist_ids(data: "BusinessSetup", mini_site_data: dict) -> list:
+    """Seed Google Business checklist from real onboarding / website-derived fields."""
+    completed: list = []
+    address = (data.address or "").strip()
+    phone = (data.whatsapp_number or "").strip()
+    hours = (data.working_hours or "").strip()
+    industry = (data.industry or "").strip()
+    products = (data.top_products or "").strip()
+    about = (
+        (mini_site_data or {}).get("about_us")
+        or data.business_description
+        or ""
+    )
+    about = str(about).strip()
+    digital = data.current_digital_status or []
+
+    contact_score = sum(1 for part in (address, phone, hours) if part)
+    if contact_score >= 2:
+        completed.append("contact-complete")
+    if industry:
+        completed.append("category-selected")
+    if len(about) >= 40:
+        completed.append("description-written")
+    if len(products) >= 3:
+        completed.append("products-added")
+    if (data.name or "").strip() and (data.city or address):
+        completed.append("review-link-ready")
+    if any(
+        "google" in str(item).lower() or "harita" in str(item).lower()
+        for item in digital
+    ):
+        completed.append("profile-claimed")
+    # Magic-fill / website path often fills description + contact → treat as web-backed
+    if data.business_description and contact_score >= 2:
+        if "profile-claimed" not in completed:
+            completed.append("profile-claimed")
+
+    # unique order
+    seen = set()
+    ordered = []
+    for item in completed:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
+
+
 @app.post("/setup-business")
 async def setup_business(data: BusinessSetup):
     user_prompt = f"""
@@ -1331,7 +1378,14 @@ async def setup_business(data: BusinessSetup):
 
     # Dinamik sekme mimarisine geçildiği için active_modules artık AI tarafından üretilmiyor.
     # Bunun yerine ML tahmin modeli tarafından üretilen veriler frontend üzerinden aktarılır.
-    active_modules = data.active_modules if data.active_modules else []
+    active_modules = list(data.active_modules or [])
+
+    # Gerçek işletme verisi (adres/şehir+telefon) → Google profil sekmesi her zaman açılsın
+    has_location = bool((data.address or "").strip() or (data.city or "").strip())
+    has_phone = bool((data.whatsapp_number or "").strip())
+    if has_location or has_phone:
+        if "google_business" not in active_modules:
+            active_modules.append("google_business")
     
     theme_config = ai_decision.get("theme_config") or {
         "primaryColor": normalize_color(data.color_preference),
@@ -1418,12 +1472,29 @@ async def setup_business(data: BusinessSetup):
                 }
             ).execute()
 
+        # Google checklist: gerçek site / onboarding alanlarından otomatik seed
+        google_completed = _infer_google_checklist_ids(
+            data, ai_decision.get("mini_site_data") or {}
+        )
+        if google_completed:
+            try:
+                supabase.table("google_checklists").upsert(
+                    {
+                        "business_id": business_id,
+                        "completed_item_ids": google_completed,
+                        "updated_at": datetime.utcnow().isoformat() + "Z",
+                    }
+                ).execute()
+            except Exception as checklist_error:
+                print(f"⚠️ google_checklists seed failed: {checklist_error}")
+
         return {
             "status": "success",
             "business": new_biz.data[0],
             "ai_decision": ai_decision,
             "setup_summary": {
                 "active_modules": active_modules,
+                "google_checklist_seeded": google_completed,
                 "created_outputs": {
                     "mini_site": bool(ai_decision.get("mini_site_data")),
                     "social_media_posts": len(
@@ -1434,6 +1505,7 @@ async def setup_business(data: BusinessSetup):
                     ),
                     "campaigns": len(ai_decision.get("campaigns", [])),
                     "quick_wins": len(ai_decision.get("quick_wins", [])),
+                    "google_checklist_items": len(google_completed),
                 },
             },
         }
