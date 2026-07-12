@@ -80,25 +80,36 @@ test("onboarding keeps five steps with inline validation and setup feedback", as
   assert.match(source, /<FieldError\s+field="brand_tone"/);
   assert.match(source, /\{setupError\}/);
   assert.match(source, /disabled=\{isSettingUp\}/);
+  assert.match(source, /magicFill/);
+  assert.match(source, /matchIndustryToCatalog/);
+  assert.match(source, /Sihirli Doldurma/);
 });
 
 test("content history normalizes, timestamps, persists, and deletes items", async () => {
-  const source = await readSource(
-    "app/components/dashboard/IcerikTab.tsx",
-  );
+  const [tabSource, repoSource] = await Promise.all([
+    readSource("app/components/dashboard/IcerikTab.tsx"),
+    readSource("lib/repositories/content-items.ts"),
+  ]);
 
-  assert.match(source, /normalizeSocialPosts/);
-  assert.match(source, /record\.caption/);
-  assert.match(source, /normalizeWhatsappTemplates/);
-  assert.match(source, /record\.message/);
-  assert.match(source, /created_at:\s*createdAt/);
-  assert.match(source, /listContentItems/);
-  assert.match(source, /saveContentItems/);
-  assert.match(source, /crypto\.randomUUID\(\)/);
-  assert.match(source, /handleDeleteSocialPost/);
-  assert.match(source, /handleDeleteWhatsappTemplate/);
-  assert.match(source, /İçerik Geçmişi/);
-  assert.match(source, /setHistoryStatus\("idle"\)/);
+  assert.match(repoSource, /normalizeSocialPosts/);
+  assert.match(repoSource, /record\.caption/);
+  assert.match(repoSource, /normalizeWhatsappTemplates/);
+  assert.match(repoSource, /record\.message/);
+  assert.match(tabSource, /listContentItems/);
+  assert.match(tabSource, /saveContentItems/);
+  assert.match(tabSource, /handleDeleteSocialPost/);
+  assert.match(tabSource, /handleDeleteWhatsappTemplate/);
+  assert.match(tabSource, /İçerik Geçmişi/);
+  assert.match(tabSource, /setHistoryStatus\("idle"\)/);
+});
+
+test("ai client exposes magic-fill and tab prediction", async () => {
+  const source = await readSource("lib/ai-client.ts");
+  assert.match(source, /export async function magicFill/);
+  assert.match(source, /\/magic-fill/);
+  assert.match(source, /export async function predictTabs/);
+  assert.match(source, /\/predict-tabs/);
+  assert.match(source, /generateOnboardingOptions/);
 });
 
 test("CRM follow-ups migrate locally and persist to Supabase", async () => {

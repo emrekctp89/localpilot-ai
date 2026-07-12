@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.9 - 2026-07-12
+
+### Added
+- Industry catalog matcher (`matchIndustryToCatalog`) so magic-fill maps AI sectors onto onboarding select.
+- Magic-fill success/error feedback in wizard.
+- Expanded ML synthetic training sectors; smoke + unit tests for magic-fill wiring.
+
+### Changed
+- Shared `SECTOR_CATEGORIES` in `lib/onboarding-sectors.ts`.
+- Faz G marked complete in roadmap (ops env still optional).
+
 ## 2.5.8 - 2026-07-12
 
 ### Added

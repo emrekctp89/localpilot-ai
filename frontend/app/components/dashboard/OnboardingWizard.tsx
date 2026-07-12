@@ -1,7 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { buildDraftOnboardingRate } from "@/lib/activation-metrics";
 import { resolveSectorPackFromIndustry } from "@/lib/sector-packs";
-import { generateOnboardingOptions, magicFill, type OnboardingOptionsResult } from "@/lib/ai-client";
+import {
+  generateOnboardingOptions,
+  magicFill,
+  type OnboardingOptionsResult,
+} from "@/lib/ai-client";
+import {
+  OTHER_INDUSTRY_VALUE,
+  SECTOR_CATEGORIES,
+  matchIndustryToCatalog,
+} from "@/lib/onboarding-sectors";
 
 export interface OnboardingData {
   name: string;
@@ -36,54 +45,6 @@ interface OnboardingWizardProps {
   setupError?: string;
 }
 
-// 🚀 Zenginleştirilmiş Sektör Kategorileri
-const SECTOR_CATEGORIES = [
-  {
-    group: "Endüstri, İmalat ve Yan Sanayi",
-    items: [
-      "Metal Şekillendirme ve Pres İmalatı",
-      "Otomotiv Yan Sanayi",
-      "3D Baskı ve Katmanlı Üretim",
-      "Makine ve Yedek Parça Üretimi",
-      "Plastik, Kalıp ve Ambalaj",
-      "Endüstriyel Ekipman Tedariği",
-    ],
-  },
-  {
-    group: "Yeme, İçme ve Gıda",
-    items: [
-      "Restoran & Lokanta",
-      "Kafe & Kahveciler",
-      "Pastane, Fırın & Tatlıcı",
-      "Fast Food & Paket Servis",
-      "Gıda Üretimi ve Toptan Satış",
-    ],
-  },
-  {
-    group: "Perakende ve Mağazacılık",
-    items: [
-      "Giyim, Tekstil & Butik",
-      "Market & Süpermarket",
-      "Elektronik & Teknoloji Mağazası",
-      "Kozmetik & Kişisel Bakım",
-      "Otomotiv & Galeri",
-    ],
-  },
-  {
-    group: "Hizmet ve Profesyonel",
-    items: [
-      "Yazılım ve Teknoloji Ajansı",
-      "Kuaför & Güzellik Salonu",
-      "Sağlık & Klinik",
-      "Spor Salonu & Fitness",
-      "Oto Bakım, Yıkama & Servis",
-      "Gayrimenkul & Emlak",
-      "Lojistik, Taşımacılık & Depolama",
-      "Danışmanlık ve B2B Hizmetler",
-    ],
-  },
-];
-
 function FieldError({
   field,
   errors,
@@ -115,10 +76,16 @@ export default function OnboardingWizard({
   const [isGeneratingOptions, setIsGeneratingOptions] = useState(false);
   const [magicUrl, setMagicUrl] = useState("");
   const [isMagicFilling, setIsMagicFilling] = useState(false);
+  const [magicStatus, setMagicStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [magicMessage, setMagicMessage] = useState("");
 
   const handleMagicFill = async () => {
     if (!magicUrl.trim()) return;
     setIsMagicFilling(true);
+    setMagicStatus("idle");
+    setMagicMessage("");
     try {
       const res = await magicFill({ url: magicUrl.trim() });
       const products =
@@ -130,11 +97,21 @@ export default function OnboardingWizard({
             ]
           : data.top_products;
 
-      // setData is (data) => void — not React setState; spread current data.
+      const industryMatch = matchIndustryToCatalog(res.industry);
+      const nextIndustry = industryMatch.value || data.industry;
+      const filledCount = [
+        res.name,
+        res.city,
+        res.address,
+        res.whatsapp_number,
+        res.business_description,
+        ...(res.top_products || []),
+      ].filter((v) => Boolean(String(v || "").trim())).length;
+
       setData({
         ...data,
         name: res.name || data.name,
-        industry: res.industry || data.industry,
+        industry: nextIndustry,
         business_type: res.business_type || data.business_type,
         city: res.city || data.city,
         address: res.address || data.address,
@@ -143,14 +120,33 @@ export default function OnboardingWizard({
         business_description:
           res.business_description || data.business_description,
         top_products: products,
-        // Sektör değiştiyse chip cache'i düşür
         ai_options:
-          res.industry && res.industry !== data.industry
+          nextIndustry && nextIndustry !== data.industry
             ? null
             : data.ai_options,
       });
+
+      if (filledCount === 0) {
+        setMagicStatus("error");
+        setMagicMessage(
+          "Siteden net bilgi çıkarılamadı. Alanları elle doldurabilirsiniz.",
+        );
+      } else {
+        setMagicStatus("success");
+        setMagicMessage(
+          industryMatch.source === "other" && res.industry
+            ? `Form dolduruldu. Sektör listede yoktu → «Diğer» seçildi (AI: ${res.industry}).`
+            : "Form web sitenizden dolduruldu. Eksik alanları kontrol edin.",
+        );
+      }
     } catch (e) {
       console.error("Magic fill error:", e);
+      setMagicStatus("error");
+      setMagicMessage(
+        e instanceof Error
+          ? e.message
+          : "Web sitesi okunamadı. Linki kontrol edip tekrar deneyin.",
+      );
     } finally {
       setIsMagicFilling(false);
     }
@@ -375,32 +371,44 @@ export default function OnboardingWizard({
       {step === 1 && (
         <div className="space-y-5 animate-fade-in-up">
           {/* Sihirli Doldurma */}
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-            <label className="block text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+            <label className="mb-2 flex items-center gap-2 text-sm font-bold text-indigo-900">
               <span>✨ Sihirli Doldurma (Web Siteniz)</span>
-              <span className="text-xs font-normal bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Yapay Zeka</span>
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-normal text-indigo-700">
+                Yapay Zeka
+              </span>
             </label>
-            <p className="text-xs text-indigo-700 mb-3">
-              Web sitenizin veya sosyal medya hesabınızın linkini girin, formu sizin yerinize dolduralım.
+            <p className="mb-3 text-xs text-indigo-700">
+              Web sitenizin linkini girin; ad, sektör, iletişim ve ürün
+              alanlarını otomatik dolduralım. Sonucu mutlaka kontrol edin.
             </p>
             <div className="flex gap-2">
               <input
-                type="text"
+                type="url"
+                inputMode="url"
                 placeholder="https://www.ornek.com"
-                className="flex-1 border-2 border-indigo-200 rounded-lg p-2.5 focus:ring-0 focus:border-indigo-500 outline-none transition text-sm text-black bg-white"
+                className="flex-1 rounded-lg border-2 border-indigo-200 bg-white p-2.5 text-sm text-black outline-none transition focus:border-indigo-500 focus:ring-0"
                 value={magicUrl}
-                onChange={(e) => setMagicUrl(e.target.value)}
+                onChange={(e) => {
+                  setMagicUrl(e.target.value);
+                  if (magicStatus !== "idle") {
+                    setMagicStatus("idle");
+                    setMagicMessage("");
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleMagicFill();
+                    void handleMagicFill();
                   }
                 }}
+                disabled={isMagicFilling}
               />
               <button
-                onClick={handleMagicFill}
-                disabled={isMagicFilling || !magicUrl}
-                className="bg-indigo-600 text-white font-bold px-4 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                type="button"
+                onClick={() => void handleMagicFill()}
+                disabled={isMagicFilling || !magicUrl.trim()}
+                className="flex min-w-[120px] items-center justify-center rounded-lg bg-indigo-600 px-4 font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isMagicFilling ? (
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -409,8 +417,20 @@ export default function OnboardingWizard({
                 )}
               </button>
             </div>
+            {magicMessage ? (
+              <p
+                className={`mt-2 text-xs font-medium ${
+                  magicStatus === "error"
+                    ? "text-rose-700"
+                    : "text-emerald-800"
+                }`}
+                role={magicStatus === "error" ? "alert" : "status"}
+              >
+                {magicMessage}
+              </p>
+            ) : null}
           </div>
-          <div className="border-t border-gray-100 my-2"></div>
+          <div className="my-2 border-t border-gray-100" />
           
           <div>
             <label className="lp-label">
@@ -468,7 +488,10 @@ export default function OnboardingWizard({
                   ))}
                 </optgroup>
               ))}
-              <option value="Diger" className="font-bold text-blue-600">
+              <option
+                value={OTHER_INDUSTRY_VALUE}
+                className="font-bold text-blue-600"
+              >
                 Diğer (Belirtilmemiş)
               </option>
             </select>

@@ -224,13 +224,14 @@ Referans linki: `/auth?ref=LP-XXXXXX`
 
 ---
 
-## Bu Sprint — Faz G
+## Bu Sprint — Faz G ✅ (kod kapanış)
 
 1. [x] Çoklu işletme faturalandırma taslağı
 2. [x] White-label mini site araştırması + slug (G.1)
 3. [x] Özel domain UI + DNS talimatları (G.2)
 4. [x] Vercel Domains API + middleware (G.3)
-5. [ ] Opsiyonel: G.4 polish / Pro-only domain gate
+5. [x] G.4 temel (active domain footer hide); Pro-only domain gate bilinçli ertelendi
+6. [x] Onboarding 2.5.x: zengin alanlar, AI chip, magic-fill, ML sekme tahmini
 
 Detay: `docs/white-label-mini-site.md`  
 Migration: `012_mini_site_domains.sql` Supabase’de uygulandı.

@@ -82,7 +82,37 @@ SYNTHETIC_DATA = [
         "business_type": "hizmet",
         "goals": "Üyelik satışı, Randevu",
         "tabs": ["randevu", "crm", "kasa", "personel"]
-    }
+    },
+    {
+        "industry": "Kuaför & Güzellik Salonu",
+        "business_type": "hizmet",
+        "goals": "Randevu, Müşteri sadakati, İçerik",
+        "tabs": ["randevu", "crm", "icerik", "kasa", "personel", "google_business"]
+    },
+    {
+        "industry": "Restoran & Lokanta",
+        "business_type": "urun",
+        "goals": "Paket servis, Yeni müşteri, Menü",
+        "tabs": ["menu", "siparis", "kasa", "icerik", "crm", "google_business"]
+    },
+    {
+        "industry": "Makine ve Yedek Parça Üretimi",
+        "business_type": "urun",
+        "goals": "B2B sipariş, Kapasite, CRM",
+        "tabs": ["is_akisi", "siparis", "kasa", "crm", "personel"]
+    },
+    {
+        "industry": "Gayrimenkul & Emlak",
+        "business_type": "hizmet",
+        "goals": "Portföy, Randevu, Lead",
+        "tabs": ["crm", "randevu", "icerik", "google_business", "is_akisi"]
+    },
+    {
+        "industry": "Giyim, Tekstil & Butik",
+        "business_type": "urun",
+        "goals": "Satış, Sosyal medya, Stok",
+        "tabs": ["menu", "siparis", "kasa", "icerik", "crm"]
+    },
 ]
 
 class TabPredictorML:
