@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.3 - 2026-07-12
+
+### Fixed
+- Google “Bağlan” felt dead: errors only rendered under AI suggestions (hidden when checklist full). Errors now show next to connect button.
+- Block connect when Render `google_oauth` is not configured, with env instructions.
+- Reject browser AI URL pointing at localhost; require valid `NEXT_PUBLIC_AI_SERVICE_URL`.
+
 ## 2.6.2 - 2026-07-12
 
 ### Fixed

@@ -194,11 +194,31 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
   };
 
   const handleConnectGoogle = async () => {
-    if (!business.id) return;
+    setSuggestionError("");
+    if (!business.id) {
+      setSuggestionError(
+        "İşletme kimliği yok. Paneli yenileyip tekrar deneyin.",
+      );
+      return;
+    }
+
+    // Remote status already known: block with clear ops message
+    if (googleRemoteStatus && googleRemoteStatus.configured === false) {
+      setSuggestionError(
+        "Google OAuth Render env eksik: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URI (https://localpilot-ai-1eea.onrender.com/integration/google/oauth/callback). Ayarlayıp ai-service redeploy edin.",
+      );
+      return;
+    }
+
     setConnectingGoogle(true);
     try {
       const { auth_url: authUrl } = await startGoogleOAuth(business.id);
-      window.location.href = authUrl;
+      if (!authUrl || !/^https?:\/\//i.test(authUrl)) {
+        throw new Error(
+          "Google yönlendirme adresi alınamadı. AI servis URL ve Google OAuth env’lerini kontrol edin.",
+        );
+      }
+      window.location.assign(authUrl);
     } catch (error) {
       setSuggestionError(
         error instanceof Error
@@ -313,12 +333,34 @@ export default function GoogleBusinessTab({ business }: GoogleBusinessTabProps) 
             <p className="mt-2 text-sm text-amber-900">
               {integrationStatus.detail}
             </p>
+            {googleRemoteStatus?.configured === false ? (
+              <p className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-xs font-medium text-amber-950">
+                Canlı OAuth kapalı (<code className="font-mono">google_oauth:
+                false</code> on /health). Render ai-service env:
+                <code className="mx-1 font-mono">GOOGLE_OAUTH_CLIENT_ID</code>,
+                <code className="mx-1 font-mono">GOOGLE_OAUTH_CLIENT_SECRET</code>,
+                <code className="mx-1 font-mono">GOOGLE_OAUTH_REDIRECT_URI</code>
+                ={" "}
+                <code className="break-all font-mono text-[10px]">
+                  https://localpilot-ai-1eea.onrender.com/integration/google/oauth/callback
+                </code>
+                . Google Cloud Console’da aynı redirect URI’yi ekleyin.
+              </p>
+            ) : null}
+            {suggestionError ? (
+              <p
+                className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"
+                role="alert"
+              >
+                {suggestionError}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             {googleRemoteStatus?.status !== "connected" && (
               <button
                 type="button"
-                onClick={handleConnectGoogle}
+                onClick={() => void handleConnectGoogle()}
                 disabled={connectingGoogle}
                 className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50"
               >

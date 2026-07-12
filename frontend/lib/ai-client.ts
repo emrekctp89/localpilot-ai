@@ -9,15 +9,36 @@ export class AiServiceError extends Error {
   }
 }
 
+/** Trim / strip quotes — Vercel paste artifacts break fetch. */
 export function getAiServiceUrl(): string | undefined {
-  return process.env.NEXT_PUBLIC_AI_SERVICE_URL;
+  const raw = (process.env.NEXT_PUBLIC_AI_SERVICE_URL || "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\/+$/, "");
+  if (!raw) return undefined;
+  // Browser must not call developer localhost (looks like “nothing happens”)
+  if (
+    typeof window !== "undefined" &&
+    /^(https?:\/\/)?(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)
+  ) {
+    return undefined;
+  }
+  try {
+    const parsed = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return undefined;
+    }
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
 }
 
 export function requireAiServiceUrl(): string {
   const url = getAiServiceUrl();
   if (!url) {
     throw new AiServiceError(
-      "AI servis adresi tanımlı değil. NEXT_PUBLIC_AI_SERVICE_URL kontrol edin.",
+      "AI servis adresi tanımlı değil veya geçersiz. Vercel → NEXT_PUBLIC_AI_SERVICE_URL = https://localpilot-ai-1eea.onrender.com (localhost olmamalı).",
     );
   }
   return url;
