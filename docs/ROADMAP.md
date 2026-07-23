@@ -1,8 +1,8 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `2.6.5` (Faz H.4 — realtime + lead aksiyon)  
+**Güncel sürüm:** `2.6.6` (Faz H — owner channel notify)  
 **Son güncelleme:** 23 Temmuz 2026  
-**Aktif sprint:** **Faz H** (polish)
+**Aktif sprint:** **Faz H** (kapanışa yakın)
 
 ---
 
@@ -44,7 +44,8 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | **2.5.x** | Mini site + onboarding + universal tabs | ✅ |
 | **2.6.0** | **Faz H** — panel bildirimleri (lead / site) | ✅ |
 | **2.6.5** | Realtime, lead→CRM deep link, bildirim tercihleri | ✅ |
-| **2.6.x** | E-posta / WhatsApp owner notify (opsiyonel Pro) | planlı |
+| **2.6.6** | Owner e-posta (Resend) / WhatsApp Cloud + tarayıcı push | ✅ |
+| **2.7.x** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
 | **2.7.0** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
 | **2.8.0** | Faz E canlı Google/Meta (gerçek domain + credential) | ⏸️ domain sonrası |
 
@@ -86,7 +87,8 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Realtime (Supabase channel + migration `018`)
 - [x] Bildirim tercihleri (Ayarlar)
 - [x] Mini site lead → CRM deep link + WhatsApp / Ara
-- [ ] E-posta / WhatsApp owner notify (opsiyonel Pro)
+- [x] E-posta / WhatsApp owner notify (Resend + Cloud API opsiyonel; soft-fail)
+- [x] Tarayıcı / sistem bildirimi (Notification API)
 - [ ] Google Places API canlı profil (credential)
 
 ---
@@ -96,7 +98,6 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Madde | Öncelik |
 |-------|---------|
 | GitHub E2E secrets + panel E2E (Kasa sabit) | P1 |
-| Owner e-posta / WA bildirim (Pro) | P2 |
 | Vercel `VERCEL_TOKEN` / domain canlı doğrulama | P2 ops |
 | Stripe Price ID env | P2 ops |
 | Faz E Google OAuth (gerçek domain + Cloud Console + Render env) | P2 — **bilinçli ertelendi** (public hazır değil) |

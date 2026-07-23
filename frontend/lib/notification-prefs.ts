@@ -10,12 +10,15 @@ export interface NotificationPrefs {
   notifyMiniSite: boolean;
   /** Toast when a new notification arrives via realtime/poll */
   toastOnNew: boolean;
+  /** OS browser notification when tab is open/background (requires permission) */
+  browserPush: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   notifyLeads: true,
   notifyMiniSite: true,
   toastOnNew: true,
+  browserPush: true,
 };
 
 const STORAGE_PREFIX = "localpilot-notification-prefs-";
@@ -40,6 +43,10 @@ export function normalizeNotificationPrefs(
       typeof input?.toastOnNew === "boolean"
         ? input.toastOnNew
         : DEFAULT_NOTIFICATION_PREFS.toastOnNew,
+    browserPush:
+      typeof input?.browserPush === "boolean"
+        ? input.browserPush
+        : DEFAULT_NOTIFICATION_PREFS.browserPush,
   };
 }
 

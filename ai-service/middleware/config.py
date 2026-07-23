@@ -9,6 +9,7 @@ PUBLIC_PATHS = {
     "/health",
     "/stripe-webhook",
     "/integration/google/oauth/callback",
+    "/public/owner-lead-notify",
     "/docs",
     "/openapi.json",
     "/redoc",

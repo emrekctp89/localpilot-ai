@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.6.6 - 2026-07-23
+
+### Added
+- **Owner channel notify** for mini-site leads (optional):
+  - AI service `POST /public/owner-lead-notify` (public, rate-limited, soft-fail)
+  - WhatsApp Cloud → `business.whatsapp_number` when Ayarlar’da açık + env
+  - Resend e-posta when `RESEND_API_KEY` (+ optional `RESEND_FROM_EMAIL`) + Ayarlar e-posta
+- Ayarlar: tarayıcı/sistem bildirimi izni + kanal tercihleri (`theme_config.owner_notify`)
+- Lead form calls owner notify after in-app notification
+- Health check field `owner_email` (Resend configured?)
+
+### Changed
+- Notification prefs: `browserPush` default on
+
 ## 2.6.5 - 2026-07-23
 
 ### Added

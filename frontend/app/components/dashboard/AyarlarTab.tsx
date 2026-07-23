@@ -18,6 +18,16 @@ import {
   type NotificationPrefs,
 } from "@/lib/notification-prefs";
 import {
+  getBrowserNotifyPermission,
+  requestBrowserNotifyPermission,
+  type BrowserNotifyPermission,
+} from "@/lib/browser-notify";
+import {
+  isValidOwnerNotifyEmail,
+  mergeOwnerNotifyIntoTheme,
+  ownerNotifyFromTheme,
+} from "@/lib/owner-notify";
+import {
   customDomainStatusLabel,
   getCustomDomainDnsInstructions,
   getMiniSitePublicPath,
@@ -155,20 +165,28 @@ export default function AyarlarTab({
         : { ...DEFAULT_NOTIFICATION_PREFS },
   );
   const [prefsSavedMessage, setPrefsSavedMessage] = useState("");
+  const [ownerNotify, setOwnerNotify] = useState(() =>
+    ownerNotifyFromTheme(business?.theme_config),
+  );
+  const [browserPermission, setBrowserPermission] =
+    useState<BrowserNotifyPermission>("default");
 
   useEffect(() => {
     Promise.resolve().then(() => {
       setBillingInterval(readBillingInterval());
+      setBrowserPermission(getBrowserNotifyPermission());
     });
   }, []);
 
   useEffect(() => {
     if (!business?.id) {
       setNotificationPrefs({ ...DEFAULT_NOTIFICATION_PREFS });
+      setOwnerNotify(ownerNotifyFromTheme(null));
       return;
     }
     setNotificationPrefs(readNotificationPrefs(business.id));
-  }, [business?.id]);
+    setOwnerNotify(ownerNotifyFromTheme(business.theme_config));
+  }, [business?.id, business?.theme_config]);
 
   const updateNotificationPref = <K extends keyof NotificationPrefs>(
     key: K,
@@ -179,6 +197,22 @@ export default function AyarlarTab({
     setNotificationPrefs(next);
     setPrefsSavedMessage("Bildirim tercihleri kaydedildi.");
     window.setTimeout(() => setPrefsSavedMessage(""), 2500);
+  };
+
+  const handleRequestBrowserPush = async () => {
+    const permission = await requestBrowserNotifyPermission();
+    setBrowserPermission(permission);
+    if (permission === "granted") {
+      updateNotificationPref("browserPush", true);
+      setPrefsSavedMessage("Tarayıcı bildirim izni verildi.");
+    } else if (permission === "denied") {
+      setPrefsSavedMessage(
+        "Tarayıcı bildirimleri engellendi. Tarayıcı ayarlarından açabilirsiniz.",
+      );
+    } else if (permission === "unsupported") {
+      setPrefsSavedMessage("Bu tarayıcı sistem bildirimlerini desteklemiyor.");
+    }
+    window.setTimeout(() => setPrefsSavedMessage(""), 3500);
   };
 
   const handleBillingIntervalChange = (interval: BillingInterval) => {
@@ -398,10 +432,21 @@ export default function AyarlarTab({
           throw new Error(domainSave.error || "Geçersiz özel domain.");
         }
 
-        const nextThemeConfig = {
-          ...(business.theme_config || {}),
-          primaryColor: selectedTheme,
-        };
+        if (
+          ownerNotify.email_enabled &&
+          ownerNotify.email &&
+          !isValidOwnerNotifyEmail(ownerNotify.email)
+        ) {
+          throw new Error("Bildirim e-postası geçerli değil.");
+        }
+
+        const nextThemeConfig = mergeOwnerNotifyIntoTheme(
+          {
+            ...(business.theme_config || {}),
+            primaryColor: selectedTheme,
+          },
+          ownerNotify,
+        );
         const nextSlug = slugCheck.slug || null;
         const { error: businessError } = await supabase
           .from("businesses")
@@ -879,7 +924,120 @@ export default function AyarlarTab({
               />
             </label>
           </li>
+          <li className="flex items-start justify-between gap-4 rounded-xl border border-violet-100 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Tarayıcı / sistem bildirimi
+              </p>
+              <p className="text-xs text-gray-500">
+                Panel açık veya arka plandayken OS bildirimi. İzin:{" "}
+                <span className="font-semibold text-violet-700">
+                  {browserPermission === "granted"
+                    ? "açık"
+                    : browserPermission === "denied"
+                      ? "engelli"
+                      : browserPermission === "unsupported"
+                        ? "desteklenmiyor"
+                        : "henüz sorulmadı"}
+                </span>
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {browserPermission !== "granted" ? (
+                <button
+                  type="button"
+                  onClick={() => void handleRequestBrowserPush()}
+                  className="rounded-lg bg-violet-600 px-2.5 py-1 text-[10px] font-black text-white hover:bg-violet-700"
+                >
+                  İzin iste
+                </button>
+              ) : null}
+              <label className="inline-flex cursor-pointer items-center gap-2">
+                <span className="sr-only">Tarayıcı bildirimleri</span>
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  checked={notificationPrefs.browserPush}
+                  disabled={!business?.id}
+                  onChange={(e) =>
+                    updateNotificationPref("browserPush", e.target.checked)
+                  }
+                />
+              </label>
+            </div>
+          </li>
         </ul>
+
+        <div className="mt-5 rounded-xl border border-violet-200 bg-white p-4">
+          <p className="text-xs font-black uppercase tracking-widest text-violet-600">
+            Kanal bildirimleri (lead)
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            Mini site’den lead gelince e-posta veya işletme WhatsApp numaranıza
+            mesaj. Kaydet ile işletme ayarına yazılır. E-posta için Render’da{" "}
+            <code className="rounded bg-violet-50 px-1 text-xs">RESEND_API_KEY</code>
+            ; WhatsApp için Cloud API env gerekir — yoksa sessizce atlanır.
+          </p>
+          <ul className="mt-3 space-y-3">
+            <li className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                  checked={ownerNotify.whatsapp_enabled}
+                  disabled={!business?.id}
+                  onChange={(e) =>
+                    setOwnerNotify((current) => ({
+                      ...current,
+                      whatsapp_enabled: e.target.checked,
+                    }))
+                  }
+                />
+                WhatsApp ile bana yaz
+              </label>
+              <p className="text-xs text-gray-500 sm:text-right">
+                {business?.whatsapp_number
+                  ? `Numara: ${business.whatsapp_number}`
+                  : "Önce işletme WhatsApp numaranızı tanımlayın"}
+              </p>
+            </li>
+            <li className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-violet-600"
+                  checked={ownerNotify.email_enabled}
+                  disabled={!business?.id}
+                  onChange={(e) =>
+                    setOwnerNotify((current) => ({
+                      ...current,
+                      email_enabled: e.target.checked,
+                    }))
+                  }
+                />
+                E-posta ile bildir
+              </label>
+              <input
+                type="email"
+                value={ownerNotify.email}
+                disabled={!business?.id || !ownerNotify.email_enabled}
+                onChange={(e) =>
+                  setOwnerNotify((current) => ({
+                    ...current,
+                    email: e.target.value,
+                  }))
+                }
+                placeholder="sahip@ornek.com"
+                className="lp-input w-full text-sm disabled:bg-gray-50"
+              />
+            </li>
+          </ul>
+          <p className="mt-3 text-xs text-gray-500">
+            Kanal tercihlerini uygulamak için aşağıdaki{" "}
+            <strong>Değişiklikleri Kaydet</strong> butonunu kullanın.
+          </p>
+        </div>
+
         {prefsSavedMessage ? (
           <p className="mt-3 text-sm font-medium text-violet-700" role="status">
             {prefsSavedMessage}

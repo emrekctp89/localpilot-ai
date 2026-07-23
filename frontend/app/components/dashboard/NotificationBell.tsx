@@ -25,6 +25,7 @@ import {
   buildWhatsAppDeepLink,
   normalizeWhatsAppNumber,
 } from "@/lib/mini-site";
+import { showBrowserNotification } from "@/lib/browser-notify";
 import { useToast } from "../Toast";
 
 interface NotificationBellProps {
@@ -83,6 +84,7 @@ export default function NotificationBell({
           notifyLeads: true,
           notifyMiniSite: true,
           toastOnNew: true,
+          browserPush: true,
         },
   );
   const rootRef = useRef<HTMLDivElement>(null);
@@ -125,12 +127,21 @@ export default function NotificationBell({
         if (knownIdsRef.current.has(item.id)) return;
         knownIdsRef.current.add(item.id);
         setItems((current) => [item, ...current].slice(0, 25));
-        if (
-          bootstrappedRef.current &&
-          currentPrefs.toastOnNew &&
-          !item.read_at
-        ) {
-          showToast(item.title + (item.body ? `: ${item.body}` : ""), "success");
+        if (bootstrappedRef.current && !item.read_at) {
+          if (currentPrefs.toastOnNew) {
+            showToast(
+              item.title + (item.body ? `: ${item.body}` : ""),
+              "success",
+            );
+          }
+          if (currentPrefs.browserPush) {
+            showBrowserNotification({
+              title: item.title,
+              body: item.body || undefined,
+              tag: item.id,
+              onClickUrl: "/dashboard",
+            });
+          }
         }
       },
       onUpdate: (item) => {

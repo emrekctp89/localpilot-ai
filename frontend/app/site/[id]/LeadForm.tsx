@@ -11,6 +11,7 @@ import {
 import { logAuditEvent } from "@/lib/platform/audit";
 import { triggerBusinessWebhooks } from "@/lib/platform/webhooks";
 import { notifyBusinessLead } from "@/lib/repositories/business-notifications";
+import { notifyOwnerLeadChannels } from "@/lib/owner-notify";
 
 const PRODUCT_INTEREST_KEY = "localpilot:product-interest";
 
@@ -122,6 +123,13 @@ export default function LeadForm({
 
     recordLeadCapture(payload);
     void notifyBusinessLead({
+      businessId,
+      fullName,
+      phone: normalizedPhone,
+      notes,
+    });
+    // Optional owner email / WhatsApp Cloud (AI service; soft-fail)
+    void notifyOwnerLeadChannels({
       businessId,
       fullName,
       phone: normalizedPhone,

@@ -15,6 +15,7 @@ describe("notification prefs (Faz H.4)", () => {
     assert.equal(prefs.notifyLeads, false);
     assert.equal(prefs.notifyMiniSite, true);
     assert.equal(prefs.toastOnNew, true);
+    assert.equal(prefs.browserPush, true);
   });
 
   it("uses stable storage key per business", () => {

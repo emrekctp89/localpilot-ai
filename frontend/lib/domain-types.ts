@@ -1,5 +1,15 @@
+/** Owner channel notify for leads (persisted on businesses.theme_config). */
+export interface OwnerNotifyConfig {
+  /** Send lead alerts via Resend when AI service has RESEND_API_KEY */
+  email_enabled?: boolean;
+  email?: string;
+  /** Send lead alerts to business.whatsapp_number via WhatsApp Cloud when configured */
+  whatsapp_enabled?: boolean;
+}
+
 export interface ThemeConfig {
   primaryColor?: string;
+  owner_notify?: OwnerNotifyConfig;
 }
 
 export interface Campaign {

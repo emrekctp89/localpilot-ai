@@ -75,6 +75,10 @@ from integrations.whatsapp_cloud import (
     send_whatsapp_text_message,
     whatsapp_env_configured,
 )
+from integrations.owner_notify import (
+    notify_owner_of_lead,
+    resend_env_configured,
+)
 
 # ------------------------------------------------------------
 # ENV / CLIENT SETUP
@@ -164,6 +168,7 @@ async def health():
         "stripe": bool(STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET),
         "whatsapp_cloud": whatsapp_env_configured(),
         "google_oauth": google_env_configured(),
+        "owner_email": resend_env_configured(),
     }
     degraded = not all(checks.values())
     return {
@@ -469,6 +474,15 @@ class WhatsAppSendRequest(BaseModel):
     business_id: str
     recipient_phone: str
     message: str
+
+
+class OwnerLeadNotifyRequest(BaseModel):
+    """Public mini-site lead → optional owner email / WhatsApp channels."""
+
+    business_id: str
+    full_name: str = Field(..., min_length=2, max_length=120)
+    phone: str = ""
+    notes: str = ""
 
 
 class GoogleApplySuggestionRequest(BaseModel):
@@ -1033,6 +1047,38 @@ def _integration_subject(request: Request) -> str:
             detail="Entegrasyon işlemleri için oturum açmanız gerekir.",
         )
     return subject
+
+
+@app.post("/public/owner-lead-notify")
+async def public_owner_lead_notify(data: OwnerLeadNotifyRequest):
+    """
+    Called from public mini-site lead form (no auth).
+    Soft-fails when owner channels are off or providers are not configured.
+    """
+    business_id = (data.business_id or "").strip()
+    full_name = (data.full_name or "").strip()
+    if not business_id:
+        raise HTTPException(status_code=400, detail="business_id gerekli.")
+    if len(full_name) < 2:
+        raise HTTPException(status_code=400, detail="full_name gerekli.")
+
+    try:
+        result = notify_owner_of_lead(
+            supabase,
+            business_id=business_id,
+            full_name=full_name,
+            phone=(data.phone or "").strip()[:40],
+            notes=(data.notes or "").strip()[:500],
+        )
+        return result
+    except Exception as error:
+        print(f"🚨 OWNER LEAD NOTIFY HATASI: {str(error)}")
+        # Never break the visitor lead flow
+        return {
+            "status": "skipped",
+            "reason": "internal_error",
+            "channels": {},
+        }
 
 
 @app.get("/integration/status")
