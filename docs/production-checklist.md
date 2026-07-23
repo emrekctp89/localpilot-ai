@@ -62,6 +62,7 @@ UPDATE profiles SET commission_admin = true WHERE id = '<admin-uuid>';
 Sırayla SQL Editor'de uygulayın (`supabase/migrations/`):
 
 - [x] `001` → `008` tamamlandı (`008_schema_migrations.sql` dahil)
+- [ ] `017_business_notifications.sql` + `018_notifications_realtime.sql` (Faz H bildirim + Realtime)
 - [x] `supabase/scripts/verify_schema.sql` çalıştırıldı — tüm satırlar `ok = true`
 - [x] `supabase/scripts/rls_audit.sql` çalıştırıldı — RLS fonksiyonları ve policy'ler OK
 - [x] Yerel doğrulama: `cd ai-service && python ../supabase/scripts/verify_schema_remote.py`

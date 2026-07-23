@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.6.5 - 2026-07-23
+
+### Added
+- **Faz H.4** notification polish: Supabase Realtime on `business_notifications` (migration `018`) + 45s poll fallback.
+- Notification bell: instant toast on new lead/site events; **WhatsApp** / **Ara** actions on lead items.
+- Lead → CRM deep link: open CRM with search, highlight matching customer, banner with WA/call.
+- CRM customer detail: WhatsApp + Ara buttons.
+- Ayarlar → **Bildirim tercihleri** (lead, mini site, toast) — per-business localStorage.
+
+### Changed
+- Poll interval 30s → 45s when Realtime is primary; unread list filters by prefs.
+
 ## 2.6.4 - 2026-07-12
 
 ### Changed

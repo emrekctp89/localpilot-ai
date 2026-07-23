@@ -5,6 +5,8 @@ import { analyzeChurn, getAiServiceUrl } from "@/lib/ai-client";
 import {
   LEAD_CAPTURE_EVENT,
   LEAD_CAPTURE_STORAGE_KEY,
+  buildWhatsAppDeepLink,
+  normalizeWhatsAppNumber,
   type LeadCapturePayload,
 } from "@/lib/mini-site";
 import { supabase } from "@/lib/supabase";
@@ -18,10 +20,17 @@ import type {
   Customer,
   CustomerFollowUp,
 } from "@/lib/domain-types";
+import {
+  matchCustomerToLeadFocus,
+  type CrmLeadFocus,
+} from "@/lib/notification-prefs";
 import EmptyState from "./EmptyState";
 
 interface CrmTabProps {
   business: Business;
+  /** Deep-link from notification bell (lead → CRM). */
+  focusLead?: CrmLeadFocus | null;
+  onFocusLeadConsumed?: () => void;
 }
 
 interface ChurnData {
@@ -32,7 +41,11 @@ interface ChurnData {
   win_back_message: string;
 }
 
-export default function CrmTab({ business }: CrmTabProps) {
+export default function CrmTab({
+  business,
+  focusLead = null,
+  onFocusLeadConsumed,
+}: CrmTabProps) {
   const { showToast } = useToast();
   const reminderStorageKey = `localpilot-crm-reminders-${business?.id || "preview"}`;
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -42,6 +55,7 @@ export default function CrmTab({ business }: CrmTabProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
+  const [leadBanner, setLeadBanner] = useState<CrmLeadFocus | null>(null);
   const [reminders, setReminders] = useState<Record<string, CustomerFollowUp>>(
     {},
   );
@@ -107,6 +121,25 @@ export default function CrmTab({ business }: CrmTabProps) {
       void fetchCustomers();
     });
   }, [fetchCustomers]);
+
+  // Notification bell → CRM deep link: search banner + consume token
+  useEffect(() => {
+    if (!focusLead) return;
+    const query = (focusLead.phone || focusLead.fullName || "").trim();
+    if (query) {
+      setSearchQuery(query);
+      setStatusFilter("all");
+    }
+    setLeadBanner(focusLead);
+    onFocusLeadConsumed?.();
+  }, [focusLead, onFocusLeadConsumed]);
+
+  // Open matching customer once list is loaded
+  useEffect(() => {
+    if (!leadBanner || loading) return;
+    const match = matchCustomerToLeadFocus(customers, leadBanner);
+    if (match) setSelectedCustomer(match);
+  }, [leadBanner, loading, customers]);
 
   useEffect(() => {
     if (!business?.id) return;
@@ -396,8 +429,106 @@ export default function CrmTab({ business }: CrmTabProps) {
     ? reminders[selectedCustomer.id] || {}
     : {};
 
+  const openWhatsAppForCustomer = (customer: Customer) => {
+    const url = buildWhatsAppDeepLink(
+      customer.phone || "",
+      `Merhaba ${customer.full_name}, mini siteden ilettiğiniz talebiniz hakkında yazıyorum.`,
+    );
+    if (!url) {
+      showToast("Bu müşteri için geçerli telefon yok.", "error");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const callCustomer = (customer: Customer) => {
+    const digits =
+      normalizeWhatsAppNumber(customer.phone || "") ||
+      (customer.phone || "").replace(/\D/g, "");
+    if (!digits) {
+      showToast("Bu müşteri için geçerli telefon yok.", "error");
+      return;
+    }
+    const tel = digits.startsWith("90") ? `0${digits.slice(2)}` : digits;
+    window.location.href = `tel:${tel}`;
+  };
+
   return (
     <div className="relative space-y-5 animate-fade-in-up sm:space-y-6">
+      {leadBanner ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-indigo-600">
+              Bildirimden açıldı
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-900">
+              {leadBanner.fullName || "Yeni lead"}
+              {leadBanner.phone ? ` · ${leadBanner.phone}` : ""}
+            </p>
+            {leadBanner.notes ? (
+              <p className="mt-1 text-xs text-slate-600 line-clamp-2">
+                {leadBanner.notes}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {leadBanner.phone || selectedCustomer?.phone ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const c =
+                      selectedCustomer ||
+                      matchCustomerToLeadFocus(customers, leadBanner);
+                    if (c) openWhatsAppForCustomer(c);
+                    else {
+                      const url = buildWhatsAppDeepLink(
+                        leadBanner.phone || "",
+                        leadBanner.fullName
+                          ? `Merhaba ${leadBanner.fullName}, mini siteden ilettiğiniz talebiniz hakkında yazıyorum.`
+                          : undefined,
+                      );
+                      if (url) window.open(url, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                  className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-white hover:bg-emerald-600"
+                >
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const c =
+                      selectedCustomer ||
+                      matchCustomerToLeadFocus(customers, leadBanner);
+                    if (c) callCustomer(c);
+                    else if (leadBanner.phone) {
+                      const digits =
+                        normalizeWhatsAppNumber(leadBanner.phone) ||
+                        leadBanner.phone.replace(/\D/g, "");
+                      const tel = digits.startsWith("90")
+                        ? `0${digits.slice(2)}`
+                        : digits;
+                      window.location.href = `tel:${tel}`;
+                    }
+                  }}
+                  className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-slate-800"
+                >
+                  Ara
+                </button>
+              </>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setLeadBanner(null)}
+              className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50"
+            >
+              Kapat
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* ÜST BİLGİ KARTLARI VE AI BUTONU */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="lp-card flex items-center gap-4 p-5">
@@ -657,6 +788,24 @@ export default function CrmTab({ business }: CrmTabProps) {
                 <p className="mt-1 text-sm text-gray-500">
                   {selectedCustomer.phone || "Telefon bilgisi yok"}
                 </p>
+                {selectedCustomer.phone ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppForCustomer(selectedCustomer)}
+                      className="rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-600"
+                    >
+                      WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => callCustomer(selectedCustomer)}
+                      className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-black text-white hover:bg-slate-800"
+                    >
+                      Ara
+                    </button>
+                  </div>
+                ) : null}
               </div>
               <button
                 type="button"

@@ -1,5 +1,10 @@
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { isMissingTableError } from "@/lib/repositories/errors";
+import {
+  isNotificationTypeEnabled,
+  readNotificationPrefs,
+} from "@/lib/notification-prefs";
 
 export type BusinessNotificationType =
   | "lead.created"
@@ -16,6 +21,78 @@ export interface BusinessNotification {
   metadata: Record<string, unknown>;
   read_at: string | null;
   created_at: string;
+}
+
+function mapNotificationRow(row: unknown): BusinessNotification | null {
+  if (!row || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  if (typeof r.id !== "string" || typeof r.business_id !== "string") {
+    return null;
+  }
+  return {
+    id: r.id,
+    business_id: r.business_id,
+    type: typeof r.type === "string" ? r.type : "lead.created",
+    title: typeof r.title === "string" ? r.title : "Bildirim",
+    body: typeof r.body === "string" ? r.body : "",
+    metadata:
+      r.metadata && typeof r.metadata === "object" && !Array.isArray(r.metadata)
+        ? (r.metadata as Record<string, unknown>)
+        : {},
+    read_at: typeof r.read_at === "string" ? r.read_at : null,
+    created_at:
+      typeof r.created_at === "string"
+        ? r.created_at
+        : new Date().toISOString(),
+  };
+}
+
+/**
+ * Subscribe to INSERT (and optional UPDATE) on business_notifications.
+ * Requires migration 018 (supabase_realtime publication). Poll remains fallback.
+ */
+export function subscribeBusinessNotifications(
+  businessId: string,
+  handlers: {
+    onInsert?: (item: BusinessNotification) => void;
+    onUpdate?: (item: BusinessNotification) => void;
+  },
+): () => void {
+  if (!businessId) return () => undefined;
+
+  const channel: RealtimeChannel = supabase
+    .channel(`business_notifications:${businessId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "business_notifications",
+        filter: `business_id=eq.${businessId}`,
+      },
+      (payload) => {
+        const item = mapNotificationRow(payload.new);
+        if (item) handlers.onInsert?.(item);
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "business_notifications",
+        filter: `business_id=eq.${businessId}`,
+      },
+      (payload) => {
+        const item = mapNotificationRow(payload.new);
+        if (item) handlers.onUpdate?.(item);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 export async function listBusinessNotifications(
@@ -120,14 +197,23 @@ export async function notifyBusinessLead(input: {
   return (data as string) || null;
 }
 
-/** Authenticated owner/member insert (settings save, publish). */
+/** Authenticated owner/member insert (settings save, publish). Respects prefs. */
 export async function createBusinessNotification(input: {
   businessId: string;
   type: BusinessNotificationType;
   title: string;
   body?: string;
   metadata?: Record<string, unknown>;
+  /** Skip notification-prefs gate (tests / system). */
+  force?: boolean;
 }): Promise<string | null> {
+  if (!input.force) {
+    const prefs = readNotificationPrefs(input.businessId);
+    if (!isNotificationTypeEnabled(input.type, prefs)) {
+      return null;
+    }
+  }
+
   const { data, error } = await supabase
     .from("business_notifications")
     .insert({

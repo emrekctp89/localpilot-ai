@@ -12,6 +12,12 @@ import type {
 import { isMiniSitePublished } from "@/lib/mini-site";
 import { createBusinessNotification } from "@/lib/repositories/business-notifications";
 import {
+  DEFAULT_NOTIFICATION_PREFS,
+  readNotificationPrefs,
+  writeNotificationPrefs,
+  type NotificationPrefs,
+} from "@/lib/notification-prefs";
+import {
   customDomainStatusLabel,
   getCustomDomainDnsInstructions,
   getMiniSitePublicPath,
@@ -142,12 +148,38 @@ export default function AyarlarTab({
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("monthly");
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(
+    () =>
+      business?.id
+        ? readNotificationPrefs(business.id)
+        : { ...DEFAULT_NOTIFICATION_PREFS },
+  );
+  const [prefsSavedMessage, setPrefsSavedMessage] = useState("");
 
   useEffect(() => {
     Promise.resolve().then(() => {
       setBillingInterval(readBillingInterval());
     });
   }, []);
+
+  useEffect(() => {
+    if (!business?.id) {
+      setNotificationPrefs({ ...DEFAULT_NOTIFICATION_PREFS });
+      return;
+    }
+    setNotificationPrefs(readNotificationPrefs(business.id));
+  }, [business?.id]);
+
+  const updateNotificationPref = <K extends keyof NotificationPrefs>(
+    key: K,
+    value: NotificationPrefs[K],
+  ) => {
+    if (!business?.id) return;
+    const next = writeNotificationPrefs(business.id, { [key]: value });
+    setNotificationPrefs(next);
+    setPrefsSavedMessage("Bildirim tercihleri kaydedildi.");
+    window.setTimeout(() => setPrefsSavedMessage(""), 2500);
+  };
 
   const handleBillingIntervalChange = (interval: BillingInterval) => {
     setBillingInterval(interval);
@@ -767,6 +799,92 @@ export default function AyarlarTab({
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-violet-100 bg-violet-50/60 p-5">
+        <p className="text-xs font-black uppercase tracking-widest text-violet-600">
+          Bildirimler
+        </p>
+        <h3 className="mt-1 text-lg font-black text-gray-900">
+          Panel bildirim tercihleri
+        </h3>
+        <p className="mt-1 text-sm text-gray-600">
+          Mini site lead’leri ve vitrin güncellemeleri için zil ve toast
+          davranışını buradan yönetin. Tercihler bu tarayıcıda saklanır.
+        </p>
+        <ul className="mt-4 space-y-3">
+          <li className="flex items-start justify-between gap-4 rounded-xl border border-violet-100 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Yeni mini site lead
+              </p>
+              <p className="text-xs text-gray-500">
+                Zilde lead bildirimi ve CRM’e atlama
+              </p>
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-2">
+              <span className="sr-only">Lead bildirimleri</span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                checked={notificationPrefs.notifyLeads}
+                disabled={!business?.id}
+                onChange={(e) =>
+                  updateNotificationPref("notifyLeads", e.target.checked)
+                }
+              />
+            </label>
+          </li>
+          <li className="flex items-start justify-between gap-4 rounded-xl border border-violet-100 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Mini site kaydet / yayına al
+              </p>
+              <p className="text-xs text-gray-500">
+                Vitrin güncellendi, yayında veya taslak bildirimleri
+              </p>
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-2">
+              <span className="sr-only">Mini site bildirimleri</span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                checked={notificationPrefs.notifyMiniSite}
+                disabled={!business?.id}
+                onChange={(e) =>
+                  updateNotificationPref("notifyMiniSite", e.target.checked)
+                }
+              />
+            </label>
+          </li>
+          <li className="flex items-start justify-between gap-4 rounded-xl border border-violet-100 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Anlık toast (Realtime)
+              </p>
+              <p className="text-xs text-gray-500">
+                Yeni bildirim gelince ekranda kısa bildirim göster
+              </p>
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-2">
+              <span className="sr-only">Toast bildirimleri</span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                checked={notificationPrefs.toastOnNew}
+                disabled={!business?.id}
+                onChange={(e) =>
+                  updateNotificationPref("toastOnNew", e.target.checked)
+                }
+              />
+            </label>
+          </li>
+        </ul>
+        {prefsSavedMessage ? (
+          <p className="mt-3 text-sm font-medium text-violet-700" role="status">
+            {prefsSavedMessage}
+          </p>
+        ) : null}
       </section>
 
       <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 md:p-5">

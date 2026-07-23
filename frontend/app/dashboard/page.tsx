@@ -19,6 +19,7 @@ import type { OnboardingData } from "../components/dashboard/OnboardingWizard";
 import TabMenu from "../components/dashboard/TabMenu";
 import NotificationBell from "../components/dashboard/NotificationBell";
 import CrmTab from "../components/dashboard/CrmTab";
+import type { CrmLeadFocus } from "@/lib/notification-prefs";
 import RandevuTab from "../components/dashboard/RandevuTab";
 import SiparisTab from "../components/dashboard/SiparisTab";
 import GorevlerTab from "../components/dashboard/GorevlerTab";
@@ -69,6 +70,8 @@ export default function Dashboard() {
   );
 
   const [activeTab, setActiveTab] = useState("ozet");
+  const [crmLeadFocus, setCrmLeadFocus] = useState<CrmLeadFocus | null>(null);
+  const clearCrmLeadFocus = useCallback(() => setCrmLeadFocus(null), []);
   const [paymentReturn, setPaymentReturn] = useState<"success" | "cancel" | null>(
     null,
   );
@@ -424,7 +427,10 @@ export default function Dashboard() {
             />
             <NotificationBell
               businessId={session.business?.id}
-              onOpenCrm={() => setActiveTab("crm")}
+              onOpenCrm={(focus) => {
+                setCrmLeadFocus(focus || null);
+                setActiveTab("crm");
+              }}
               onOpenSettings={() => setActiveTab("ayarlar")}
             />
             <button
@@ -484,7 +490,13 @@ export default function Dashboard() {
               {activeTab === "icerik" && (
                 <IcerikTab business={session.business} />
               )}
-              {activeTab === "crm" && <CrmTab business={session.business} />}
+              {activeTab === "crm" && (
+                <CrmTab
+                  business={session.business}
+                  focusLead={crmLeadFocus}
+                  onFocusLeadConsumed={clearCrmLeadFocus}
+                />
+              )}
               {activeTab === "randevu" && (
                 <RandevuTab business={session.business} />
               )}

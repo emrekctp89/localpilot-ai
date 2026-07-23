@@ -1,8 +1,8 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `2.6.0` (Faz H — bildirim + tutma)  
-**Son güncelleme:** 12 Temmuz 2026  
-**Aktif sprint:** **Faz H**
+**Güncel sürüm:** `2.6.5` (Faz H.4 — realtime + lead aksiyon)  
+**Son güncelleme:** 23 Temmuz 2026  
+**Aktif sprint:** **Faz H** (polish)
 
 ---
 
@@ -42,8 +42,9 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Sürüm | Odak | Durum |
 |-------|------|--------|
 | **2.5.x** | Mini site + onboarding + universal tabs | ✅ |
-| **2.6.0** | **Faz H** — panel bildirimleri (lead / site) | 🔄 aktif |
-| **2.6.x** | Bildirim polish, e-posta/WhatsApp opsiyonel | planlı |
+| **2.6.0** | **Faz H** — panel bildirimleri (lead / site) | ✅ |
+| **2.6.5** | Realtime, lead→CRM deep link, bildirim tercihleri | ✅ |
+| **2.6.x** | E-posta / WhatsApp owner notify (opsiyonel Pro) | planlı |
 | **2.7.0** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
 | **2.8.0** | Faz E canlı Google/Meta (gerçek domain + credential) | ⏸️ domain sonrası |
 
@@ -80,11 +81,12 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 - [x] Panelde okunabilir özet metin
 
 ### H.4 Sonraki (2.6.x)
-- [x] 30 sn poll (zil)
+- [x] 30–45 sn poll (zil, Realtime fallback)
 - [x] Google checklist auto-seed (gerçek site / onboarding verisi)
-- [ ] Realtime (Supabase channel)
+- [x] Realtime (Supabase channel + migration `018`)
+- [x] Bildirim tercihleri (Ayarlar)
+- [x] Mini site lead → CRM deep link + WhatsApp / Ara
 - [ ] E-posta / WhatsApp owner notify (opsiyonel Pro)
-- [ ] Bildirim tercihleri (Ayarlar)
 - [ ] Google Places API canlı profil (credential)
 
 ---
@@ -94,7 +96,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Madde | Öncelik |
 |-------|---------|
 | GitHub E2E secrets + panel E2E (Kasa sabit) | P1 |
-| Mini site lead → CRM deep link + WhatsApp “ara” | P1 |
+| Owner e-posta / WA bildirim (Pro) | P2 |
 | Vercel `VERCEL_TOKEN` / domain canlı doğrulama | P2 ops |
 | Stripe Price ID env | P2 ops |
 | Faz E Google OAuth (gerçek domain + Cloud Console + Render env) | P2 — **bilinçli ertelendi** (public hazır değil) |
@@ -112,16 +114,17 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Mini site public | ✅ RPC 016 + vitrin |
 | Partner / komisyon | ✅ |
 | CI smoke + integration | ✅ |
-| In-app owner bildirim | 🔄 Faz H |
+| In-app owner bildirim | ✅ Faz H (+ Realtime 2.6.5) |
 | E2E secrets | ⏸️ opsiyonel |
 
 ---
 
 ## Nasıl kullanılır? (Faz H)
 
-1. Supabase’de `017_business_notifications.sql` uygula.
+1. Supabase’de `017_business_notifications.sql` + **`018_notifications_realtime.sql`** uygula.
 2. Deploy frontend (+ gerekirse ai-service).
-3. Mini site lead gönder → panel zilinde bildirim.
-4. Ayarlar’dan site kaydet / yayına al → bildirim.
+3. Mini site lead gönder → panel zilinde bildirim (Realtime veya poll).
+4. Zilden lead’e tıkla → CRM + WhatsApp/Ara; Ayarlar’dan tercihleri yönet.
+5. Ayarlar’dan site kaydet / yayına al → bildirim (tercih açıksa).
 
-**Migration sırası:** `001`–`016` + **`017`**.
+**Migration sırası:** `001`–`016` + **`017`** + **`018`**.
