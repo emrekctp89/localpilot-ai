@@ -1,9 +1,16 @@
 -- LocalPilot AI: enable Realtime for owner notifications (Faz H.4)
--- Run in Supabase SQL Editor after 017_business_notifications.sql
+-- Prerequisites: 017_business_notifications.sql MUST be applied first
+-- (creates public.business_notifications).
 
--- Realtime INSERT events for in-app bell (poll remains as fallback)
 DO $$
 BEGIN
+  IF to_regclass('public.business_notifications') IS NULL THEN
+    RAISE EXCEPTION
+      'public.business_notifications yok. Önce 017_business_notifications.sql çalıştırın, sonra 018.'
+      USING ERRCODE = '42P01';
+  END IF;
+
+  -- Realtime INSERT events for in-app bell (poll remains as fallback)
   IF NOT EXISTS (
     SELECT 1
     FROM pg_publication_tables
@@ -13,10 +20,10 @@ BEGIN
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.business_notifications;
   END IF;
-END $$;
 
--- Replica identity FULL so UPDATE payloads include old row (mark-read)
-ALTER TABLE public.business_notifications REPLICA IDENTITY FULL;
+  -- Replica identity FULL so UPDATE payloads include old row (mark-read)
+  ALTER TABLE public.business_notifications REPLICA IDENTITY FULL;
+END $$;
 
 INSERT INTO schema_migrations (version, name) VALUES
   ('018', '018_notifications_realtime.sql')
