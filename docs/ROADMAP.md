@@ -1,8 +1,8 @@
 # LocalPilot AI — Geliştirme Roadmap
 
-**Güncel sürüm:** `2.6.6` (Faz H — owner channel notify)  
+**Güncel sürüm:** `2.7.0` (Ops — E2E / live smoke)  
 **Son güncelleme:** 23 Temmuz 2026  
-**Aktif sprint:** **Faz H** (kapanışa yakın)
+**Aktif sprint:** **Ops 2.7**
 
 ---
 
@@ -20,7 +20,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | **Canlı Google OAuth** | **Ertelendi** — gerçek public domain + Google Cloud OAuth client sonra. Şimdilik: checklist auto-seed, kopyalanabilir metinler, Haritalar / Profil Yöneticisi linkleri |
 | **Canlı WhatsApp Cloud** | Ertelendi — `wa.me` fallback |
 | **Partner komisyonu** | Ajans %20 · Referans %10 · panelden onay |
-| **Aktif faz** | **Faz H** (Faz G kod kapandı) |
+| **Aktif faz** | **Ops 2.7** (Faz H kod tamam; secrets/domain manuel) |
 | **Public launch** | Henüz değil — preview domain (`*.vercel.app` / Render) geliştirme için yeterli |
 | **Production** | Vercel `localpilot-ai-1b2h-phi` · Render `localpilot-ai-1eea` |
 
@@ -45,8 +45,8 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | **2.6.0** | **Faz H** — panel bildirimleri (lead / site) | ✅ |
 | **2.6.5** | Realtime, lead→CRM deep link, bildirim tercihleri | ✅ |
 | **2.6.6** | Owner e-posta (Resend) / WhatsApp Cloud + tarayıcı push | ✅ |
-| **2.7.x** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
-| **2.7.0** | Ops: domain env, E2E secrets, Stripe Price ID | ops |
+| **2.7.0** | Ops: panel E2E, live/mobile smoke CI, ops-e2e doc | ✅ |
+| **2.7.x** | E2E secrets doldurma, VERCEL_TOKEN domain, Stripe Price ID | ops (manuel) |
 | **2.8.0** | Faz E canlı Google/Meta (gerçek domain + credential) | ⏸️ domain sonrası |
 
 ---
@@ -97,7 +97,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 
 | Madde | Öncelik |
 |-------|---------|
-| GitHub E2E secrets + panel E2E (Kasa sabit) | P1 |
+| GitHub Secrets: `E2E_*` doldur (panel-core yeşile döner) | P1 manuel |
 | Vercel `VERCEL_TOKEN` / domain canlı doğrulama | P2 ops |
 | Stripe Price ID env | P2 ops |
 | Faz E Google OAuth (gerçek domain + Cloud Console + Render env) | P2 — **bilinçli ertelendi** (public hazır değil) |
@@ -116,7 +116,7 @@ Yerel işletmeler için tek panelden çalışan, ölçülebilir kararlar üreten
 | Partner / komisyon | ✅ |
 | CI smoke + integration | ✅ |
 | In-app owner bildirim | ✅ Faz H (+ Realtime 2.6.5) |
-| E2E secrets | ⏸️ opsiyonel |
+| E2E / live smoke CI | ✅ kod (secrets opsiyonel) |
 
 ---
 

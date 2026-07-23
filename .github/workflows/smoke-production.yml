@@ -94,3 +94,46 @@ jobs:
           validate_http_url "$FRONTEND_BASE" "FRONTEND_URL"
           echo "Frontend pricing: ${FRONTEND_BASE}/fiyatlandirma"
           curl --fail --retry 3 --retry-delay 5 --max-time 60 "${FRONTEND_BASE}/fiyatlandirma"
+
+      - name: Check frontend auth page
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+        run: |
+          source .github/scripts/normalize-url.sh
+          FRONTEND_BASE="$(normalize_url "$FRONTEND_URL")"
+          curl --fail --retry 3 --retry-delay 5 --max-time 60 "${FRONTEND_BASE}/auth"
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps (Playwright live)
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: frontend
+        run: npx playwright install chromium --with-deps
+
+      - name: Playwright live public surfaces
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: frontend
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ vars.FRONTEND_URL }}
+          PLAYWRIGHT_SKIP_WEBSERVER: "1"
+        run: npm run test:e2e:live
+
+      - name: Playwright mobile live smoke
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: frontend
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ vars.FRONTEND_URL }}
+        run: npm run test:e2e:mobile

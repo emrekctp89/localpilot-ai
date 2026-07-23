@@ -2,6 +2,13 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.PLAYWRIGHT_PORT ?? "3100";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
+const isRemoteBase =
+  /^https?:\/\//i.test(baseURL) &&
+  !/localhost|127\.0\.0\.1/i.test(baseURL);
+const skipWebServer =
+  process.env.PLAYWRIGHT_SKIP_WEBSERVER === "1" ||
+  process.env.PLAYWRIGHT_SKIP_WEBSERVER === "true" ||
+  isRemoteBase;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +24,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER
+  webServer: skipWebServer
     ? undefined
     : {
         command: `npm run build && npm run start -- -p ${port}`,

@@ -123,9 +123,12 @@ GitHub repo → Settings → **Secrets** → Actions (E2E için):
 |--------|----------|
 | `E2E_TEST_EMAIL` | Test kullanıcı e-postası |
 | `E2E_TEST_PASSWORD` | Test kullanıcı şifresi |
-| `E2E_TEST_HAS_BUSINESS` | `true` — randevu E2E için |
+| `E2E_TEST_HAS_BUSINESS` | `true` — panel-core / randevu / karar E2E |
 | `E2E_PUBLIC_BUSINESS_ID` | Mini site lead form E2E |
+
+Tam rehber: **`docs/ops-e2e.md`**.
 
 - [ ] Secrets tanımlı (yoksa CI authenticated E2E skip eder — normal)
 - [x] GitHub Actions `Production Smoke` workflow yeşil (6 saatte bir)
+- [x] CI panel-core + live-public job’ları kodda (secrets/vars ile aktif)
 - [x] CI `main` push pipeline yeşil (smoke + integration + ai-service tests)

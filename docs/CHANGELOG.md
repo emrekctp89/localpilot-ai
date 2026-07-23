@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.7.0 - 2026-07-23
+
+### Added
+- E2E **panel-core**: Finans, CRM, Ayarlar (bildirim tercihleri), notification bell.
+- CI `e2e-live-public`: production `FRONTEND_URL` üzerinde live-public + mobile smoke.
+- Production Smoke: `/auth` curl + Playwright live/mobile.
+- `docs/ops-e2e.md` — secrets, variables, domain, owner notify env rehberi.
+- npm scripts: `test:e2e:live`, `test:e2e:mobile`, `test:e2e:panel`.
+- Test workflow: `workflow_dispatch` + concurrency.
+
+### Changed
+- Playwright skips local webServer when `PLAYWRIGHT_BASE_URL` is a remote host.
+
 ## 2.6.6 - 2026-07-23
 
 ### Added

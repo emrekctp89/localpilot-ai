@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "2.6.6",
+  "version": "2.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,10 @@
     "test:integration": "tsx --test tests/integration/business-os.test.ts tests/integration/repositories.test.ts tests/integration/campaign-mapping.test.ts tests/integration/crm-activities.test.ts tests/integration/integrations.test.ts tests/integration/dashboard-bootstrap.test.ts tests/integration/dashboard-session.test.ts tests/integration/dashboard-utils.test.ts tests/integration/pro-funnel.test.ts tests/integration/pro-pricing.test.ts tests/integration/partner-program.test.ts tests/integration/activation-metrics.test.ts tests/integration/marketing-site.test.ts tests/integration/platform.test.ts tests/integration/rls-migrations.test.ts tests/integration/legacy-dual-read.test.ts tests/integration/decision-quick-actions.test.ts tests/integration/sector-automation-triggers.test.ts tests/integration/main-flows.test.ts tests/integration/content-items.test.ts tests/integration/faz-e-integrations.test.ts tests/integration/mini-site-domain.test.ts tests/integration/pwa-mobile.test.ts tests/integration/ui-ux.test.ts tests/integration/business-slug.test.ts tests/integration/onboarding-sectors.test.ts tests/integration/notification-prefs.test.ts tests/integration/owner-notify.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:live": "playwright test e2e/live-public.spec.ts",
+    "test:e2e:mobile": "node scripts/mobile-live-smoke.mjs",
+    "test:e2e:panel": "playwright test e2e/panel-core.spec.ts e2e/dashboard.spec.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

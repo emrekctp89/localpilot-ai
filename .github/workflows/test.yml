@@ -4,6 +4,11 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   frontend:
@@ -96,6 +101,15 @@ jobs:
           E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
           E2E_TEST_HAS_BUSINESS: ${{ secrets.E2E_TEST_HAS_BUSINESS }}
 
+      - name: E2E tests (panel core — Finans, CRM, Ayarlar, zil)
+        if: steps.e2e_auth_gate.outputs.skip != 'true' && steps.e2e_auth_gate.outputs.has_business == 'true'
+        run: npm run test:e2e -- e2e/panel-core.spec.ts
+        env:
+          CI: true
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_TEST_HAS_BUSINESS: true
+
       - name: E2E tests (appointment flow)
         if: steps.e2e_auth_gate.outputs.skip != 'true' && steps.e2e_auth_gate.outputs.has_business == 'true'
         run: npm run test:e2e -- e2e/appointment.spec.ts
@@ -104,6 +118,56 @@ jobs:
           E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
           E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
           E2E_TEST_HAS_BUSINESS: true
+
+  e2e-live-public:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip when FRONTEND_URL variable is missing
+        id: live_gate
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+        run: |
+          if [ -z "$FRONTEND_URL" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "FRONTEND_URL not set; skipping live public E2E."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.live_gate.outputs.skip != 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.live_gate.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Install Playwright browser
+        if: steps.live_gate.outputs.skip != 'true'
+        run: npx playwright install chromium --with-deps
+
+      - name: Live public surfaces (production domain)
+        if: steps.live_gate.outputs.skip != 'true'
+        run: npm run test:e2e:live
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ vars.FRONTEND_URL }}
+          PLAYWRIGHT_SKIP_WEBSERVER: "1"
+
+      - name: Live mobile smoke (iPhone + Pixel)
+        if: steps.live_gate.outputs.skip != 'true'
+        run: npm run test:e2e:mobile
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ vars.FRONTEND_URL }}
 
   e2e-public-site:
     runs-on: ubuntu-latest
